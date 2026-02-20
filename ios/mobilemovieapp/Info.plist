@@ -27,7 +27,7 @@
       <dict>
         <key>CFBundleURLSchemes</key>
         <array>
-          <string>movies</string>
+          <string>lhamo</string>
           <string>com.zimingtheking.mobile-movie-app</string>
         </array>
       </dict>
@@ -46,13 +46,15 @@
       <true/>
     </dict>
     <key>NSMicrophoneUsageDescription</key>
-    <string>Allow $(PRODUCT_NAME) to use the microphone.</string>
+    <string>Allow mobile_movie_app to use the microphone for voice input and speech recognition.</string>
     <key>NSSpeechRecognitionUsageDescription</key>
-    <string>Allow $(PRODUCT_NAME) to use speech recognition.</string>
+    <string>Allow mobile_movie_app to use speech recognition to enable voice commands and dictation.</string>
     <key>NSUserActivityTypes</key>
     <array>
       <string>$(PRODUCT_BUNDLE_IDENTIFIER).expo.index_route</string>
     </array>
+    <key>RCTNewArchEnabled</key>
+    <true/>
     <key>UILaunchStoryboardName</key>
     <string>SplashScreen</string>
     <key>UIRequiredDeviceCapabilities</key>
