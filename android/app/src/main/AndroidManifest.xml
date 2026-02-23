@@ -31,8 +31,6 @@
         <action android:name="android.intent.action.VIEW"/>
         <category android:name="android.intent.category.DEFAULT"/>
         <category android:name="android.intent.category.BROWSABLE"/>
-        <data android:scheme="movies"/>
-        <data android:scheme="com.zimingtheking.mobile_movie_app"/>
         <data android:scheme="lhamo"/>
       </intent-filter>
     </activity>

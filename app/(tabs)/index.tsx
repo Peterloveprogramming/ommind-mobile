@@ -32,9 +32,9 @@ const Index = () => {
     };
 
     socket.onmessage = (event) => {
-      const text = typeof event.data === "string" ? event.data : JSON.stringify(event.data);
-      setMessages((prev) => [...prev, `[server] ${text}`]);
+      console.log("[ws] message:", event.data);
     };
+
 
     socket.onerror = () => {
       setStatus("error");
@@ -42,6 +42,7 @@ const Index = () => {
     };
 
     socket.onclose = () => {
+      console.log("[ws] disconnected");
       setStatus("closed");
       setMessages((prev) => [...prev, "[system] disconnected"]);
     };

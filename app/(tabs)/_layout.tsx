@@ -18,13 +18,12 @@ const Rinpoche = () => {
 
   return (
     <View style={styles.rinpocheContainer}>
-      {/* <TouchableOpacity onPress={() => router.push('/lhamo')}> Navigate to the AI page */}
       <TouchableOpacity 
            onPress={() => router.push({
                 pathname: '/chat/[id]',
                 params: { id: 1, session_id: generateUniqueId() }
               })} 
-      > {/* Navigate to the AI page */}
+      >
       <Image source={images.rinpoche_normal} style={styles.rinpocheImage} />
       </TouchableOpacity>
     </View>

@@ -2681,11 +2681,6 @@
   dependencies:
     "@sinonjs/commons" "^3.0.0"
 
-"@speechmatics/expo-two-way-audio@^0.1.2":
-  version "0.1.2"
-  resolved "https://registry.yarnpkg.com/@speechmatics/expo-two-way-audio/-/expo-two-way-audio-0.1.2.tgz#35f477e8b13c286fa01d43dc8b57ecb829b06293"
-  integrity sha512-ecg4y/fkd2v1oWH2BTNyG5GBRqDuL2j9b86xNXGXHX87Xx87pw9CIPmIUIJWkk2aApXsWdkATz2txEcV41JMkg==
-
 "@testing-library/react-native@^12.5.2":
   version "12.9.0"
   resolved "https://registry.npmjs.org/@testing-library/react-native/-/react-native-12.9.0.tgz"
