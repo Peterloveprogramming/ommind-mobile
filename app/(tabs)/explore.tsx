@@ -1,24 +1,23 @@
-import React from "react";
-import { StyleSheet, Text, View } from "react-native";
+import React from 'react';
+import { View, Button } from 'react-native';
+import { AudioContext } from 'react-native-audio-api';
 
-const Explore = () => {
+export default function Explore() {
+  const handlePlay = async () => {
+    const audioContext = new AudioContext();
+    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+
+    const playerNode = audioContext.createBufferSource();
+    playerNode.buffer = audioBuffer;
+
+    playerNode.connect(audioContext.destination);
+    playerNode.start(audioContext.currentTime);
+    playerNode.stop(audioContext.currentTime + 10);
+  };
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Coming Soon</Text>
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <Button onPress={handlePlay} title="Play sound!" />
     </View>
   );
-};
-
-export default Explore
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: "600",
-  },
-});
+}
