@@ -7511,6 +7511,13 @@ react-is@^19.1.0:
   resolved "https://registry.yarnpkg.com/react-is/-/react-is-19.2.4.tgz#a080758243c572ccd4a63386537654298c99d135"
   integrity sha512-W+EWGn2v0ApPKgKKCy/7s7WHXkboGcsrXE+2joLyVxkbyVQfO3MUEaUQDHoSmb8TFFrSKYa9mw64WZHNHSDzYA==
 
+react-native-audio-api@^0.11.5:
+  version "0.11.5"
+  resolved "https://registry.yarnpkg.com/react-native-audio-api/-/react-native-audio-api-0.11.5.tgz#7d33e67770ee9edc08cc0d9037058b6bb019155b"
+  integrity sha512-gAEcj/oNP9WJXKErk29gykbclANzEfPJqogDMa3Gr+nINPi3KKEekqzSsqjb1RcMjnFlNw192bGSaRLIvB765g==
+  dependencies:
+    semver "^7.7.3"
+
 react-native-curved-bottom-bar@^3.5.0:
   version "3.5.0"
   resolved "https://registry.npmjs.org/react-native-curved-bottom-bar/-/react-native-curved-bottom-bar-3.5.0.tgz"
@@ -8056,6 +8063,11 @@ semver@^6.1.0, semver@^6.3.0, semver@^6.3.1:
   version "6.3.1"
   resolved "https://registry.npmjs.org/semver/-/semver-6.3.1.tgz"
   integrity sha512-BR7VvDCVHO+q2xBEWskxS6DJE1qRnb7DxzUrogb71CWoSficBxYsiAGd+Kl0mmq/MprG9yArRkyrQxTO6XjMzA==
+
+semver@^7.7.3:
+  version "7.7.4"
+  resolved "https://registry.yarnpkg.com/semver/-/semver-7.7.4.tgz#28464e36060e991fa7a11d0279d2d3f3b57a7e8a"
+  integrity sha512-vFKC2IEtQnVhpT78h1Yp8wzwrf8CM+MzKMHGJZfBtzhZNycRFnXsHk6E5TxIkkMsgNS7mdX3AGB7x2QM2di4lA==
 
 semver@~7.6.3:
   version "7.6.3"
