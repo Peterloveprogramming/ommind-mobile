@@ -1,32 +1,21 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useState } from "react";
 import { Alert, Button, Text, TextInput, View } from "react-native";
-import { WebsocketHexPcmAudioService } from "@/services/websocketHexPcmAudioService";
+import { useWebsocketHexPcmAudio } from "@/services/useWebsocketHexPcmAudio";
 
 export default function Explore() {
   const [input, setInput] = useState("hello world");
-  const [status, setStatus] = useState("idle");
-  const audioServiceRef = useRef(
-    new WebsocketHexPcmAudioService({
-      onStatusChange: (nextStatus) => setStatus(nextStatus),
-    })
-  );
-
-  useEffect(() => {
-    return () => {
-      void audioServiceRef.current.dispose();
-    };
-  }, []);
+  const { status, playAudio, disconnect } = useWebsocketHexPcmAudio();
 
   const handlePlayAudio = async () => {
     try {
-      await audioServiceRef.current.playAudio(input);
+      await playAudio(input);
     } catch (error) {
       Alert.alert("Play audio failed", String(error));
     }
   };
 
   const handleDisconnect = () => {
-    audioServiceRef.current.disconnect();
+    disconnect();
   };
 
   return (

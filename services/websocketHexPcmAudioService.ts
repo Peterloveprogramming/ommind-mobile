@@ -1,16 +1,16 @@
 import { WS_URL } from "@/constant";
 import { HexPcmAudioPlayer } from "@/services/hexPcmAudioPlayer";
 
-type ConnectionStatus = "idle" | "connecting" | "open" | "closed" | "error";
+export type ConnectionStatus = "idle" | "connecting" | "open" | "closed" | "error";
 type RNWebSocketCtor = new (
   url: string,
   protocols?: string | string[] | null,
   options?: { headers?: Record<string, string> }
 ) => WebSocket;
 
-type PlayAudioInput = string | ({ text: string } & Record<string, unknown>);
+export type PlayAudioInput = string | ({ text: string } & Record<string, unknown>);
 
-type WebsocketHexPcmAudioServiceOptions = {
+export type WebsocketHexPcmAudioServiceOptions = {
   wsUrl?: string;
   authorization?: string;
   fileFormat?: string;
