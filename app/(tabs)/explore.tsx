@@ -1,23 +1,52 @@
-import React from 'react';
-import { View, Button } from 'react-native';
-import { AudioContext } from 'react-native-audio-api';
+import React, { useEffect, useRef, useState } from "react";
+import { Alert, Button, Text, TextInput, View } from "react-native";
+import { WebsocketHexPcmAudioService } from "@/services/websocketHexPcmAudioService";
 
 export default function Explore() {
-  const handlePlay = async () => {
-    const audioContext = new AudioContext();
-    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+  const [input, setInput] = useState("hello world");
+  const [status, setStatus] = useState("idle");
+  const audioServiceRef = useRef(
+    new WebsocketHexPcmAudioService({
+      onStatusChange: (nextStatus) => setStatus(nextStatus),
+    })
+  );
 
-    const playerNode = audioContext.createBufferSource();
-    playerNode.buffer = audioBuffer;
+  useEffect(() => {
+    return () => {
+      void audioServiceRef.current.dispose();
+    };
+  }, []);
 
-    playerNode.connect(audioContext.destination);
-    playerNode.start(audioContext.currentTime);
-    playerNode.stop(audioContext.currentTime + 10);
+  const handlePlayAudio = async () => {
+    try {
+      await audioServiceRef.current.playAudio(input);
+    } catch (error) {
+      Alert.alert("Play audio failed", String(error));
+    }
+  };
+
+  const handleDisconnect = () => {
+    audioServiceRef.current.disconnect();
   };
 
   return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-      <Button onPress={handlePlay} title="Play sound!" />
+    <View style={{ flex: 1, justifyContent: "center", padding: 16, gap: 12 }}>
+      <Text>Status: {status}</Text>
+      <TextInput
+        value={input}
+        onChangeText={setInput}
+        placeholder="Type text to stream..."
+        autoCapitalize="none"
+        style={{
+          borderWidth: 1,
+          borderColor: "#ccc",
+          borderRadius: 8,
+          paddingHorizontal: 10,
+          paddingVertical: 8,
+        }}
+      />
+      <Button onPress={handlePlayAudio} title="Play Audio" />
+      <Button onPress={handleDisconnect} title="Disconnect" />
     </View>
   );
 }
