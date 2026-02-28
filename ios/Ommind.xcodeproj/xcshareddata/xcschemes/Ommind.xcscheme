@@ -15,9 +15,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-               BuildableName = "mobilemovieapp.app"
-               BlueprintName = "mobilemovieapp"
-               ReferencedContainer = "container:mobilemovieapp.xcodeproj">
+               BuildableName = "Ommind.app"
+               BlueprintName = "Ommind"
+               ReferencedContainer = "container:Ommind.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -33,9 +33,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "00E356ED1AD99517003FC87E"
-               BuildableName = "mobilemovieappTests.xctest"
-               BlueprintName = "mobilemovieappTests"
-               ReferencedContainer = "container:mobilemovieapp.xcodeproj">
+               BuildableName = "OmmindTests.xctest"
+               BlueprintName = "OmmindTests"
+               ReferencedContainer = "container:Ommind.xcodeproj">
             </BuildableReference>
          </TestableReference>
       </Testables>
@@ -55,9 +55,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-            BuildableName = "mobilemovieapp.app"
-            BlueprintName = "mobilemovieapp"
-            ReferencedContainer = "container:mobilemovieapp.xcodeproj">
+            BuildableName = "Ommind.app"
+            BlueprintName = "Ommind"
+            ReferencedContainer = "container:Ommind.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </LaunchAction>
@@ -72,9 +72,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-            BuildableName = "mobilemovieapp.app"
-            BlueprintName = "mobilemovieapp"
-            ReferencedContainer = "container:mobilemovieapp.xcodeproj">
+            BuildableName = "Ommind.app"
+            BlueprintName = "Ommind"
+            ReferencedContainer = "container:Ommind.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>
