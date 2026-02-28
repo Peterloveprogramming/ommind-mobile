@@ -15,11 +15,14 @@ import Ai from '@/comp/chat/Ai'
 import Human from '@/comp/chat/Human'
 import useFetchAiMessage from '@/services/useFetchAiMessage'
 import { useToast } from '@/context/useToast'
+import { useWebsocketHexPcmAudio } from "@/services/useWebsocketHexPcmAudio";
+import { GUIDED_MEDITATION } from "@/constant";
 
 const SpiritualMentorChat = () => {
     const { id, session_id } = useLocalSearchParams()
     const [recognizing, setRecognizing] = useState(false);
-    const {aiMessage,isAiLoading,aiError,fetchMessage} = useFetchAiMessage(false,session_id);
+    const {aiMessage,isAiLoading,aiError,aiMode,fetchMessage} = useFetchAiMessage(false,session_id);
+    const { playAudio } = useWebsocketHexPcmAudio();
     const [messages,setMessages] = useState([])
     const [inputText, setInputText] = useState(""); 
     const flatListRef = useRef(null);
@@ -63,10 +66,19 @@ const SpiritualMentorChat = () => {
           flatListRef.current?.scrollToEnd({ animated: true });
         }, 100); // Reduced delay to 100ms
       }
+      if (aiMessage && aiMode === GUIDED_MEDITATION) {
+        (async () => {
+          try {
+            await playAudio(String(aiMessage));
+          } catch (error) {
+            console.error("Play audio failed:", error);
+          }
+        })();
+      }
       return () => {
         setRecognizing(false);
       }
-    }, [aiMessage]); 
+    }, [aiMessage, aiMode, playAudio]); 
     
 
     useEffect(()=>{

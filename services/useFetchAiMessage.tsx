@@ -15,6 +15,7 @@ const getRandomQuote = () => {
 
 export default function useFetchAiMessage (testMode:boolean = true,session_id:string) {
     const [aiMessage,setAiMessage] = useState<String|null>();
+    const [aiMode, setAiMode] = useState<string | null>(null);
     const [isAiLoading,setIsAiLoading] = useState<boolean>(false);
     const [aiError,setIsAiError] = useState<String|null>();
     const {chatAi:{chatAi}} = useChatAiApi()
@@ -31,11 +32,13 @@ export default function useFetchAiMessage (testMode:boolean = true,session_id:st
 
             const randomQuote = getRandomQuote();
             setAiMessage(randomQuote);
+            setAiMode(null);
 
         } catch (error) { 
             console.error("Error setting comforting quote:", error);
             setIsAiError("Sorry, something went wrong while getting a quote.");
             setAiMessage(null); 
+            setAiMode(null);
         } finally {
             setIsAiLoading(false);
         }
@@ -82,9 +85,10 @@ export default function useFetchAiMessage (testMode:boolean = true,session_id:st
             showToastMessage("An error occurred while fetching messages",false)
             return;
           }
-          //TODO: need to check the mode. if the mode is guided meditation, then need to start a websocket connection
+          //TODO: if the mode is GUIDED_MEDITATION then we want to 
           console.log("the response is",response)
           setAiMessage(response.response)
+          setAiMode(typeof (response as { mode?: unknown }).mode === "string" ? (response as { mode: string }).mode : null)
           setIsAiLoading(false)
           setIsAiError(null)
         } catch (err) {
@@ -104,5 +108,5 @@ export default function useFetchAiMessage (testMode:boolean = true,session_id:st
     }
 
    
-    return {aiMessage,isAiLoading,aiError,fetchMessage}
+    return {aiMessage,isAiLoading,aiError,aiMode,fetchMessage}
 }

@@ -15,7 +15,6 @@ import { generateUniqueId } from '@/utils/helper';
 
 const Rinpoche = () => {
   const router = useRouter(); // Initialize the router
-
   return (
     <View style={styles.rinpocheContainer}>
       <TouchableOpacity 
