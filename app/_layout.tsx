@@ -94,6 +94,18 @@ export default function RootLayout() {
         />
 
         <Stack.Screen
+          name="authentication/login"
+          options={{
+            headerShown: true,
+            headerTitle: () => <View></View>,
+            headerLeft:()=> <BackButton onTouch={() => router.back()} />,
+            // headerTitleAlign: "center", // Center the header title
+            // headerStyle: {
+            // }
+          }}
+        />
+
+        <Stack.Screen
           name="authentication/registration_questions"
           options={{
             headerShown: true,

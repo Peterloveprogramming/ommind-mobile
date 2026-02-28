@@ -11,7 +11,7 @@ import { useToast } from '@/context/useToast';
 import { convertFieldNameToReadableFormat,checkIfLambdaResultIsSuccess } from '@/utils/helper';
 import BaseButton from '@/comp/base/BaseButton';
 import { storeAuthInfo } from '@/utils/helper';
-let debugUi = false;
+let debugUi = true;
 interface RegisterFormProps{
   onPressRegister:() => void
   handleInputChange:(field:keyof UserDetails,newValue:string)=>void

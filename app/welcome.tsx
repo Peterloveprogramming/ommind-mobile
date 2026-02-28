@@ -52,9 +52,7 @@ const Welcome = () => {
                     // If showLoginOptions is true, render nothing (empty fragment)
                     <>
                       <View style={{ width: "80%" }}>
-                        <BaseButton  text={"Login with Email"} onPress={async ()=> {
-                          console.log("login with email pressed")
-                        }} />
+                        <BaseButton  text={"Login with Email"} onPress={() => router.push('/authentication/login')} />
                       </View>
                       <View style={{ width: "80%"}}>
                         <BaseButton 
