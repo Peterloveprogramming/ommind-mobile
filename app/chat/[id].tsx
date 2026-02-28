@@ -16,6 +16,7 @@ import useFetchAiMessage from '@/services/useFetchAiMessage'
 import { useToast } from '@/context/useToast'
 import { useWebsocketHexPcmAudio } from "@/services/useWebsocketHexPcmAudio";
 import { GUIDED_MEDITATION } from "@/constant";
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type ChatMessage = {
   id: number;
@@ -35,7 +36,8 @@ const SpiritualMentorChat = () => {
     const flatListRef = useRef<FlatList<ChatMessage> | null>(null);
     const fullInterimTranscript = useRef(null);
     const lastInterimWord = useRef(null)
-   
+    const insets = useSafeAreaInsets();
+
     console.log("session_id is",session_id)
     console.log("id is",id)
     const {showToastMessage} = useToast()
@@ -270,7 +272,7 @@ const SpiritualMentorChat = () => {
       <KeyboardAvoidingView
         style={{ flex: 1 }} // <-- Add this style for flexibility
         behavior='padding'
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 50}
       >
           <View style={styles.chatViewParent}>
             <View style={styles.chatviewChild}>
@@ -295,7 +297,7 @@ const SpiritualMentorChat = () => {
             </View>
           </View>
           
-          <View style={styles.inputView}>
+          <View style={[styles.inputView,{paddingBottom:insets.bottom}]}>
             <View style={styles.inputChild}>
 
               {/* message box  */}
