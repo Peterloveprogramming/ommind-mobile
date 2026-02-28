@@ -1,6 +1,6 @@
 import { useFetch } from "@/api/useFetch";
 import {LAMBDA_SERVICE_URL} from "@/constant"
-import { LambdaResult,CreateUserInput ,LambdaRequest} from "../../types";
+import { LambdaResult,CreateUserInput, LoginUserInput, LambdaRequest} from "../../types";
 
 export const useCreateUser = () => {
     const {commonFetch} = useFetch<LambdaResult.CreateUserResult>({
@@ -23,3 +23,24 @@ export const useCreateUser = () => {
     return { createUser };
 }
 
+export const useLoginUser = () => {
+    const {commonFetch} = useFetch<LambdaResult.LoginUserResult>({
+        url: LAMBDA_SERVICE_URL,
+        method:"POST",
+        clearUserInfoFromCacheIfUnauthorized:true,
+        useAuthFromCache:true
+    });
+
+    const LambdaConfig:LambdaRequest = {
+        route:"login",
+    }
+
+    const loginUser = (loginUserInput:LoginUserInput) => commonFetch({
+        input:{
+            ...LambdaConfig,
+            ...loginUserInput
+        }
+    });
+
+    return { loginUser };
+}

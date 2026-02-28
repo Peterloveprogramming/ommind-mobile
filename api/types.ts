@@ -55,6 +55,11 @@ export type CreateUserInput = {
     password:string,
 }
 
+export type LoginUserInput = {
+    email:string,
+    password:string,
+}
+
 
 export namespace LambdaResult {
   export type CreateUserResult = LambdaResult<{
@@ -63,8 +68,11 @@ export namespace LambdaResult {
     name: string;
   }>;
 
-}
+  export type LoginUserResult = LambdaResult<{
+    jwt_token: string;
+  }>;
 
+}
 
 
 

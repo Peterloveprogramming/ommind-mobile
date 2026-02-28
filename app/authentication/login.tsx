@@ -10,9 +10,13 @@ import {
   TouchableWithoutFeedback,
   View,
 } from 'react-native';
+import { useRouter } from "expo-router";
+import { useUserApi } from '@/api/api';
 import BaseTextInput from "@/comp/base/BaseTextInput";
 import BaseButton from '@/comp/base/BaseButton';
 import { FONTS } from '@/theme';
+import { useToast } from '@/context/useToast';
+import { checkIfLambdaResultIsSuccess, convertFieldNameToReadableFormat, storeAuthInfo } from '@/utils/helper';
 
 let debugUi = false
 type LoginDetails = {
@@ -21,17 +25,63 @@ type LoginDetails = {
 };
 
 export default function Login() {
+  const router = useRouter();
   const [details, setDetails] = useState<LoginDetails>({
     email: '',
     password: '',
   });
   const [passwordSecurityEntry, setPasswordSecurityEntry] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const {
+    loginUser: { loginUser },
+  } = useUserApi();
+  const { showToastMessage } = useToast();
 
   const handleInputChange = (field: keyof LoginDetails, value: string) => {
     setDetails((prevState) => ({
       ...prevState,
       [field]: value,
     }));
+  };
+
+  const handleLogin = async () => {
+    setIsLoading(true);
+
+    for (const key in details) {
+      const value = details[key as keyof LoginDetails];
+      if (!value) {
+        showToastMessage(`${convertFieldNameToReadableFormat(key)} is missing`, false);
+        setIsLoading(false);
+        return;
+      }
+    }
+
+    try {
+      const loginUserResult = await loginUser({
+        email: details.email,
+        password: details.password,
+      });
+
+      const resultSuccess = checkIfLambdaResultIsSuccess(loginUserResult);
+      if (!resultSuccess) {
+        showToastMessage(loginUserResult.response, false);
+        return;
+      }
+
+      await storeAuthInfo({
+        userName: '',
+        userId: 0,
+        jwtToken: loginUserResult.data.jwt_token,
+      });
+
+      showToastMessage("Successfully Logged In!", true);
+      router.replace("/(tabs)");
+    } catch (error) {
+      console.log("error is", error);
+      showToastMessage("Error occurred while logging in", false);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -82,7 +132,8 @@ export default function Login() {
               <View style={styles.loginButtonContainer}>
                 <BaseButton
                   text='Login'
-                  onPress={() => console.log("login pressed")}
+                  isLoading={isLoading}
+                  onPress={handleLogin}
                 />
               </View>
             </View>

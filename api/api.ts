@@ -1,6 +1,6 @@
 import { useGetSupplier,useCreateSupplier } from "./useSupplierApi/requests";
 import {useGetTodo} from './useTodoApi/requests'
-import {useCreateUser} from './lambda/useUserApi/requests'
+import {useCreateUser, useLoginUser} from './lambda/useUserApi/requests'
 import {useSaveAnswersForRegistrationQuestions} from './lambda/useRegistrationQuestionApi/requests'
 import { useChatAi } from "./lambda/useAiChatApi/requests";
 //Supplier
@@ -56,10 +56,16 @@ export const useUserApi =() => {
     const {
         createUser, 
     } = useCreateUser()
+    const {
+        loginUser,
+    } = useLoginUser()
 
     return {
         createUser:{
             createUser
+        },
+        loginUser:{
+            loginUser
         }
     }
 }
