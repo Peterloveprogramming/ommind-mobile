@@ -4,7 +4,7 @@
     "slug": "Ommind",
     "version": "1.0.1",
     "orientation": "portrait",
-    "icon": "./assets/images/logos/ommind_logo.png",
+    "icon": "./assets/images/sample/sample_meditation.png",
     "scheme": "Ommind",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -18,7 +18,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/logos/ommind_logo.png",
+        "foregroundImage": "./assets/images/sample/sample_meditation.png",
         "backgroundColor": "#ffffff"
       },
       "permissions": [
