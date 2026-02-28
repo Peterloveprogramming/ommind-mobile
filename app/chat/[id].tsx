@@ -1,8 +1,7 @@
-import {ImageBackground, StyleSheet,Text,View,TextInput, Platform, TouchableOpacity,FlatList,KeyboardAvoidingView} from 'react-native' // Added Platform
+import { StyleSheet,Text,View,TextInput, Platform, TouchableOpacity,FlatList,KeyboardAvoidingView} from 'react-native'
 import React, { useEffect } from 'react'
 import { useState,useRef } from 'react'
 import { useLocalSearchParams } from 'expo-router'
-import { images } from '@/constants/images'
 import { generateRandomNumber } from '@/utils/helper'
 import {
     ExpoSpeechRecognitionModule,
@@ -18,14 +17,22 @@ import { useToast } from '@/context/useToast'
 import { useWebsocketHexPcmAudio } from "@/services/useWebsocketHexPcmAudio";
 import { GUIDED_MEDITATION } from "@/constant";
 
+type ChatMessage = {
+  id: number;
+  ai?: string;
+  human?: string;
+  mode?: string | null;
+  showSpinner?: boolean;
+};
+
 const SpiritualMentorChat = () => {
     const { id, session_id } = useLocalSearchParams()
     const [recognizing, setRecognizing] = useState(false);
-    const {aiMessage,isAiLoading,aiError,aiMode,fetchMessage} = useFetchAiMessage(false,session_id);
-    const { playAudio } = useWebsocketHexPcmAudio();
-    const [messages,setMessages] = useState([])
+    const {aiMessage,isAiLoading,aiMode,fetchMessage} = useFetchAiMessage(false,session_id);
+    const { playAudio, status } = useWebsocketHexPcmAudio();
+    const [messages,setMessages] = useState<ChatMessage[]>([])
     const [inputText, setInputText] = useState(""); 
-    const flatListRef = useRef(null);
+    const flatListRef = useRef<FlatList<ChatMessage> | null>(null);
     const fullInterimTranscript = useRef(null);
     const lastInterimWord = useRef(null)
    
@@ -40,24 +47,28 @@ const SpiritualMentorChat = () => {
       // Only run this logic if a new aiMessage has arrived
       if (aiMessage) {
         setMessages(prevMessages => {
-          // Get the last message from the current state
+          const nextAiMessage: ChatMessage =
+            aiMode === GUIDED_MEDITATION
+              ? {
+                  ai: "Guided meditation playing",
+                  id: generateRandomNumber(),
+                  mode: GUIDED_MEDITATION,
+                  showSpinner: true,
+                }
+              : { ai: String(aiMessage), id: generateRandomNumber(), mode: aiMode };
           const lastMessage = prevMessages[prevMessages.length - 1];
-    
-          // Check if the last message exists and is the AI's "loading" message
+
           if (lastMessage && lastMessage.ai === "loading") {
-            // If yes, return a new array containing all messages *except* the last one,
-            // and then append the new actual aiMessage.
             return [
-              ...prevMessages.slice(0, -1), // All messages except the last
-              { ai: aiMessage, id: generateRandomNumber() } // The new AI message
-            ];
-          } else {
-            // If the last message wasn't "loading", just append the new aiMessage
-            return [
-              ...prevMessages,
-              { ai: aiMessage, id: generateRandomNumber() }
+              ...prevMessages.slice(0, -1),
+              nextAiMessage
             ];
           }
+
+          return [
+            ...prevMessages,
+            nextAiMessage
+          ];
         });
     
         // Scroll to the end after the state update has been processed.
@@ -79,6 +90,35 @@ const SpiritualMentorChat = () => {
         setRecognizing(false);
       }
     }, [aiMessage, aiMode, playAudio]); 
+
+    useEffect(() => {
+      if (status !== "closed") {
+        return;
+      }
+
+      setMessages(prevMessages => {
+        const guidedMessageIndex = [...prevMessages]
+          .reverse()
+          .findIndex(message => message.mode === GUIDED_MEDITATION && message.showSpinner);
+
+        if (guidedMessageIndex === -1) {
+          return prevMessages;
+        }
+
+        const actualIndex = prevMessages.length - 1 - guidedMessageIndex;
+        return prevMessages.map((message, index) => {
+          if (index !== actualIndex) {
+            return message;
+          }
+
+          return {
+            ...message,
+            ai: "Guided meditation ended",
+            showSpinner: false,
+          };
+        });
+      });
+    }, [status]);
     
 
     useEffect(()=>{
@@ -208,7 +248,7 @@ const SpiritualMentorChat = () => {
       return;
     }
     handleRecognition(true);
-    const newMessage = { human: inputText, id: generateRandomNumber() };
+    const newMessage: ChatMessage = { human: inputText, id: generateRandomNumber() };
 
     // 1. Update state
     setMessages(prevMessages => [...prevMessages, newMessage]);
@@ -245,13 +285,10 @@ const SpiritualMentorChat = () => {
               keyExtractor={(item) => item.id.toString()} 
               renderItem={({ item }) => { 
                 if (item.ai) {
-                    // If the 'ai' property exists, render the Ai component
-                    return <Ai message={item.ai} />;
+                    return <Ai message={item.ai} showSpinner={item.showSpinner} />;
                 } else if (item.human) {
-                    // If the 'human' property exists, render the Human component
                     return <Human message={item.human} />;
                 }
-                  // Optionally return null or a placeholder if neither exists (shouldn't happen with your current structure)
                   return null;
               }}
               />

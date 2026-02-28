@@ -1,7 +1,8 @@
 import { useChatAiApi } from "@/api/api";
-import { useEffect, useState,useCallback } from "react"
+import { useState,useCallback } from "react"
 import { checkIfLambdaResultIsSuccess } from "@/utils/helper";
 import { useToast } from "@/context/useToast";
+import { GENERAL } from "@/constant";
 const comfortingQuotes = [
     "Even the darkest night will end and the sun will rise. - Victor Hugo",
     "You are braver than you believe, stronger than you seem, and smarter than you think. - A.A. Milne"
@@ -32,7 +33,7 @@ export default function useFetchAiMessage (testMode:boolean = true,session_id:st
 
             const randomQuote = getRandomQuote();
             setAiMessage(randomQuote);
-            setAiMode(null);
+            setAiMode(GENERAL);
 
         } catch (error) { 
             console.error("Error setting comforting quote:", error);
