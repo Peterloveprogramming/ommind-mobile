@@ -269,7 +269,7 @@ export default function Registration() {
       <KeyboardAvoidingView
         style={{ flex: 1 }} 
         behavior="padding"
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 20 : 0}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 20 : 100}
       >
         {/* Dismissing the keyboard when tapping outside */}
         <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>

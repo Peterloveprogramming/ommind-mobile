@@ -25,8 +25,8 @@ export default function Index() {
   }
 
 
-  return <Redirect href={initialRoute === "(tabs)" ? "/(tabs)" : "/welcome"} />;
+  // return <Redirect href={initialRoute === "(tabs)" ? "/(tabs)" : "/welcome"} />;
   // testing Websocket.tsx
-  // return <Redirect href="/(tabs)" />;
+  return <Redirect href="/welcome" />;
 
 }
