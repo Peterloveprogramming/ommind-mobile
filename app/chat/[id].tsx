@@ -299,7 +299,7 @@ const SpiritualMentorChat = () => {
           
           <View style={[styles.inputView,{paddingBottom:insets.bottom}]}>
             <View style={styles.inputChild}>
-
+            
               {/* message box  */}
               <TextInput
                 style={styles.inputBox}
