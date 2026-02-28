@@ -32,6 +32,7 @@ const Welcome = () => {
             contentInsetAdjustmentBehavior="automatic"
             onScroll={()=>console.log("scroll")}
             style={{flex:1}}
+            contentContainerStyle={{flexGrow:1, justifyContent:"center"}}
           >
             <View style={{height:height}}>
               <View style={{width:"100%",alignItems:"center",justifyContent:"center",flex:1,marginTop:15}}>

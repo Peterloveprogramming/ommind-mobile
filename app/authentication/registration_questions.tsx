@@ -9,6 +9,7 @@ import BaseButton from '@/comp/base/BaseButton';
 import { useRouter } from "expo-router";
 import { useRegistrationQuestionApi } from '@/api/api';
 import { checkIfLambdaResultIsSuccess, getLambdaErrorMessage } from '@/utils/helper';
+import {SafeAreaView, SafeAreaProvider} from 'react-native-safe-area-context';
 // debug
 let debug = false;
 
@@ -59,7 +60,14 @@ const RegistrationQuestions = () => {
 
     // console.log(currentQuestion)
     return (
-        <ScrollView style={styles.container} contentContainerStyle={{justifyContent:'center',alignItems:"center"}}>
+        <SafeAreaProvider>
+            <SafeAreaView style={{flex:1,justifyContent:"center"}} edges={['left', 'right', 'bottom']}>
+          <ScrollView
+            contentInsetAdjustmentBehavior="automatic"
+            onScroll={()=>console.log("scroll")}
+            style={styles.container}
+            contentContainerStyle={styles.scrollContent}
+          >
             {/* progress bar */}
             <View style={styles.progressBarContainer}>
                 <BaseProgressBar 
@@ -145,18 +153,25 @@ const RegistrationQuestions = () => {
                 />
             </View>
         </ScrollView>
+        </ SafeAreaView>
+        </ SafeAreaProvider>
     )
 }
 export default RegistrationQuestions 
 
 const styles = StyleSheet.create({
-        container:{
+    container:{
         padding:15,
         flex:1,
-        // alignItems:'center'
+    },
+    scrollContent:{
+        flexGrow:1,
+        justifyContent:"center",
+        paddingBottom:30,
     },
     progressBarContainer:{
-        marginBottom:20
+        marginBottom:20,
+        alignItems:"center",
     },
     questionTitle:{
         fontFamily:FONTS.figtreeSemiBold,
@@ -174,6 +189,7 @@ const styles = StyleSheet.create({
         marginTop:10,
         gap:10,
         borderWidth:debug?1:0,
-        width:"100%"
+        width:"100%",
+        paddingBottom:20,
     }
 })
