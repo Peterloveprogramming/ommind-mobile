@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "lhamo",
-    "slug": "lhamo",
+    "name": "Ommind",
+    "slug": "Ommind",
     "version": "1.0.1",
     "orientation": "portrait",
-    "icon": "./assets/images/rinpoche_normal.png",
-    "scheme": "lhamo",
+    "icon": "./assets/images/logos/ommind_logo.png",
+    "scheme": "Ommind",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
@@ -36,7 +36,7 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/rinpoche_normal.png",
+          "image": "./assets/images/Lhamo/background_image_one.png",
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
