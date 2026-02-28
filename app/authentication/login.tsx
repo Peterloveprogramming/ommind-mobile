@@ -67,10 +67,11 @@ export default function Login() {
         showToastMessage(loginUserResult.response, false);
         return;
       }
-
+      console.log("loginUserResult",loginUserResult.data)
+      
       await storeAuthInfo({
-        userName: '',
-        userId: 0,
+        userName: loginUserResult.data.name,
+        userId: loginUserResult.data.id,
         jwtToken: loginUserResult.data.jwt_token,
       });
 

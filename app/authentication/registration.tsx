@@ -2,7 +2,6 @@ import { Checkbox } from 'expo-checkbox';
 import { useState,useContext } from 'react';
 import { StyleSheet, Text, View, KeyboardAvoidingView, Platform, TouchableOpacity, Image, ScrollView, TouchableWithoutFeedback, Keyboard } from 'react-native';
 import { COLORS, FONTS } from "@/theme.js";
-import { images } from "@/constants/images";
 import BaseTextInput from "@/comp/base/BaseTextInput";
 import OTPInput from '@/comp/OTPInput';
 import { useRouter,Router } from "expo-router";

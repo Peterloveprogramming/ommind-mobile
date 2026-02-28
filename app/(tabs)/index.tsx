@@ -150,28 +150,70 @@
 //   logText: { fontSize: 14, marginBottom: 8 },
 // });
 
-
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
+import { useRouter } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import BaseButton from "@/comp/base/BaseButton";
+import { getAuthInfo } from "@/utils/helper";
+import { FONTS } from "@/theme";
+
+const getFirstName = (userName: string | undefined) => {
+  const trimmedName = (userName ?? "").trim();
+  if (!trimmedName) return "";
+  return trimmedName.split(" ")[0];
+};
 
 const Home = () => {
+  const router = useRouter();
+  const [firstName, setFirstName] = useState("");
+
+  useEffect(() => {
+    const loadUserName = async () => {
+      const authInfo = await getAuthInfo();
+      console.log("userinfo is",authInfo)
+      setFirstName(getFirstName(authInfo?.userName));
+    };
+
+    loadUserName();
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      await AsyncStorage.clear();
+      router.replace("/welcome");
+    } catch (error) {
+      console.error("Error clearing AsyncStorage:", error);
+    }
+  };
+
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Coming Soon</Text>
+      <Text style={styles.title}>
+        {firstName ? `Welcome ${firstName}` : "Welcome"}
+      </Text>
+      <View style={styles.logoutButtonContainer}>
+        <BaseButton text="Logout" onPress={handleLogout} />
+      </View>
     </View>
   );
 };
 
-export default Home
+export default Home;
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    paddingHorizontal: 20,
   },
   title: {
-    fontSize: 20,
-    fontWeight: "600",
+    fontSize: 28,
+    fontFamily: FONTS.figtreeSemiBold,
+  },
+  logoutButtonContainer: {
+    width: "100%",
+    marginTop: 24,
   },
 });
