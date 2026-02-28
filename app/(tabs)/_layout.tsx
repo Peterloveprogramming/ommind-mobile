@@ -12,6 +12,8 @@ import { BottomNavVisibilityContext } from '@/context/BottomNavVisibilityContext
 import LhamoHeader from "@/comp/headers/LhamoHeader";
 import { COLORS, FONTS } from "@/theme.js";
 import { generateUniqueId } from '@/utils/helper';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
 
 const Rinpoche = () => {
   const router = useRouter(); // Initialize the router
@@ -55,6 +57,8 @@ const icon = (focused:Boolean, iconName:string) => {
 };
 
 export default function TabLayout() {
+    const insets = useSafeAreaInsets();
+
   const {isVisible} = useContext(BottomNavVisibilityContext)
   console.log("bottomNavigationVisible",isVisible);
   return (
@@ -73,7 +77,8 @@ export default function TabLayout() {
             zIndex:1,
             justifyContent:"center",
             alignContent:"center",
-            bottom: isVisible ? -15 : -100, // Move the tab bar down
+            // bottom: isVisible ? -15 : -100, // Move the tab bar down
+            bottom:insets.bottom - 25
           },
           tabBarItemStyle: {
             height:60,
@@ -104,7 +109,7 @@ export default function TabLayout() {
         <Tabs.Screen
           name="lhamo"
           options={{
-            tabBarIcon: ({ focused  }) => <View style={{height:50,width:50,bottom:-55}}><Text style={{color:focused?"#242424":"white",fontSize:12,left:4}}>Llhamo</Text></View>,
+            tabBarIcon: ({ focused  }) => <View style={{height:50,width:50,bottom:-45}}><Text style={{color:focused?"#242424":"white",fontSize:13,left:4}}>Llhamo</Text></View>,
             tabBarItemStyle: {
               width: 0, 
               height: 0, 
@@ -139,7 +144,7 @@ export default function TabLayout() {
         <>
           <Rinpoche />
           {/* Custom Bottom Navigation Bar */}
-          <View style={styles.bottomNavigationBar}>
+          <View style={[styles.bottomNavigationBar,{bottom:insets.bottom}]}>
             <BottomNavigationBar width="100%" preserveAspectRatio="none" height="100%"  />
           </View>
         </>
@@ -164,7 +169,7 @@ const styles = StyleSheet.create({
     position:"absolute",
     borderRadius: 30, // Make it circular
     alignSelf:"center",
-    bottom:30,
+    bottom:70,
     zIndex: 10, // Ensure Rinpoche is above other elements
   },
   rinpocheImage: {
