@@ -11,8 +11,8 @@
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-        "NSSpeechRecognitionUsageDescription": "Allow $(PRODUCT_NAME) to use speech recognition.",
-        "NSMicrophoneUsageDescription": "Allow $(PRODUCT_NAME) to use the microphone."
+        "NSSpeechRecognitionUsageDescription": "Allow mobile_movie_app to use speech recognition to enable voice commands and dictation.",
+        "NSMicrophoneUsageDescription": "Allow mobile_movie_app to use the microphone for voice input and speech recognition."
       },
       "bundleIdentifier": "com.zimingtheking.mobile-movie-app"
     },
@@ -22,7 +22,10 @@
         "backgroundColor": "#ffffff"
       },
       "permissions": [
-        "android.permission.RECORD_AUDIO"
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
       ],
       "package": "com.zimingtheking.mobile_movie_app"
     },
@@ -36,7 +39,7 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/Lhamo/background_image_one.png",
+          "image": "./assets/images/loading/loading_screen.jpg",
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
@@ -73,6 +76,12 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "037cb18d-1789-4bbd-87f0-8fe34fe74e8e"
+      }
     }
   }
 }
