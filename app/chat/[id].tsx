@@ -30,7 +30,7 @@ const SpiritualMentorChat = () => {
     const { id, session_id } = useLocalSearchParams()
     const [recognizing, setRecognizing] = useState(false);
     const {aiMessage,isAiLoading,aiMode,fetchMessage} = useFetchAiMessage(false,session_id);
-    const { playAudio, status } = useWebsocketHexPcmAudio();
+    const { playAudio, status, dispose } = useWebsocketHexPcmAudio();
     const [messages,setMessages] = useState<ChatMessage[]>([])
     const [inputText, setInputText] = useState(""); 
     const flatListRef = useRef<FlatList<ChatMessage> | null>(null);
@@ -121,6 +121,13 @@ const SpiritualMentorChat = () => {
         });
       });
     }, [status]);
+
+    useEffect(() => {
+      return () => {
+        ExpoSpeechRecognitionModule.stop();
+        void dispose();
+      };
+    }, [dispose]);
     
 
     useEffect(()=>{
