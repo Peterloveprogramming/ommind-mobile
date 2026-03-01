@@ -1,8 +1,8 @@
-const NGROK_URL = "api.hulolo.xyz"
+const NGROK_URL = "https://api.hulolo.xyz";
 
 //export constants 
 export const LAMBDA_SERVICE_URL=NGROK_URL + "/2015-03-31/functions/function/invocations"
-export const WS_URL = "audio.hulolo.xyz"
+export const WS_URL = "wss://audio.hulolo.xyz";
 const DEBUG = true
 //mode constants
 export const GENERAL = "general"
