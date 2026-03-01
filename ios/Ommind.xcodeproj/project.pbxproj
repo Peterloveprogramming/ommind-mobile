@@ -7,11 +7,11 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		0EF92CEB8286AA534A9680F9 /* libPods-Ommind.a in Frameworks */ = {isa = PBXBuildFile; fileRef = F608E4A907C1E9EFA3E65817 /* libPods-Ommind.a */; };
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
-		3CDEDC4372AA839CFEB85438 /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 186E06C06AF4BFB0B3578207 /* ExpoModulesProvider.swift */; };
 		3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */; };
-		A0F585DE57A0253470C55B02 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 3759FDC0442692FBA4570A60 /* PrivacyInfo.xcprivacy */; };
+		44743505DB1A9633F6658E51 /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A037C5BEC76E0C20419C1C0 /* ExpoModulesProvider.swift */; };
+		8D659DE4DD73527A8CD84D58 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = B2D03F7E86684C988FA4F692 /* PrivacyInfo.xcprivacy */; };
+		A4C88836E648C964A8BBC76E /* libPods-Ommind.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5F01EBEA4EA7D0D37A23ACE6 /* libPods-Ommind.a */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
 		F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11748412D0307B40044C1D9 /* AppDelegate.swift */; };
 /* End PBXBuildFile section */
@@ -20,16 +20,16 @@
 		13B07F961A680F5B00A75B9A /* Ommind.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Ommind.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = Ommind/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = Ommind/Info.plist; sourceTree = "<group>"; };
-		186E06C06AF4BFB0B3578207 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-Ommind/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
-		3759FDC0442692FBA4570A60 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = Ommind/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
-		A30D7A665D0DF33AF0A24C90 /* Pods-Ommind.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Ommind.release.xcconfig"; path = "Target Support Files/Pods-Ommind/Pods-Ommind.release.xcconfig"; sourceTree = "<group>"; };
+		219FE7381CE2E1AD9C675A0E /* Pods-Ommind.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Ommind.debug.xcconfig"; path = "Target Support Files/Pods-Ommind/Pods-Ommind.debug.xcconfig"; sourceTree = "<group>"; };
+		3A037C5BEC76E0C20419C1C0 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-Ommind/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
+		5F01EBEA4EA7D0D37A23ACE6 /* libPods-Ommind.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-Ommind.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		A835881F6459DD60CCE09AA6 /* Pods-Ommind.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Ommind.release.xcconfig"; path = "Target Support Files/Pods-Ommind/Pods-Ommind.release.xcconfig"; sourceTree = "<group>"; };
 		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = Ommind/SplashScreen.storyboard; sourceTree = "<group>"; };
+		B2D03F7E86684C988FA4F692 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = Ommind/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		F11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = Ommind/AppDelegate.swift; sourceTree = "<group>"; };
 		F11748442D0722820044C1D9 /* Ommind-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "Ommind-Bridging-Header.h"; path = "Ommind/Ommind-Bridging-Header.h"; sourceTree = "<group>"; };
-		F54A0A4BD9BC8686B064430E /* Pods-Ommind.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Ommind.debug.xcconfig"; path = "Target Support Files/Pods-Ommind/Pods-Ommind.debug.xcconfig"; sourceTree = "<group>"; };
-		F608E4A907C1E9EFA3E65817 /* libPods-Ommind.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-Ommind.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -37,7 +37,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				0EF92CEB8286AA534A9680F9 /* libPods-Ommind.a in Frameworks */,
+				A4C88836E648C964A8BBC76E /* libPods-Ommind.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -53,34 +53,34 @@
 				13B07FB51A68108700A75B9A /* Images.xcassets */,
 				13B07FB61A68108700A75B9A /* Info.plist */,
 				AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */,
-				3759FDC0442692FBA4570A60 /* PrivacyInfo.xcprivacy */,
+				B2D03F7E86684C988FA4F692 /* PrivacyInfo.xcprivacy */,
 			);
 			name = Ommind;
-			sourceTree = "<group>";
-		};
-		1BB5786A369621C5108E4115 /* Pods */ = {
-			isa = PBXGroup;
-			children = (
-				F54A0A4BD9BC8686B064430E /* Pods-Ommind.debug.xcconfig */,
-				A30D7A665D0DF33AF0A24C90 /* Pods-Ommind.release.xcconfig */,
-			);
-			name = Pods;
-			path = Pods;
 			sourceTree = "<group>";
 		};
 		2D16E6871FA4F8E400B85C8A /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
 				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
-				F608E4A907C1E9EFA3E65817 /* libPods-Ommind.a */,
+				5F01EBEA4EA7D0D37A23ACE6 /* libPods-Ommind.a */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
-		74617167DF3E9C823B64D074 /* ExpoModulesProviders */ = {
+		546573ABEC5B2BF5FFA6124D /* Pods */ = {
 			isa = PBXGroup;
 			children = (
-				862537B3E033CDEFB8AC9682 /* Ommind */,
+				219FE7381CE2E1AD9C675A0E /* Pods-Ommind.debug.xcconfig */,
+				A835881F6459DD60CCE09AA6 /* Pods-Ommind.release.xcconfig */,
+			);
+			name = Pods;
+			path = Pods;
+			sourceTree = "<group>";
+		};
+		5695062F29E4E968047FC0CA /* ExpoModulesProviders */ = {
+			isa = PBXGroup;
+			children = (
+				C7AB860443CA4D61B9273593 /* Ommind */,
 			);
 			name = ExpoModulesProviders;
 			sourceTree = "<group>";
@@ -99,8 +99,8 @@
 				832341AE1AAA6A7D00B99B32 /* Libraries */,
 				83CBBA001A601CBA00E9B192 /* Products */,
 				2D16E6871FA4F8E400B85C8A /* Frameworks */,
-				1BB5786A369621C5108E4115 /* Pods */,
-				74617167DF3E9C823B64D074 /* ExpoModulesProviders */,
+				546573ABEC5B2BF5FFA6124D /* Pods */,
+				5695062F29E4E968047FC0CA /* ExpoModulesProviders */,
 			);
 			indentWidth = 2;
 			sourceTree = "<group>";
@@ -115,14 +115,6 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
-		862537B3E033CDEFB8AC9682 /* Ommind */ = {
-			isa = PBXGroup;
-			children = (
-				186E06C06AF4BFB0B3578207 /* ExpoModulesProvider.swift */,
-			);
-			name = Ommind;
-			sourceTree = "<group>";
-		};
 		BB2F792B24A3F905000567C9 /* Supporting */ = {
 			isa = PBXGroup;
 			children = (
@@ -130,6 +122,14 @@
 			);
 			name = Supporting;
 			path = Ommind/Supporting;
+			sourceTree = "<group>";
+		};
+		C7AB860443CA4D61B9273593 /* Ommind */ = {
+			isa = PBXGroup;
+			children = (
+				3A037C5BEC76E0C20419C1C0 /* ExpoModulesProvider.swift */,
+			);
+			name = Ommind;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -140,13 +140,13 @@
 			buildConfigurationList = 13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "Ommind" */;
 			buildPhases = (
 				08A4A3CD28434E44B6B9DE2E /* [CP] Check Pods Manifest.lock */,
-				C857E940AA629D911F46B086 /* [Expo] Configure project */,
+				749B2F54D8F80918AA7ED082 /* [Expo] Configure project */,
 				13B07F871A680F5B00A75B9A /* Sources */,
 				13B07F8C1A680F5B00A75B9A /* Frameworks */,
 				13B07F8E1A680F5B00A75B9A /* Resources */,
 				00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */,
 				800E24972A6A228C8D4807E9 /* [CP] Copy Pods Resources */,
-				FC51D425E5B453006A37033E /* [CP] Embed Pods Frameworks */,
+				C3F659A980B54ED1DD767277 /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -196,7 +196,7 @@
 				BB2F792D24A3F905000567C9 /* Expo.plist in Resources */,
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 				3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */,
-				A0F585DE57A0253470C55B02 /* PrivacyInfo.xcprivacy in Resources */,
+				8D659DE4DD73527A8CD84D58 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -242,6 +242,30 @@
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
 		};
+		749B2F54D8F80918AA7ED082 /* [Expo] Configure project */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/.xcode.env",
+				"$(SRCROOT)/.xcode.env.local",
+				"$(SRCROOT)/Ommind/Ommind.entitlements",
+				"$(SRCROOT)/Pods/Target Support Files/Pods-Ommind/expo-configure-project.sh",
+			);
+			name = "[Expo] Configure project";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(SRCROOT)/Pods/Target Support Files/Pods-Ommind/ExpoModulesProvider.swift",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# This script configures Expo modules and generates the modules provider file.\nbash -l -c \"./Pods/Target\\ Support\\ Files/Pods-Ommind/expo-configure-project.sh\"\n";
+		};
 		800E24972A6A228C8D4807E9 /* [CP] Copy Pods Resources */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
@@ -274,31 +298,7 @@
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Ommind/Pods-Ommind-resources.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
-		C857E940AA629D911F46B086 /* [Expo] Configure project */ = {
-			isa = PBXShellScriptBuildPhase;
-			alwaysOutOfDate = 1;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-				"$(SRCROOT)/.xcode.env",
-				"$(SRCROOT)/.xcode.env.local",
-				"$(SRCROOT)/Ommind/Ommind.entitlements",
-				"$(SRCROOT)/Pods/Target Support Files/Pods-Ommind/expo-configure-project.sh",
-			);
-			name = "[Expo] Configure project";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-				"$(SRCROOT)/Pods/Target Support Files/Pods-Ommind/ExpoModulesProvider.swift",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "# This script configures Expo modules and generates the modules provider file.\nbash -l -c \"./Pods/Target\\ Support\\ Files/Pods-Ommind/expo-configure-project.sh\"\n";
-		};
-		FC51D425E5B453006A37033E /* [CP] Embed Pods Frameworks */ = {
+		C3F659A980B54ED1DD767277 /* [CP] Embed Pods Frameworks */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -336,7 +336,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */,
-				3CDEDC4372AA839CFEB85438 /* ExpoModulesProvider.swift in Sources */,
+				44743505DB1A9633F6658E51 /* ExpoModulesProvider.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -345,7 +345,7 @@
 /* Begin XCBuildConfiguration section */
 		13B07F941A680F5B00A75B9A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = F54A0A4BD9BC8686B064430E /* Pods-Ommind.debug.xcconfig */;
+			baseConfigurationReference = 219FE7381CE2E1AD9C675A0E /* Pods-Ommind.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
@@ -381,7 +381,7 @@
 		};
 		13B07F951A680F5B00A75B9A /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = A30D7A665D0DF33AF0A24C90 /* Pods-Ommind.release.xcconfig */;
+			baseConfigurationReference = A835881F6459DD60CCE09AA6 /* Pods-Ommind.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import {
+  Alert,
   Keyboard,
   KeyboardAvoidingView,
   Platform,
@@ -19,6 +20,7 @@ import { useToast } from '@/context/useToast';
 import { checkIfLambdaResultIsSuccess, convertFieldNameToReadableFormat, storeAuthInfo } from '@/utils/helper';
 
 let debugUi = false
+const DEBUG = false;
 type LoginDetails = {
   email: string;
   password: string;
@@ -79,6 +81,12 @@ export default function Login() {
       router.replace("/(tabs)");
     } catch (error) {
       console.log("error is", error);
+      if (DEBUG) {
+        Alert.alert(
+          "Login Error",
+          error instanceof Error ? error.message : JSON.stringify(error)
+        );
+      }
       showToastMessage("Error occurred while logging in", false);
     } finally {
       setIsLoading(false);

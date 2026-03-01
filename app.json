@@ -33,14 +33,14 @@
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/rinpoche_normal.png"
+      "favicon": "./akeassets/images/rinpoche_normal.png"
     },
     "plugins": [
       "expo-router",
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/loading/loading_screen.jpg",
+          "image": "./assets/images/loading/ommind_loading.png",
           "resizeMode": "cover",
           "backgroundColor": "#ffffff"
         }
