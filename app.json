@@ -17,8 +17,8 @@
       "bundleIdentifier": "com.zimingtheking.mobile-movie-app"
     },
     "android": {
+      "usesCleartextTraffic": true,
       "adaptiveIcon": {
-        "usesCleartextTraffic": true,
         "foregroundImage": "./assets/images/sample/sample_meditation.jpg",
         "backgroundColor": "#ffffff"
       },
