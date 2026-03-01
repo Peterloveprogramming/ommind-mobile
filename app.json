@@ -18,6 +18,7 @@
     },
     "android": {
       "adaptiveIcon": {
+        "usesCleartextTraffic": true,
         "foregroundImage": "./assets/images/sample/sample_meditation.jpg",
         "backgroundColor": "#ffffff"
       },
@@ -40,7 +41,6 @@
         "expo-splash-screen",
         {
           "image": "./assets/images/loading/loading_screen.jpg",
-          "imageWidth": 1000,
           "resizeMode": "cover",
           "backgroundColor": "#ffffff"
         }
