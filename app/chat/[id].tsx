@@ -29,7 +29,7 @@ type ChatMessage = {
 const SpiritualMentorChat = () => {
     const { id, session_id } = useLocalSearchParams()
     const [recognizing, setRecognizing] = useState(false);
-    const {aiMessage,isAiLoading,aiMode,fetchMessage} = useFetchAiMessage(false,session_id);
+    const {aiMessage,isAiLoading,aiError,aiMode,fetchMessage} = useFetchAiMessage(false,session_id);
     const { playAudio, status, dispose } = useWebsocketHexPcmAudio();
     const [messages,setMessages] = useState<ChatMessage[]>([])
     const [inputText, setInputText] = useState(""); 
@@ -128,6 +128,21 @@ const SpiritualMentorChat = () => {
         void dispose();
       };
     }, [dispose]);
+
+    useEffect(() => {
+      if (!aiError) {
+        return;
+      }
+
+      setMessages(prevMessages => {
+        const lastMessage = prevMessages[prevMessages.length - 1];
+        if (!lastMessage || lastMessage.ai !== "loading") {
+          return prevMessages;
+        }
+
+        return prevMessages.slice(0, -1);
+      });
+    }, [aiError]);
     
 
     useEffect(()=>{
