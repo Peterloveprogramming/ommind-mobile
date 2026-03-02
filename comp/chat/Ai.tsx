@@ -18,7 +18,6 @@ const Ai = ({message, showSpinner = false}:AiProps) => {
             <Image source={images.lhamo_mini}/>
             <View style={{backgroundColor:"#8C8C8A",padding:15,maxWidth:"90%",borderRadius:10,flexDirection:"row",alignItems:"center",gap:8}}>
             <Text style={{fontSize:16, color:"#FFFFFF",flexShrink:1}}>{message}</Text>
-            {showSpinner ? <ActivityIndicator size="small" color="#FFFFFF" /> : null}
             {showSpinner ? (
                 <TouchableOpacity onPress={() => console.log("pause pressed")}>
                     <PauseButton />
