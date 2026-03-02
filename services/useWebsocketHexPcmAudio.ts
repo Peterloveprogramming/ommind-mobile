@@ -5,14 +5,17 @@ import {
   WebsocketHexPcmAudioService,
   WebsocketHexPcmAudioServiceOptions,
 } from "@/services/websocketHexPcmAudioService";
+import { PlaybackStatus } from "@/services/hexPcmAudioPlayer";
 
 type UseWebsocketHexPcmAudioOptions = Omit<WebsocketHexPcmAudioServiceOptions, "onStatusChange"> & {
   autoDispose?: boolean;
   onStatusChange?: (status: ConnectionStatus) => void;
+  onPlaybackStatusChange?: (status: PlaybackStatus) => void;
 };
 
 export function useWebsocketHexPcmAudio(options: UseWebsocketHexPcmAudioOptions = {}) {
   const [status, setStatus] = useState<ConnectionStatus>("idle");
+  const [playbackStatus, setPlaybackStatus] = useState<PlaybackStatus>("idle");
   const serviceRef = useRef<WebsocketHexPcmAudioService | null>(null);
 
   if (!serviceRef.current) {
@@ -21,6 +24,10 @@ export function useWebsocketHexPcmAudio(options: UseWebsocketHexPcmAudioOptions 
       onStatusChange: (nextStatus) => {
         setStatus(nextStatus);
         options.onStatusChange?.(nextStatus);
+      },
+      onPlaybackStatusChange: (nextPlaybackStatus) => {
+        setPlaybackStatus(nextPlaybackStatus);
+        options.onPlaybackStatusChange?.(nextPlaybackStatus);
       },
     });
   }
@@ -50,6 +57,7 @@ export function useWebsocketHexPcmAudio(options: UseWebsocketHexPcmAudioOptions 
 
   return {
     status,
+    playbackStatus,
     connect,
     playAudio,
     disconnect,

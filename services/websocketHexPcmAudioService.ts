@@ -1,5 +1,5 @@
 import { WS_URL } from "@/constant";
-import { HexPcmAudioPlayer } from "@/services/hexPcmAudioPlayer";
+import { HexPcmAudioPlayer, PlaybackStatus } from "@/services/hexPcmAudioPlayer";
 
 export type ConnectionStatus = "idle" | "connecting" | "open" | "closed" | "error";
 type RNWebSocketCtor = new (
@@ -16,6 +16,7 @@ export type WebsocketHexPcmAudioServiceOptions = {
   fileFormat?: string;
   audioPlayer?: HexPcmAudioPlayer;
   onStatusChange?: (status: ConnectionStatus) => void;
+  onPlaybackStatusChange?: (status: PlaybackStatus) => void;
   onError?: (error: unknown) => void;
 };
 
@@ -24,6 +25,7 @@ export class WebsocketHexPcmAudioService {
   private readonly authorization?: string;
   private readonly fileFormat: string;
   private readonly onStatusChange?: (status: ConnectionStatus) => void;
+  private readonly onPlaybackStatusChange?: (status: PlaybackStatus) => void;
   private readonly onError?: (error: unknown) => void;
 
   private readonly audioPlayer: HexPcmAudioPlayer;
@@ -36,7 +38,14 @@ export class WebsocketHexPcmAudioService {
     this.wsUrl = options.wsUrl ?? WS_URL;
     this.authorization = options.authorization ?? "Ommind2026";
     this.fileFormat = options.fileFormat ?? "pcm";
-    this.audioPlayer = options.audioPlayer ?? new HexPcmAudioPlayer();
+    this.onPlaybackStatusChange = options.onPlaybackStatusChange;
+    this.audioPlayer =
+      options.audioPlayer ??
+      new HexPcmAudioPlayer({
+        onPlaybackStatusChange: (status) => {
+          this.onPlaybackStatusChange?.(status);
+        },
+      });
     this.onStatusChange = options.onStatusChange;
     this.onError = options.onError;
   }
@@ -51,6 +60,7 @@ export class WebsocketHexPcmAudioService {
 
   async playAudio(input: PlayAudioInput): Promise<void> {
     const payload = this.normalizePayload(input);
+    await this.audioPlayer.beginStream();
     await this.ensureConnected();
     this.socket?.send(JSON.stringify(payload));
   }
@@ -111,6 +121,7 @@ export class WebsocketHexPcmAudioService {
       socket.onclose = () => {
         this.socket = null;
         this.connectPromise = null;
+        void this.audioPlayer.completeStream();
         this.setStatus("closed");
         if (!settled) {
           settled = true;

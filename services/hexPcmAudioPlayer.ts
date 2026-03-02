@@ -4,26 +4,63 @@ type BufferQueueSource = {
   connect: (destination: unknown) => void;
   enqueueBuffer: (buffer: unknown) => void;
   start: () => void;
+  pause?: () => void;
   stop?: () => void;
 };
+
+export type PlaybackStatus = "idle" | "buffering" | "playing" | "ended";
 
 type HexPcmAudioPlayerOptions = {
   inputSampleRate?: number;
   warmupChunks?: number;
+  onPlaybackStatusChange?: (status: PlaybackStatus) => void;
 };
 
 export class HexPcmAudioPlayer {
   private readonly inputSampleRate: number;
   private readonly warmupChunks: number;
+  private readonly onPlaybackStatusChange?: (status: PlaybackStatus) => void;
 
   private audioCtx: AudioContext | null = null;
   private queue: BufferQueueSource | null = null;
   private started = false;
   private warmupCount = 0;
+  private playbackStatus: PlaybackStatus = "idle";
+  private queuedDurationMs = 0;
+  private playbackStartedAtMs: number | null = null;
+  private playbackEndTimer: ReturnType<typeof setTimeout> | null = null;
+  private streamCompleted = false;
 
   constructor(options: HexPcmAudioPlayerOptions = {}) {
     this.inputSampleRate = options.inputSampleRate ?? 32000;
     this.warmupChunks = options.warmupChunks ?? 3;
+    this.onPlaybackStatusChange = options.onPlaybackStatusChange;
+  }
+
+  async beginStream(): Promise<void> {
+    await this.resetAudioEngine();
+    this.streamCompleted = false;
+    this.queuedDurationMs = 0;
+    this.playbackStartedAtMs = null;
+    this.setPlaybackStatus("buffering");
+  }
+
+  async completeStream(): Promise<void> {
+    this.streamCompleted = true;
+
+    if (!this.started && this.queuedDurationMs > 0) {
+      const audioCtx = this.audioCtx;
+      const queue = this.queue;
+      if (audioCtx && queue) {
+        if (audioCtx.state !== "running") await audioCtx.resume();
+        queue.start();
+        this.started = true;
+        this.playbackStartedAtMs = Date.now();
+        this.setPlaybackStatus("playing");
+      }
+    }
+
+    this.schedulePlaybackEnd();
   }
 
   async playHexChunk(hex: string): Promise<void> {
@@ -45,6 +82,7 @@ export class HexPcmAudioPlayer {
     const audioBuffer = audioCtx.createBuffer(1, floatsOut.length, audioCtx.sampleRate);
     audioBuffer.copyToChannel(floatsOut, 0);
     queue.enqueueBuffer(audioBuffer);
+    this.queuedDurationMs += audioBuffer.duration * 1000;
 
     if (!this.started) {
       this.warmupCount += 1;
@@ -52,11 +90,42 @@ export class HexPcmAudioPlayer {
         if (audioCtx.state !== "running") await audioCtx.resume();
         queue.start();
         this.started = true;
+        this.playbackStartedAtMs = Date.now();
+        this.setPlaybackStatus("playing");
       }
+    } else {
+      this.setPlaybackStatus("playing");
+    }
+
+    if (this.streamCompleted) {
+      this.schedulePlaybackEnd();
     }
   }
 
   async dispose(): Promise<void> {
+    await this.resetAudioEngine();
+    this.streamCompleted = false;
+    this.queuedDurationMs = 0;
+    this.playbackStartedAtMs = null;
+    this.setPlaybackStatus("idle");
+  }
+
+  private async ensureAudioEngine(): Promise<void> {
+    if (this.audioCtx && this.queue) return;
+
+    const audioCtx = new AudioContext();
+    const queue = audioCtx.createBufferQueueSource() as unknown as BufferQueueSource;
+    queue.connect(audioCtx.destination);
+
+    this.audioCtx = audioCtx;
+    this.queue = queue;
+    this.started = false;
+    this.warmupCount = 0;
+  }
+
+  private async resetAudioEngine(): Promise<void> {
+    this.clearPlaybackEndTimer();
+
     try {
       this.queue?.stop?.();
     } catch {}
@@ -71,17 +140,46 @@ export class HexPcmAudioPlayer {
     this.warmupCount = 0;
   }
 
-  private async ensureAudioEngine(): Promise<void> {
-    if (this.audioCtx && this.queue) return;
+  private schedulePlaybackEnd(): void {
+    if (!this.streamCompleted) return;
 
-    const audioCtx = new AudioContext();
-    const queue = audioCtx.createBufferQueueSource() as unknown as BufferQueueSource;
-    queue.connect(audioCtx.destination);
+    this.clearPlaybackEndTimer();
+    const remainingMs = this.getRemainingPlaybackMs();
 
-    this.audioCtx = audioCtx;
-    this.queue = queue;
-    this.started = false;
-    this.warmupCount = 0;
+    if (remainingMs <= 0) {
+      this.queuedDurationMs = 0;
+      this.playbackStartedAtMs = null;
+      this.setPlaybackStatus("ended");
+      return;
+    }
+
+    this.playbackEndTimer = setTimeout(() => {
+      this.playbackEndTimer = null;
+      this.queuedDurationMs = 0;
+      this.playbackStartedAtMs = null;
+      this.setPlaybackStatus("ended");
+    }, remainingMs + 50);
+  }
+
+  private getRemainingPlaybackMs(): number {
+    if (!this.started || this.playbackStartedAtMs === null) {
+      return this.queuedDurationMs;
+    }
+
+    const elapsedMs = Date.now() - this.playbackStartedAtMs;
+    return Math.max(0, this.queuedDurationMs - elapsedMs);
+  }
+
+  private clearPlaybackEndTimer(): void {
+    if (!this.playbackEndTimer) return;
+    clearTimeout(this.playbackEndTimer);
+    this.playbackEndTimer = null;
+  }
+
+  private setPlaybackStatus(status: PlaybackStatus): void {
+    if (this.playbackStatus === status) return;
+    this.playbackStatus = status;
+    this.onPlaybackStatusChange?.(status);
   }
 
   private resampleLinear(input: Float32Array, inRate: number, outRate: number): Float32Array {
