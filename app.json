@@ -19,7 +19,7 @@
     "android": {
       "usesCleartextTraffic": true,
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/logos/loading_logo.png",
+        "foregroundImage": "./assets/images/logos/ommind_loading.png",
         "backgroundColor": "#ffffff"
       },
       "permissions": [
@@ -40,7 +40,7 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/loading/ommind_loading.png",
+          "image": "./assets/images/logos/ommind_loading.png",
           "resizeMode": "cover",
           "backgroundColor": "#ffffff"
         }
