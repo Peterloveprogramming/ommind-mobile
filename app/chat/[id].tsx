@@ -1,4 +1,4 @@
-import { StyleSheet,Text,View,TextInput, Platform, TouchableOpacity,FlatList,KeyboardAvoidingView} from 'react-native'
+import { StyleSheet,Text,View,TextInput, Platform, TouchableOpacity,FlatList,KeyboardAvoidingView, Keyboard} from 'react-native'
 import React, { useEffect } from 'react'
 import { useState,useRef } from 'react'
 import { useLocalSearchParams } from 'expo-router'
@@ -18,6 +18,10 @@ import { useWebsocketHexPcmAudio } from "@/services/useWebsocketHexPcmAudio";
 import { GUIDED_MEDITATION } from "@/constant";
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PlaybackStatus } from '@/services/hexPcmAudioPlayer';
+import { useHeaderHeight } from '@react-navigation/elements';
+
+const COMPOSER_BOTTOM_SPACE = 96;
+const ANDROID_KEYBOARD_CLEARANCE = 60;
 
 type ChatMessage = {
   id: number;
@@ -31,6 +35,7 @@ type ChatMessage = {
 const SpiritualMentorChat = () => {
     const { id, session_id } = useLocalSearchParams()
     const [recognizing, setRecognizing] = useState(false);
+    const [keyboardHeight, setKeyboardHeight] = useState(0);
     const {aiMessage,isAiLoading,aiError,aiMode,fetchMessage} = useFetchAiMessage(false,session_id);
     const { playAudio, playbackStatus, pause, resume, dispose } = useWebsocketHexPcmAudio();
     const [messages,setMessages] = useState<ChatMessage[]>([])
@@ -39,6 +44,13 @@ const SpiritualMentorChat = () => {
     const fullInterimTranscript = useRef(null);
     const lastInterimWord = useRef(null)
     const insets = useSafeAreaInsets();
+    const headerHeight = useHeaderHeight();
+    const Container = Platform.OS === "ios" ? KeyboardAvoidingView : View;
+    const androidKeyboardInset = Platform.OS === "android" ? Math.max(0, keyboardHeight - insets.bottom) : 0;
+    const androidComposerLift = Platform.OS === "android" && androidKeyboardInset > 0
+      ? androidKeyboardInset + ANDROID_KEYBOARD_CLEARANCE
+      : 0;
+    const composerBottomInset = COMPOSER_BOTTOM_SPACE + insets.bottom + androidComposerLift;
 
     console.log("session_id is",session_id)
     console.log("id is",id)
@@ -104,6 +116,12 @@ const SpiritualMentorChat = () => {
       }
     };
 
+    const scrollToLatestMessage = (delay = 100) => {
+      setTimeout(() => {
+        flatListRef.current?.scrollToEnd({ animated: true });
+      }, delay);
+    };
+
     useEffect(() => {
       // Only run this logic if a new aiMessage has arrived
       if (aiMessage) {
@@ -135,9 +153,7 @@ const SpiritualMentorChat = () => {
     
         // Scroll to the end after the state update has been processed.
         // A shorter timeout is usually sufficient.
-        setTimeout(() => {
-          flatListRef.current?.scrollToEnd({ animated: true });
-        }, 100); // Reduced delay to 100ms
+        scrollToLatestMessage();
       }
       if (aiMessage && aiMode === GUIDED_MEDITATION) {
         (async () => {
@@ -160,6 +176,25 @@ const SpiritualMentorChat = () => {
 
       updateLatestGuidedMeditationMessage(playbackStatus);
     }, [playbackStatus]);
+
+    useEffect(() => {
+      if (Platform.OS !== "android") {
+        return;
+      }
+
+      const showSubscription = Keyboard.addListener("keyboardDidShow", (event) => {
+        setKeyboardHeight(event.endCoordinates.height);
+      });
+
+      const hideSubscription = Keyboard.addListener("keyboardDidHide", () => {
+        setKeyboardHeight(0);
+      });
+
+      return () => {
+        showSubscription.remove();
+        hideSubscription.remove();
+      };
+    }, []);
 
     useEffect(() => {
       return () => {
@@ -191,9 +226,7 @@ const SpiritualMentorChat = () => {
         }, 1000); 
       }
 
-      setTimeout(() => {
-        flatListRef.current?.scrollToEnd({ animated: true });
-      }, 2000); 
+      scrollToLatestMessage(2000); 
 
     },[isAiLoading])
 
@@ -323,17 +356,19 @@ const SpiritualMentorChat = () => {
     setInputText('');
 
     // 4. Scroll to end (after state update has likely rendered)
-    setTimeout(() => {
-      flatListRef.current?.scrollToEnd({ animated: true });
-    }, 500); // A small delay (e.g., 100ms) ensures the list has time to re-render
+    scrollToLatestMessage(500);
   };
     
     return (
       <View style={styles.Parent}>
-      <KeyboardAvoidingView
-        style={{ flex: 1 }} // <-- Add this style for flexibility
-        behavior='padding'
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 50}
+      <Container
+        style={styles.parentView}
+        {...(Platform.OS === "ios"
+          ? {
+              behavior: "padding" as const,
+              keyboardVerticalOffset: headerHeight,
+            }
+          : {})}
       >
           <View style={styles.chatViewParent}>
             <View style={styles.chatviewChild}>
@@ -343,29 +378,33 @@ const SpiritualMentorChat = () => {
               </View>
 
               <FlatList 
-              data={messages}
-              ref={flatListRef}
-              keyExtractor={(item) => item.id.toString()} 
-              renderItem={({ item }) => { 
-                if (item.ai) {
-                    return (
-                      <Ai
-                        message={item.ai}
-                        showPlaybackControl={item.showSpinner}
-                        showPlayButton={item.isPlaybackPaused}
-                        onPlaybackControlPress={handleGuidedMeditationPlaybackPress}
-                      />
-                    );
-                } else if (item.human) {
-                    return <Human message={item.human} />;
-                }
-                  return null;
-              }}
+                data={messages}
+                ref={flatListRef}
+                contentContainerStyle={{ paddingBottom: composerBottomInset }}
+                keyboardShouldPersistTaps="handled"
+                keyboardDismissMode={Platform.OS === "ios" ? "interactive" : "on-drag"}
+                onContentSizeChange={() => scrollToLatestMessage(0)}
+                keyExtractor={(item) => item.id.toString()} 
+                renderItem={({ item }) => { 
+                  if (item.ai) {
+                      return (
+                        <Ai
+                          message={item.ai}
+                          showPlaybackControl={item.showSpinner}
+                          showPlayButton={item.isPlaybackPaused}
+                          onPlaybackControlPress={handleGuidedMeditationPlaybackPress}
+                        />
+                      );
+                  } else if (item.human) {
+                      return <Human message={item.human} />;
+                  }
+                    return null;
+                }}
               />
             </View>
           </View>
           
-          <View style={[styles.inputView,{paddingBottom:insets.bottom}]}>
+          <View style={[styles.inputView,{paddingBottom:insets.bottom, marginBottom: androidComposerLift}]}>
             <View style={styles.inputChild}>
             
               {/* message box  */}
@@ -376,6 +415,7 @@ const SpiritualMentorChat = () => {
                 value={inputText} 
                 multiline={true} 
                 onChange={(e) => setInputText(e.nativeEvent.text)}
+                onFocus={() => scrollToLatestMessage()}
                 // numberOfLines={1} // You can optionally set initial number of lines, but multiline handles it
               />
 
@@ -396,7 +436,7 @@ const SpiritualMentorChat = () => {
             </View>
 
           </View>
-          </KeyboardAvoidingView>
+          </Container>
       </View>
     )
 }
