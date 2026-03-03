@@ -33,6 +33,7 @@ export class WebsocketHexPcmAudioService {
   private socket: WebSocket | null = null;
   private connectPromise: Promise<void> | null = null;
   private status: ConnectionStatus = "idle";
+  private playbackRequestId = 0;
 
   constructor(options: WebsocketHexPcmAudioServiceOptions = {}) {
     this.wsUrl = options.wsUrl ?? WS_URL;
@@ -55,13 +56,24 @@ export class WebsocketHexPcmAudioService {
   }
 
   async connect(): Promise<void> {
-    await this.ensureConnected();
+    await this.ensureConnected(this.playbackRequestId);
   }
 
   async playAudio(input: PlayAudioInput): Promise<void> {
     const payload = this.normalizePayload(input);
+    const requestId = ++this.playbackRequestId;
+
+    if (this.socket) {
+      this.socket.close();
+      this.socket = null;
+      this.connectPromise = null;
+    }
+
     await this.audioPlayer.beginStream();
-    await this.ensureConnected();
+    await this.ensureConnected(requestId);
+    if (requestId !== this.playbackRequestId) {
+      return;
+    }
     this.socket?.send(JSON.stringify(payload));
   }
 
@@ -90,7 +102,7 @@ export class WebsocketHexPcmAudioService {
     this.setStatus("idle");
   }
 
-  private async ensureConnected(): Promise<void> {
+  private async ensureConnected(requestId: number): Promise<void> {
     if (this.socket?.readyState === WebSocket.OPEN) return;
     if (this.connectPromise) {
       await this.connectPromise;
@@ -108,12 +120,19 @@ export class WebsocketHexPcmAudioService {
       this.socket = socket;
 
       socket.onopen = () => {
+        if (requestId !== this.playbackRequestId) {
+          socket.close();
+          return;
+        }
         settled = true;
         this.setStatus("open");
         resolve();
       };
 
       socket.onmessage = (event) => {
+        if (requestId !== this.playbackRequestId) {
+          return;
+        }
         void this.handleMessage(event.data);
       };
 
@@ -127,6 +146,13 @@ export class WebsocketHexPcmAudioService {
       };
 
       socket.onclose = () => {
+        if (requestId !== this.playbackRequestId) {
+          if (this.socket === socket) {
+            this.socket = null;
+            this.connectPromise = null;
+          }
+          return;
+        }
         this.socket = null;
         this.connectPromise = null;
         void this.audioPlayer.completeStream();
