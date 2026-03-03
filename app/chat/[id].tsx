@@ -24,6 +24,7 @@ type ChatMessage = {
   human?: string;
   mode?: string | null;
   showSpinner?: boolean;
+  isPlaybackPaused?: boolean;
 };
 
 const SpiritualMentorChat = () => {
@@ -45,6 +46,23 @@ const SpiritualMentorChat = () => {
       showToastMessage("session_id is is not present",false);
     }
 
+    const toggleGuidedMeditationPlayback = (messageId: number) => {
+      setMessages(prevMessages =>
+        prevMessages.map(message => {
+          if (message.id !== messageId || message.mode !== GUIDED_MEDITATION || !message.showSpinner) {
+            return message;
+          }
+
+          const nextPausedState = !message.isPlaybackPaused;
+          return {
+            ...message,
+            ai: nextPausedState ? "Guided meditation paused" : "Guided meditation playing",
+            isPlaybackPaused: nextPausedState,
+          };
+        })
+      );
+    };
+
     useEffect(() => {
       // Only run this logic if a new aiMessage has arrived
       if (aiMessage) {
@@ -56,6 +74,7 @@ const SpiritualMentorChat = () => {
                   id: generateRandomNumber(),
                   mode: GUIDED_MEDITATION,
                   showSpinner: true,
+                  isPlaybackPaused: false,
                 }
               : { ai: String(aiMessage), id: generateRandomNumber(), mode: aiMode };
           const lastMessage = prevMessages[prevMessages.length - 1];
@@ -117,6 +136,7 @@ const SpiritualMentorChat = () => {
             ...message,
             ai: "Guided meditation ended",
             showSpinner: false,
+            isPlaybackPaused: false,
           };
         });
       });
@@ -309,7 +329,14 @@ const SpiritualMentorChat = () => {
               keyExtractor={(item) => item.id.toString()} 
               renderItem={({ item }) => { 
                 if (item.ai) {
-                    return <Ai message={item.ai} showPlaybackControl={item.showSpinner} />;
+                    return (
+                      <Ai
+                        message={item.ai}
+                        showPlaybackControl={item.showSpinner}
+                        showPlayButton={item.isPlaybackPaused}
+                        onPlaybackControlPress={() => toggleGuidedMeditationPlayback(item.id)}
+                      />
+                    );
                 } else if (item.human) {
                     return <Human message={item.human} />;
                 }
