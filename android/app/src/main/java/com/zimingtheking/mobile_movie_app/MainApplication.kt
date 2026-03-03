@@ -1,4 +1,4 @@
-package com.ommind
+package com.zimingtheking.mobile_movie_app
 
 import android.app.Application
 import android.content.res.Configuration
