@@ -51,6 +51,10 @@ const SpiritualMentorChat = () => {
       ? androidKeyboardInset + ANDROID_KEYBOARD_CLEARANCE
       : 0;
     const composerBottomInset = COMPOSER_BOTTOM_SPACE + insets.bottom + androidComposerLift;
+    const isGuidedMeditationInProgress =
+      playbackStatus === "buffering" ||
+      playbackStatus === "playing" ||
+      playbackStatus === "paused";
 
     console.log("session_id is",session_id)
     console.log("id is",id)
@@ -156,6 +160,7 @@ const SpiritualMentorChat = () => {
         scrollToLatestMessage();
       }
       if (aiMessage && aiMode === GUIDED_MEDITATION) {
+        Keyboard.dismiss();
         (async () => {
           try {
             await playAudio(String(aiMessage));
@@ -339,6 +344,10 @@ const SpiritualMentorChat = () => {
     //checks 
     if (inputText.trim().length === 0) {
       return; 
+    }
+    if (isGuidedMeditationInProgress){
+      showToastMessage("Can not send message while guided meditation is in progress", false);
+      return;
     }
     if (isAiLoading){
       return;
