@@ -309,7 +309,7 @@ const SpiritualMentorChat = () => {
               keyExtractor={(item) => item.id.toString()} 
               renderItem={({ item }) => { 
                 if (item.ai) {
-                    return <Ai message={item.ai} showSpinner={item.showSpinner} />;
+                    return <Ai message={item.ai} showPlaybackControl={item.showSpinner} />;
                 } else if (item.human) {
                     return <Human message={item.human} />;
                 }
