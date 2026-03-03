@@ -65,6 +65,14 @@ export class WebsocketHexPcmAudioService {
     this.socket?.send(JSON.stringify(payload));
   }
 
+  async pause(): Promise<void> {
+    await this.audioPlayer.pause();
+  }
+
+  async resume(): Promise<void> {
+    await this.audioPlayer.resume();
+  }
+
   disconnect(): void {
     if (!this.socket) {
       this.setStatus("closed");

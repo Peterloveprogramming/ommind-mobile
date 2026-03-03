@@ -40,6 +40,14 @@ export function useWebsocketHexPcmAudio(options: UseWebsocketHexPcmAudioOptions 
     await serviceRef.current?.playAudio(input);
   }, []);
 
+  const pause = useCallback(async () => {
+    await serviceRef.current?.pause();
+  }, []);
+
+  const resume = useCallback(async () => {
+    await serviceRef.current?.resume();
+  }, []);
+
   const disconnect = useCallback(() => {
     serviceRef.current?.disconnect();
   }, []);
@@ -60,6 +68,8 @@ export function useWebsocketHexPcmAudio(options: UseWebsocketHexPcmAudioOptions 
     playbackStatus,
     connect,
     playAudio,
+    pause,
+    resume,
     disconnect,
     dispose,
     service: serviceRef.current,

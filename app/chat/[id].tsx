@@ -17,6 +17,7 @@ import { useToast } from '@/context/useToast'
 import { useWebsocketHexPcmAudio } from "@/services/useWebsocketHexPcmAudio";
 import { GUIDED_MEDITATION } from "@/constant";
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { PlaybackStatus } from '@/services/hexPcmAudioPlayer';
 
 type ChatMessage = {
   id: number;
@@ -31,7 +32,7 @@ const SpiritualMentorChat = () => {
     const { id, session_id } = useLocalSearchParams()
     const [recognizing, setRecognizing] = useState(false);
     const {aiMessage,isAiLoading,aiError,aiMode,fetchMessage} = useFetchAiMessage(false,session_id);
-    const { playAudio, playbackStatus, dispose } = useWebsocketHexPcmAudio();
+    const { playAudio, playbackStatus, pause, resume, dispose } = useWebsocketHexPcmAudio();
     const [messages,setMessages] = useState<ChatMessage[]>([])
     const [inputText, setInputText] = useState(""); 
     const flatListRef = useRef<FlatList<ChatMessage> | null>(null);
@@ -46,21 +47,61 @@ const SpiritualMentorChat = () => {
       showToastMessage("session_id is is not present",false);
     }
 
-    const toggleGuidedMeditationPlayback = (messageId: number) => {
-      setMessages(prevMessages =>
-        prevMessages.map(message => {
-          if (message.id !== messageId || message.mode !== GUIDED_MEDITATION || !message.showSpinner) {
+    const updateLatestGuidedMeditationMessage = (status: PlaybackStatus) => {
+      setMessages(prevMessages => {
+        const guidedMessageIndex = [...prevMessages]
+          .reverse()
+          .findIndex(message => message.mode === GUIDED_MEDITATION && message.showSpinner);
+
+        if (guidedMessageIndex === -1) {
+          return prevMessages;
+        }
+
+        const actualIndex = prevMessages.length - 1 - guidedMessageIndex;
+        return prevMessages.map((message, index) => {
+          if (index !== actualIndex) {
             return message;
           }
 
-          const nextPausedState = !message.isPlaybackPaused;
-          return {
-            ...message,
-            ai: nextPausedState ? "Guided meditation paused" : "Guided meditation playing",
-            isPlaybackPaused: nextPausedState,
-          };
-        })
-      );
+          if (status === "ended") {
+            return {
+              ...message,
+              ai: "Guided meditation ended",
+              showSpinner: false,
+              isPlaybackPaused: false,
+            };
+          }
+
+          if (status === "paused") {
+            return {
+              ...message,
+              ai: "Guided meditation paused",
+              isPlaybackPaused: true,
+            };
+          }
+
+          if (status === "playing" || status === "buffering") {
+            return {
+              ...message,
+              ai: "Guided meditation playing",
+              isPlaybackPaused: false,
+            };
+          }
+
+          return message;
+        });
+      });
+    };
+
+    const handleGuidedMeditationPlaybackPress = async () => {
+      if (playbackStatus === "paused") {
+        await resume();
+        return;
+      }
+
+      if (playbackStatus === "playing" || playbackStatus === "buffering") {
+        await pause();
+      }
     };
 
     useEffect(() => {
@@ -113,33 +154,11 @@ const SpiritualMentorChat = () => {
     }, [aiMessage, aiMode, playAudio]); 
 
     useEffect(() => {
-      if (playbackStatus !== "ended") {
+      if (playbackStatus === "idle") {
         return;
       }
 
-      setMessages(prevMessages => {
-        const guidedMessageIndex = [...prevMessages]
-          .reverse()
-          .findIndex(message => message.mode === GUIDED_MEDITATION && message.showSpinner);
-
-        if (guidedMessageIndex === -1) {
-          return prevMessages;
-        }
-
-        const actualIndex = prevMessages.length - 1 - guidedMessageIndex;
-        return prevMessages.map((message, index) => {
-          if (index !== actualIndex) {
-            return message;
-          }
-
-          return {
-            ...message,
-            ai: "Guided meditation ended",
-            showSpinner: false,
-            isPlaybackPaused: false,
-          };
-        });
-      });
+      updateLatestGuidedMeditationMessage(playbackStatus);
     }, [playbackStatus]);
 
     useEffect(() => {
@@ -334,7 +353,7 @@ const SpiritualMentorChat = () => {
                         message={item.ai}
                         showPlaybackControl={item.showSpinner}
                         showPlayButton={item.isPlaybackPaused}
-                        onPlaybackControlPress={() => toggleGuidedMeditationPlayback(item.id)}
+                        onPlaybackControlPress={handleGuidedMeditationPlaybackPress}
                       />
                     );
                 } else if (item.human) {

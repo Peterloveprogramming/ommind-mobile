@@ -8,7 +8,7 @@ type BufferQueueSource = {
   stop?: () => void;
 };
 
-export type PlaybackStatus = "idle" | "buffering" | "playing" | "ended";
+export type PlaybackStatus = "idle" | "buffering" | "playing" | "paused" | "ended";
 
 type HexPcmAudioPlayerOptions = {
   inputSampleRate?: number;
@@ -30,6 +30,7 @@ export class HexPcmAudioPlayer {
   private playbackStartedAtMs: number | null = null;
   private playbackEndTimer: ReturnType<typeof setTimeout> | null = null;
   private streamCompleted = false;
+  private pausedAtMs: number | null = null;
 
   constructor(options: HexPcmAudioPlayerOptions = {}) {
     this.inputSampleRate = options.inputSampleRate ?? 32000;
@@ -42,24 +43,13 @@ export class HexPcmAudioPlayer {
     this.streamCompleted = false;
     this.queuedDurationMs = 0;
     this.playbackStartedAtMs = null;
+    this.pausedAtMs = null;
     this.setPlaybackStatus("buffering");
   }
 
   async completeStream(): Promise<void> {
     this.streamCompleted = true;
-
-    if (!this.started && this.queuedDurationMs > 0) {
-      const audioCtx = this.audioCtx;
-      const queue = this.queue;
-      if (audioCtx && queue) {
-        if (audioCtx.state !== "running") await audioCtx.resume();
-        queue.start();
-        this.started = true;
-        this.playbackStartedAtMs = Date.now();
-        this.setPlaybackStatus("playing");
-      }
-    }
-
+    await this.startPlaybackIfReady();
     this.schedulePlaybackEnd();
   }
 
@@ -86,14 +76,8 @@ export class HexPcmAudioPlayer {
 
     if (!this.started) {
       this.warmupCount += 1;
-      if (this.warmupCount >= this.warmupChunks) {
-        if (audioCtx.state !== "running") await audioCtx.resume();
-        queue.start();
-        this.started = true;
-        this.playbackStartedAtMs = Date.now();
-        this.setPlaybackStatus("playing");
-      }
-    } else {
+      await this.startPlaybackIfReady();
+    } else if (!this.isPaused()) {
       this.setPlaybackStatus("playing");
     }
 
@@ -102,11 +86,64 @@ export class HexPcmAudioPlayer {
     }
   }
 
+  async pause(): Promise<void> {
+    if (this.isPaused() || this.playbackStatus === "idle" || this.playbackStatus === "ended") {
+      return;
+    }
+
+    this.clearPlaybackEndTimer();
+    this.pausedAtMs = Date.now();
+
+    if (this.audioCtx?.state === "running") {
+      await this.audioCtx.suspend();
+    }
+
+    this.setPlaybackStatus("paused");
+  }
+
+  async resume(): Promise<void> {
+    if (!this.isPaused()) {
+      return;
+    }
+
+    const pausedDurationMs = this.pausedAtMs ? Date.now() - this.pausedAtMs : 0;
+    this.pausedAtMs = null;
+
+    if (!this.audioCtx) {
+      this.setPlaybackStatus("buffering");
+      return;
+    }
+
+    if (this.started) {
+      if (this.audioCtx.state !== "running") {
+        await this.audioCtx.resume();
+      }
+
+      if (this.playbackStartedAtMs !== null) {
+        this.playbackStartedAtMs += pausedDurationMs;
+      }
+
+      this.setPlaybackStatus("playing");
+      this.schedulePlaybackEnd();
+      return;
+    }
+
+    await this.startPlaybackIfReady();
+
+    if (!this.started) {
+      this.setPlaybackStatus("buffering");
+      return;
+    }
+
+    this.schedulePlaybackEnd();
+  }
+
   async dispose(): Promise<void> {
     await this.resetAudioEngine();
     this.streamCompleted = false;
     this.queuedDurationMs = 0;
     this.playbackStartedAtMs = null;
+    this.pausedAtMs = null;
     this.setPlaybackStatus("idle");
   }
 
@@ -140,8 +177,32 @@ export class HexPcmAudioPlayer {
     this.warmupCount = 0;
   }
 
+  private async startPlaybackIfReady(): Promise<void> {
+    if (this.started || this.isPaused() || this.queuedDurationMs <= 0) {
+      return;
+    }
+
+    const audioCtx = this.audioCtx;
+    const queue = this.queue;
+    if (!audioCtx || !queue) return;
+
+    const hasEnoughBufferedAudio = this.warmupCount >= this.warmupChunks;
+    if (!hasEnoughBufferedAudio && !this.streamCompleted) {
+      return;
+    }
+
+    if (audioCtx.state !== "running") {
+      await audioCtx.resume();
+    }
+
+    queue.start();
+    this.started = true;
+    this.playbackStartedAtMs = Date.now();
+    this.setPlaybackStatus("playing");
+  }
+
   private schedulePlaybackEnd(): void {
-    if (!this.streamCompleted) return;
+    if (!this.streamCompleted || this.isPaused()) return;
 
     this.clearPlaybackEndTimer();
     const remainingMs = this.getRemainingPlaybackMs();
@@ -166,7 +227,7 @@ export class HexPcmAudioPlayer {
       return this.queuedDurationMs;
     }
 
-    const elapsedMs = Date.now() - this.playbackStartedAtMs;
+    const elapsedMs = (this.pausedAtMs ?? Date.now()) - this.playbackStartedAtMs;
     return Math.max(0, this.queuedDurationMs - elapsedMs);
   }
 
@@ -180,6 +241,10 @@ export class HexPcmAudioPlayer {
     if (this.playbackStatus === status) return;
     this.playbackStatus = status;
     this.onPlaybackStatusChange?.(status);
+  }
+
+  private isPaused(): boolean {
+    return this.pausedAtMs !== null;
   }
 
   private resampleLinear(input: Float32Array, inRate: number, outRate: number): Float32Array {
