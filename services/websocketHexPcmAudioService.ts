@@ -108,12 +108,16 @@ export class WebsocketHexPcmAudioService {
       this.socket = socket;
 
       socket.onopen = () => {
+        console.log("[ws-audio] socket open");
         settled = true;
         this.setStatus("open");
         resolve();
       };
 
       socket.onmessage = (event) => {
+        if (typeof event.data === "string") {
+          console.log(`[ws-audio] message received (${event.data.length} chars)`);
+        }
         void this.handleMessage(event.data);
       };
 
@@ -127,6 +131,7 @@ export class WebsocketHexPcmAudioService {
       };
 
       socket.onclose = () => {
+        console.log("[ws-audio] socket closed");
         this.socket = null;
         this.connectPromise = null;
         void this.audioPlayer.completeStream();
@@ -151,6 +156,7 @@ export class WebsocketHexPcmAudioService {
     try {
       const msg = JSON.parse(rawData);
       if (msg?.event === "task_continue" && typeof msg.audio === "string") {
+        console.log(`[ws-audio] audio chunk received (${msg.audio.length} hex chars)`);
         await this.audioPlayer.playHexChunk(msg.audio);
       }
     } catch (error) {
