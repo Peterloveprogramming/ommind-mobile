@@ -49,6 +49,6 @@ const styles = StyleSheet.create({
       borderWidth:debug?1:0,
       width:"100%",
       alignItems:"center",
-      gap:15
+      gap:15,
     },
 })

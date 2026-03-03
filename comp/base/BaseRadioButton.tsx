@@ -82,6 +82,7 @@ const styles = StyleSheet.create({
       borderRadius:10,
       borderColor:"#CFCFCF",
       justifyContent:"center",
+      paddingHorizontal:20,
       // flexDirection:"row",
       // alignItems:'center',
       // gap:5,
@@ -93,6 +94,7 @@ const styles = StyleSheet.create({
     },
     fontStyle:{
       fontFamily:FONTS.figtreeMedium,
-      fontSize:17
+      fontSize:16,
+      
     }
 })

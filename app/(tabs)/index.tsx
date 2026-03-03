@@ -164,6 +164,12 @@ const getFirstName = (userName: string | undefined) => {
   return trimmedName.split(" ")[0];
 };
 
+const capitalizeName = (name: string) => {
+  const trimmedName = name.trim();
+  if (!trimmedName) return "";
+  return trimmedName.charAt(0).toUpperCase() + trimmedName.slice(1);
+};
+
 const Home = () => {
   const router = useRouter();
   const [firstName, setFirstName] = useState("");
@@ -172,7 +178,7 @@ const Home = () => {
     const loadUserName = async () => {
       const authInfo = await getAuthInfo();
       console.log("userinfo is",authInfo)
-      setFirstName(getFirstName(authInfo?.userName));
+      setFirstName(capitalizeName(getFirstName(authInfo?.userName)));
     };
 
     loadUserName();
@@ -192,6 +198,9 @@ const Home = () => {
       <Text style={styles.title}>
         {firstName ? `Welcome ${firstName}` : "Welcome"}
       </Text>
+      <Text style={styles.subtitle}>
+        Settle in, take a breath, and give yourself a gentle moment to arrive.
+      </Text>
       <View style={styles.logoutButtonContainer}>
         <BaseButton text="Logout" onPress={handleLogout} />
       </View>
@@ -207,10 +216,20 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: 20,
+    backgroundColor: "#F7F2EA",
   },
   title: {
     fontSize: 28,
     fontFamily: FONTS.figtreeSemiBold,
+    textAlign: "center",
+  },
+  subtitle: {
+    marginTop: 10,
+    fontSize: 16,
+    fontFamily: FONTS.inter,
+    textAlign: "center",
+    color: "#5C5C5C",
+    lineHeight: 24,
   },
   logoutButtonContainer: {
     width: "100%",
