@@ -48,11 +48,9 @@
       [
         "expo-speech-recognition",
         {
-          "microphonePermission": "Allow mobile_movie_app to use the microphone for voice input and speech recognition.",
-          "speechRecognitionPermission": "Allow mobile_movie_app to use speech recognition to enable voice commands and dictation.",
-          "androidSpeechServicePackages": [
-            "com.google.android.googlequicksearchbox"
-          ]
+          "microphonePermission": "Allow $(PRODUCT_NAME) to use the microphone.",
+          "speechRecognitionPermission": "Allow $(PRODUCT_NAME) to use speech recognition.",
+          "androidSpeechServicePackages": ["com.google.android.googlequicksearchbox"]
         }
       ],
       "expo-font",

@@ -21,7 +21,7 @@ import { PlaybackStatus } from '@/services/hexPcmAudioPlayer';
 import { useHeaderHeight } from '@react-navigation/elements';
 
 const COMPOSER_BOTTOM_SPACE = 96;
-const ANDROID_KEYBOARD_CLEARANCE = 25;
+const ANDROID_KEYBOARD_CLEARANCE = 40;
 
 type ChatMessage = {
   id: number;
@@ -318,7 +318,44 @@ const SpiritualMentorChat = () => {
       }
   
       // If not recognizing and not stopOnly, start recognition
+      try {
+        const currentState = await ExpoSpeechRecognitionModule.getStateAsync();
+        console.log("speech recognizer state before start:", currentState);
+      } catch (error) {
+        console.log("failed to get speech recognizer state:", error);
+      }
+
+      if (Platform.OS === "android") {
+        let speechServices: string[] = [];
+        try {
+          speechServices = ExpoSpeechRecognitionModule.getSpeechRecognitionServices();
+          console.log("speech recognition services:", speechServices);
+        } catch (error) {
+          console.log("failed to get speech recognition services:", error);
+        }
+
+        try {
+          const defaultService = ExpoSpeechRecognitionModule.getDefaultRecognitionService();
+          console.log("default recognition service:", defaultService);
+        } catch (error) {
+          console.log("failed to get default recognition service:", error);
+        }
+
+        if (speechServices.length === 0) {
+          showToastMessage("No speech recognition service is available on this device", false);
+          return;
+        }
+      }
+
+      try {
+        const permissionStatus = await ExpoSpeechRecognitionModule.getPermissionsAsync();
+        console.log("speech permissions before start:", permissionStatus);
+      } catch (error) {
+        console.log("failed to get speech permissions:", error);
+      }
+
       const result = await ExpoSpeechRecognitionModule.requestPermissionsAsync();
+      console.log("speech permissions after request:", result);
       if (!result.granted) {
           console.warn("Permissions not granted", result);
           return;
