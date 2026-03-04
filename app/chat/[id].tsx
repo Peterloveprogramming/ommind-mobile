@@ -12,7 +12,6 @@ import MicButton from '@/assets/svg/chat/MicButton'
 import PrecautionButton from '@/assets/svg/chat/PrecautionButton'
 import Ai from '@/comp/chat/Ai'
 import Human from '@/comp/chat/Human'
-import HelperModal from '@/comp/modals/HelperModal';
 import useFetchAiMessage from '@/services/useFetchAiMessage'
 import { useToast } from '@/context/useToast'
 import { useWebsocketHexPcmAudio } from "@/services/useWebsocketHexPcmAudio";
@@ -37,7 +36,6 @@ const SpiritualMentorChat = () => {
     const { id, session_id } = useLocalSearchParams()
     const [recognizing, setRecognizing] = useState(false);
     const [keyboardHeight, setKeyboardHeight] = useState(0);
-    const [showSpeechServiceHelperModal, setShowSpeechServiceHelperModal] = useState(false);
     const {aiMessage,isAiLoading,aiError,aiMode,fetchMessage} = useFetchAiMessage(false,session_id);
     const { playAudio, playbackStatus, pause, resume, dispose } = useWebsocketHexPcmAudio();
     const [messages,setMessages] = useState<ChatMessage[]>([])
@@ -344,7 +342,7 @@ const SpiritualMentorChat = () => {
         }
 
         if (speechServices.length === 0) {
-          setShowSpeechServiceHelperModal(true);
+          showToastMessage("No speech recognition service is available on this device", false);
           return;
         }
       }
@@ -409,14 +407,6 @@ const SpiritualMentorChat = () => {
     
     return (
       <View style={styles.Parent}>
-      <HelperModal
-        visible={showSpeechServiceHelperModal}
-        title="Friendly Reminder"
-        message="Our speech recognition functionality relies on Google recognition. Please make sure you have it installed on your device. You can install it here."
-        actionLabel="Open Play Store"
-        actionUrl="https://play.google.com/store/apps/details?id=com.google.android.tts"
-        onClose={() => setShowSpeechServiceHelperModal(false)}
-      />
       <Container
         style={styles.parentView}
         {...(Platform.OS === "ios"
