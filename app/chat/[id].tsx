@@ -21,7 +21,7 @@ import { PlaybackStatus } from '@/services/hexPcmAudioPlayer';
 import { useHeaderHeight } from '@react-navigation/elements';
 
 const COMPOSER_BOTTOM_SPACE = 96;
-const ANDROID_KEYBOARD_CLEARANCE = 60;
+const ANDROID_KEYBOARD_CLEARANCE = 25;
 
 type ChatMessage = {
   id: number;
@@ -492,15 +492,16 @@ const styles = StyleSheet.create({
         paddingHorizontal: 10, // Add this line
       },
       inputView:{
-        // height:"12%",
+        height:"15%",
         gap:5,
-        borderWidth:1,
+        // borderWidth:1,
         // Remove fixed height, let it grow
         flexDirection: 'row',
         alignItems: 'center', // Align items to the bottom
-        paddingHorizontal: 10,
-        paddingVertical: 8, // Add some vertical padding
+        paddingHorizontal: 5,
+        paddingVertical: 5, // Add some vertical padding
         borderTopColor: '#ccc',
+        justifyContent:"center",
         backgroundColor: 'rgba(129, 129, 129, 0.5)',
       },
       inputChild:{

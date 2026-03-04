@@ -20,7 +20,7 @@ const styles = StyleSheet.create({
   headerParent:{
     paddingBottom: Platform.OS === 'ios' ? 12 : 0,
     width:"100%",
-    justifyContent:"center",
+    // justifyContent:"center",
     alignItems:"center",
   },
   lhamoHeaderContainer: {
