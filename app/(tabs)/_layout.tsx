@@ -1,35 +1,19 @@
 import { Tabs } from 'expo-router';
 import BottomNavigationBar from '@/assets/svg/BottomNavigationBar';
 import { View, Text,StyleSheet,Image,TouchableOpacity } from 'react-native';
-import {images} from "@/constants/images";
 import Home from '@/assets/svg/Home';
 import Explore from '@/assets/svg/Explore';
 import Journal from '@/assets/svg/Journal';
 import Profile from '@/assets/svg/Profile';
-import { useRouter } from 'expo-router';
 import {useContext} from 'react';
 import { BottomNavVisibilityContext } from '@/context/BottomNavVisibilityContext';
 import LhamoHeader from "@/comp/headers/LhamoHeader";
 import { COLORS, FONTS } from "@/theme.js";
-import { generateUniqueId } from '@/utils/helper';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 
-const Rinpoche = () => {
-  const router = useRouter(); // Initialize the router
-  return (
-    <View style={styles.rinpocheContainer}>
-      <TouchableOpacity 
-           onPress={() => router.push({
-                pathname: '/chat/[id]',
-                params: { id: 1, session_id: generateUniqueId() }
-              })} 
-      >
-      <Image source={images.rinpoche_normal} style={styles.rinpocheImage} />
-      </TouchableOpacity>
-    </View>
-  );
-};
+
+
 const icon = (focused:Boolean, iconName:string) => {
   // Define a mapping between iconName and corresponding icon component
   const icons = {
@@ -106,6 +90,8 @@ export default function TabLayout() {
             headerShown:false,
           }}
         />
+        
+        {/* invisible only acts as a placeholder */}
         <Tabs.Screen
           name="lhamo"
           options={{
@@ -142,7 +128,6 @@ export default function TabLayout() {
 
       { isVisible && (
         <>
-          <Rinpoche />
           {/* Custom Bottom Navigation Bar */}
           <View style={[styles.bottomNavigationBar,{bottom:insets.bottom}]}>
             <BottomNavigationBar width="100%" preserveAspectRatio="none" height="100%"  />
@@ -162,22 +147,7 @@ const styles = StyleSheet.create({
     zIndex: 0, 
     // borderWidth:3,
   },
-  rinpocheContainer: {
-    // borderWidth:3,
-    width: 80, // Adjust width as needed
-    height: 87, // Adjust height as needed
-    position:"absolute",
-    borderRadius: 30, // Make it circular
-    alignSelf:"center",
-    bottom:70,
-    zIndex: 10, // Ensure Rinpoche is above other elements
-  },
-  rinpocheImage: {
-    width: "100%",
-    height: "100%",
-    resizeMode: "contain",
-    // borderWidth:3,
-  },
+
   iconWrapper:{
     width:60, 
     height:50,

@@ -1,6 +1,7 @@
 
 
 import * as React from "react";
+import { View,Text,TouchableOpacity,StyleSheet,Image} from "react-native";
 import Svg, {
   ForeignObject,
   Path,
@@ -9,8 +10,32 @@ import Svg, {
   LinearGradient,
   Stop,
 } from "react-native-svg";
+import {images} from "@/constants/images";
+import { useRouter } from 'expo-router';
+import { generateUniqueId } from '@/utils/helper';
 /* SVGR has dropped some elements not supported by react-native-svg: div */
+
+
+const Rinpoche = () => {
+  const router = useRouter(); // Initialize the router
+  return (
+  
+    <View style={styles.rinpocheContainer}>
+      <TouchableOpacity 
+           onPress={() => router.push({
+                pathname: '/chat/[id]',
+                params: { id: 1, session_id: generateUniqueId() }
+              })} 
+      >
+      <Image source={images.rinpoche_normal} style={styles.rinpocheImage} />
+      </TouchableOpacity> 
+    </View>
+  );
+};
+
 const BottomNavigationBar = (props) => (
+  <View>
+    <Rinpoche />
   <Svg
     width={394}
     height={89}
@@ -50,5 +75,26 @@ const BottomNavigationBar = (props) => (
       </LinearGradient>
     </Defs>
   </Svg>
+  </View>
 );
 export default BottomNavigationBar;
+
+
+const styles = StyleSheet.create({
+  rinpocheContainer: {
+    // borderWidth:3,
+    width: 80, // Adjust width as needed
+    height: 87, // Adjust height as needed
+    position:"absolute",
+    borderRadius: 30, // Make it circular
+    alignSelf:"center",
+    bottom:30,
+    zIndex: 10, // Ensure Rinpoche is above other elements
+  },
+    rinpocheImage: {
+    width: "100%",
+    height: "100%",
+    resizeMode: "contain",
+    // borderWidth:3,
+  },
+});
