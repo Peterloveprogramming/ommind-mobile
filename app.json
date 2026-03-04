@@ -19,7 +19,7 @@
     "android": {
       "usesCleartextTraffic": true,
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/logos/loading_logo.png",
+        "foregroundImage": "./assets/images/logos/app_logo.jpg",
         "backgroundColor": "#ffffff"
       },
       "permissions": [
