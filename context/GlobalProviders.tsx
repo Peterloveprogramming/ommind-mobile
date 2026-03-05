@@ -1,6 +1,6 @@
-import React, { useState, ReactNode } from "react";
+import React, { useState, ReactNode, useEffect } from "react";
 import { BottomNavVisibilityContext } from "@/context/BottomNavVisibilityContext";
-import { ToastVisibilityContext } from "@/context/useToast";
+import { registerGlobalToastHandler, ToastVisibilityContext } from "@/context/useToast";
 import Toast from "@/comp/Toast";
 
 interface GlobalProvidersProps {
@@ -18,6 +18,14 @@ export default function GlobalProviders({ children }: GlobalProvidersProps) {
     setToastSuccess(success);
     setToastVisible(true);
   };
+
+  useEffect(() => {
+    registerGlobalToastHandler(showToastMessage);
+
+    return () => {
+      registerGlobalToastHandler(null);
+    };
+  }, []);
 
   return (
     <ToastVisibilityContext.Provider

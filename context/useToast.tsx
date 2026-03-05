@@ -25,7 +25,7 @@
 //   return context;
 // }
 
-import { createContext,Dispatch, SetStateAction,useContext } from "react";
+import { createContext, useContext } from "react";
 
 export interface ToastContextType {
   toastVisible: boolean;
@@ -35,6 +35,18 @@ export interface ToastContextType {
 // export const BottomNavVisibilityContext = createContext<BottomNavVisibilityContextType | undefined>(undefined);
 
 export const ToastVisibilityContext = createContext<ToastContextType | undefined>(undefined);
+
+let globalToastHandler: ((message: string, success: boolean) => void) | null = null;
+
+export const registerGlobalToastHandler = (
+  handler: ((message: string, success: boolean) => void) | null
+) => {
+  globalToastHandler = handler;
+};
+
+export const showGlobalToastMessage = (message: string, success: boolean) => {
+  globalToastHandler?.(message, success);
+};
 
 export function useToast() {
   const context = useContext(ToastVisibilityContext);

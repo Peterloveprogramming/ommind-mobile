@@ -1,27 +1,36 @@
-// import { useFetch } from "@/api/useFetch";
-// import {LAMBDA_SERVICE_URL} from "@/constant"
-// // import { CreateSupplierInput,GetSupplierInput,Supplier } from "../../types";
+import { LAMBDA_SERVICE_URL } from "@/constant";
+import { LambdaRequest, LambdaResult } from "@/api/types";
 
-// export const useGetSupplier = () => {
-//     const {commonFetch,isLoading,data} = useFetch<Supplier>({
-//         url: "https://jsonplaceholder.typicode.com/todos/",
-//         method:"GET"
-//     });
+type JwtValidRequest = {
+  jwt_token: string;
+};
 
-//     //using typescript to define the input here means no mistakes can be made downstream
-//     // when actually using our API layer 
+export const validateJwtToken = async (
+  jwtToken: string
+): Promise<LambdaResult | null> => {
+  const lambdaConfig: LambdaRequest = {
+    route: "jwt_valid",
+  };
 
-//     const getSupplier = (input:GetSupplierInput) => commonFetch({input});
-//     return { getSupplier, isLoading, data };
-// }
+  try {
+    const response = await fetch(LAMBDA_SERVICE_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        ...lambdaConfig,
+        jwt_token: jwtToken,
+      } as JwtValidRequest & LambdaRequest),
+    });
 
-    
-// export const useCreateSupplier = () => {
-//     const {commonFetch,isLoading,data} = useFetch<Supplier>({
-//         url: "http://myserver.com/api/supp  liers/create",
-//         method:"POST"
-//     })
+    if (!response.ok) {
+      return null;
+    }
 
-//     const createSupplier = (input:CreateSupplierInput) => commonFetch({input})
-//     return {createSupplier,isLoading,data}
-// }
+    return (await response.json()) as LambdaResult;
+  } catch (error) {
+    console.error("Error validating jwt token:", error);
+    return null;
+  }
+};

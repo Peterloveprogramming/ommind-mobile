@@ -1,5 +1,8 @@
 import { LambdaResult } from "@/api/types";
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { router } from "expo-router";
+import { validateJwtToken } from "@/api/lambda/useAuthApi/requests";
+import { showGlobalToastMessage } from "@/context/useToast";
 
 export const generateRandomNumber = () => {
     return Math.floor(Math.random() * 10000) + 1;
@@ -51,7 +54,19 @@ export const getAuthInfo = async (): Promise<{ userName: string, userId: number,
     // Retrieve the authInfo from AsyncStorage and parse it
     const authInfo = await AsyncStorage.getItem('authInfo');
     if (authInfo !== null) {
-      return JSON.parse(authInfo); // Return the parsed object
+      const parsedAuthInfo = JSON.parse(authInfo) as { userName: string, userId: number, jwtToken: string };
+      const jwtValidationResult = await validateJwtToken(parsedAuthInfo.jwtToken);
+
+      if (!checkIfLambdaResultIsSuccess(jwtValidationResult)) {
+        await deleteFromCache("authInfo");
+        console.log("Authentication expired. Please log in again")
+        showGlobalToastMessage("Authentication expired. Please log in again.", false);
+        router.replace("/welcome");
+        return null;
+      }
+      console.log("authenticated")
+
+      return parsedAuthInfo; // Return the parsed object
     }
     return null; // If there's no authInfo, return null
   } catch (e) {
