@@ -3,10 +3,6 @@ import React, { useEffect } from 'react'
 import { useState,useRef } from 'react'
 import { useLocalSearchParams } from 'expo-router'
 import { generateRandomNumber } from '@/utils/helper'
-import {
-    ExpoSpeechRecognitionModule,
-    useSpeechRecognitionEvent,
-  } from "expo-speech-recognition";
 import SendButton from '@/assets/svg/chat/SendButton'
 import MicButton from '@/assets/svg/chat/MicButton' 
 import PrecautionButton from '@/assets/svg/chat/PrecautionButton'
@@ -34,15 +30,12 @@ type ChatMessage = {
 
 const SpiritualMentorChat = () => {
     const { id, session_id } = useLocalSearchParams()
-    const [recognizing, setRecognizing] = useState(false);
     const [keyboardHeight, setKeyboardHeight] = useState(0);
     const {aiMessage,isAiLoading,aiError,aiMode,fetchMessage} = useFetchAiMessage(false,session_id);
     const { playAudio, playbackStatus, pause, resume, dispose } = useWebsocketHexPcmAudio();
     const [messages,setMessages] = useState<ChatMessage[]>([])
     const [inputText, setInputText] = useState(""); 
     const flatListRef = useRef<FlatList<ChatMessage> | null>(null);
-    const fullInterimTranscript = useRef(null);
-    const lastInterimWord = useRef(null)
     const insets = useSafeAreaInsets();
     const headerHeight = useHeaderHeight();
     const Container = Platform.OS === "ios" ? KeyboardAvoidingView : View;
@@ -169,9 +162,6 @@ const SpiritualMentorChat = () => {
           }
         })();
       }
-      return () => {
-        setRecognizing(false);
-      }
     }, [aiMessage, aiMode, playAudio]); 
 
     useEffect(() => {
@@ -203,7 +193,6 @@ const SpiritualMentorChat = () => {
 
     useEffect(() => {
       return () => {
-        ExpoSpeechRecognitionModule.stop();
         void dispose();
       };
     }, [dispose]);
@@ -235,145 +224,9 @@ const SpiritualMentorChat = () => {
 
     },[isAiLoading])
 
-    // ... (rest of your speech recognition hooks and functions remain the same)
-    useSpeechRecognitionEvent("start", () => {
-      console.log("started listening")
-      setRecognizing(true)
-      fullInterimTranscript.current = null;
-      
-    });
-    useSpeechRecognitionEvent("end", () => {
-      console.log("stopped listening")
-      setRecognizing(false)
-      lastInterimWord.current = null;
-    });
-    useSpeechRecognitionEvent("result", (event) => {
-      let transcript = event.results[0]?.transcript || '';
-        if (transcript){
-          // prevent edge cases on ios 
-          if (fullInterimTranscript.current == transcript){
-            fullInterimTranscript.current = null;
-            return;
-          }
-          fullInterimTranscript.current = transcript
-          let transcriptArray = transcript.split(" ");
-          let word = transcriptArray[transcriptArray.length-1]
-          // add spacing between the transcript 
-          if (inputText.length >0){
-            if (lastInterimWord.current){
-              let wordLowerCase = word.toLocaleLowerCase();
-              let lastInterimWordLowerCase = lastInterimWord.current.toLocaleLowerCase();
-              // prevent doubling up like potential potentially 
-              if (wordLowerCase == lastInterimWordLowerCase){
-                return
-              }
-              if (wordLowerCase.includes(lastInterimWordLowerCase) && lastInterimWordLowerCase != wordLowerCase){
-                let inputTextArray = inputText.split(" ");
-                inputTextArray.pop()
-                inputTextArray.push(word)
-                let inputTextString = inputTextArray.join(" ") 
-                lastInterimWord.current = word; 
-                setInputText(inputTextString)
-                return
-              }
-            }
-            lastInterimWord.current = word;
-            transcript = " "+word
-          } else {
-            transcript = word
-          }
-        }
-      
-      console.log(fullInterimTranscript.current)
-      // Check if the recognized text is "send"
-
-      // If it's not "send", append the transcript to the input text
-      setInputText(prevText => prevText + transcript);
-      
-  });
-  
-    useSpeechRecognitionEvent("error", (event) => {
-        console.log("error code:", event.error, "error message:", event.message);
-    });
-    
-    
-    
-    // Modify handleRecognition to accept an optional 'stopOnly' parameter
-    const handleRecognition = async (stopOnly: boolean = false) => {
-      if (stopOnly) {
-          // If stopOnly is true, only attempt to stop if currently recognizing
-          if (recognizing) {
-              ExpoSpeechRecognitionModule.stop();
-              console.log("handle stop pressed (from send)");
-          }
-          return; // Exit the function after attempting to stop
-      }
-
-      // --- Original Toggle Logic (if stopOnly is false) ---
-      if (recognizing) {
-          // If recognizing, stop it (when toggled by button press)
-          ExpoSpeechRecognitionModule.stop();
-          console.log("handle stop pressed (toggle)");
-          return; // Exit after stopping
-      }
-  
-      // If not recognizing and not stopOnly, start recognition
-      try {
-        const currentState = await ExpoSpeechRecognitionModule.getStateAsync();
-        console.log("speech recognizer state before start:", currentState);
-      } catch (error) {
-        console.log("failed to get speech recognizer state:", error);
-      }
-
-      if (Platform.OS === "android") {
-        let speechServices: string[] = [];
-        try {
-          speechServices = ExpoSpeechRecognitionModule.getSpeechRecognitionServices();
-          console.log("speech recognition services:", speechServices);
-        } catch (error) {
-          console.log("failed to get speech recognition services:", error);
-        }
-
-        try {
-          const defaultService = ExpoSpeechRecognitionModule.getDefaultRecognitionService();
-          console.log("default recognition service:", defaultService);
-        } catch (error) {
-          console.log("failed to get default recognition service:", error);
-        }
-
-        if (speechServices.length === 0) {
-          showToastMessage("No speech recognition service is available on this device", false);
-          return;
-        }
-      }
-
-      try {
-        const permissionStatus = await ExpoSpeechRecognitionModule.getPermissionsAsync();
-        console.log("speech permissions before start:", permissionStatus);
-      } catch (error) {
-        console.log("failed to get speech permissions:", error);
-      }
-
-      const result = await ExpoSpeechRecognitionModule.requestPermissionsAsync();
-      console.log("speech permissions after request:", result);
-      if (!result.granted) {
-          console.warn("Permissions not granted", result);
-          return;
-      }
-
-      // Start speech recognition
-      ExpoSpeechRecognitionModule.start(
-        {
-          lang: "en-US",
-          interimResults: true,
-          maxAlternatives: 1,
-          continuous: true,
-          requiresOnDeviceRecognition: false,
-          addsPunctuation: Platform.OS === 'ios' ? false : true,
-      });
-      lastInterimWord.current = null;
-      console.log("handle start pressed (toggle)");
-  };
+    const handleRecognition = async (_stopOnly: boolean = false) => {
+      // Placeholder to keep mic interactions wired until a replacement implementation is added.
+    };
   
 
   const handleSend = () => {

@@ -1,4 +1,4 @@
-package com.zimingtheking.mobile_movie_app
+package com.zimingtheking.ommind
 import expo.modules.splashscreen.SplashScreenManager
 
 import android.os.Build

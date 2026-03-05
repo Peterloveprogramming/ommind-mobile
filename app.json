@@ -11,10 +11,9 @@
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-        "NSSpeechRecognitionUsageDescription": "Allow mobile_movie_app to use speech recognition to enable voice commands and dictation.",
-        "NSMicrophoneUsageDescription": "Allow mobile_movie_app to use the microphone for voice input and speech recognition."
+        "NSMicrophoneUsageDescription": "Allow Ommind to use the microphone for voice input."
       },
-      "bundleIdentifier": "com.zimingtheking.mobile-movie-app"
+      "bundleIdentifier": "com.zimingtheking.Ommind"
     },
     "android": {
       "usesCleartextTraffic": true,
@@ -28,12 +27,12 @@
         "android.permission.FOREGROUND_SERVICE",
         "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
       ],
-      "package": "com.zimingtheking.mobile_movie_app"
+      "package": "com.zimingtheking.ommind"
     },
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./akeassets/images/rinpoche_normal.png"
+      "favicon": "./assets/images/logos/app_logo.jpg"
     },
     "plugins": [
       "expo-router",
@@ -43,13 +42,6 @@
           "image": "./assets/images/logos/loading_logo.png",
           "resizeMode": "cover",
           "backgroundColor": "#ffffff"
-        }
-      ],
-      [
-        "expo-speech-recognition",
-        {
-          "microphonePermission": "Allow $(PRODUCT_NAME) to use the microphone.",
-          "speechRecognitionPermission": "Allow $(PRODUCT_NAME) to use speech recognition."
         }
       ],
       "expo-font",
@@ -68,6 +60,14 @@
           "androidFSTypes": [
             "mediaPlayback"
           ]
+        }
+      ],
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Allow $(PRODUCT_NAME) to access your microphone.",
+          "enableBackgroundPlayback": true,
+          "enableBackgroundRecording": false
         }
       ]
     ],

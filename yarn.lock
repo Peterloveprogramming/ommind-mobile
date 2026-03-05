@@ -4630,6 +4630,11 @@ expo-asset@~12.0.12:
     "@expo/image-utils" "^0.8.8"
     expo-constants "~18.0.12"
 
+expo-audio@~1.1.1:
+  version "1.1.1"
+  resolved "https://registry.yarnpkg.com/expo-audio/-/expo-audio-1.1.1.tgz#7b9763118e321c5dfbf2771cd4a5b6790ce4fc8d"
+  integrity sha512-CPCpJ+0AEHdzWROc0f00Zh6e+irLSl2ALos/LPvxEeIcJw1APfBa4DuHPkL4CQCWsVe7EnUjFpdwpqsEUWcP0g==
+
 expo-blur@~15.0.8:
   version "15.0.8"
   resolved "https://registry.yarnpkg.com/expo-blur/-/expo-blur-15.0.8.tgz#846cea275a6644639c5c338987b4cca54cf93eca"
@@ -4754,11 +4759,6 @@ expo-server@^1.0.5:
   version "1.0.5"
   resolved "https://registry.yarnpkg.com/expo-server/-/expo-server-1.0.5.tgz#2d52002199a2af99c2c8771d0657916004345ca9"
   integrity sha512-IGR++flYH70rhLyeXF0Phle56/k4cee87WeQ4mamS+MkVAVP+dDlOHf2nN06Z9Y2KhU0Gp1k+y61KkghF7HdhA==
-
-expo-speech-recognition@3.0.1:
-  version "3.0.1"
-  resolved "https://registry.yarnpkg.com/expo-speech-recognition/-/expo-speech-recognition-3.0.1.tgz#7d2f291fafca1f2ff2d3253c11bbd81742250c75"
-  integrity sha512-sMyOE1Vq1635B2oG0irgv6MZo0axIva3yNMmy86fwSqcFI+y9GhfOqZnYx3PFq7A0tNP2AlaNZLA9+tkgBcLhQ==
 
 expo-splash-screen@~31.0.13:
   version "31.0.13"
