@@ -94,8 +94,18 @@ export default function TabLayout() {
         {/* invisible only acts as a placeholder */}
         <Tabs.Screen
           name="lhamo"
+          listeners={{
+            tabPress: (e) => {
+              e.preventDefault();
+            },
+          }}
           options={{
             tabBarIcon: ({ focused  }) => <View style={{height:50,width:50,bottom:-45}}><Text style={{color:focused?"#242424":"white",fontSize:13,left:4}}>Llhamo</Text></View>,
+            tabBarButton: (props) => (
+              <View style={props.style} pointerEvents="none">
+                {props.children}
+              </View>
+            ),
             tabBarItemStyle: {
               width: 0, 
               height: 0, 
