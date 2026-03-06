@@ -1,4 +1,4 @@
-import { StyleSheet,Text,View,TextInput, Platform, TouchableOpacity,FlatList,KeyboardAvoidingView, Keyboard} from 'react-native'
+import { StyleSheet,Text,View,TextInput, Platform, TouchableOpacity,FlatList,KeyboardAvoidingView, Keyboard, ActivityIndicator} from 'react-native'
 import React, { useEffect } from 'react'
 import { useState,useRef } from 'react'
 import { useLocalSearchParams } from 'expo-router'
@@ -53,7 +53,7 @@ const SpiritualMentorChat = () => {
       },
       onError: (error) => {
         console.error("Voice to text failed:", error);
-        showToastMessage("Voice recognition failed. Please try again.", false);
+        showToastMessage("Couldn’t catch that voice note. Please try again.", false);
       },
     });
     const [messages,setMessages] = useState<ChatMessage[]>([])
@@ -285,6 +285,10 @@ const SpiritualMentorChat = () => {
     if (isAiLoading){
       return;
     }
+    if (isConverting){
+      showToastMessage("Voice note is currently converting. Please wait a moment.", false);
+      return;
+    }
     const newMessage: ChatMessage = { human: inputText, id: generateRandomNumber() };
 
     // 1. Update state
@@ -375,7 +379,11 @@ const SpiritualMentorChat = () => {
                   isConverting && styles.micButtonConverting,
                 ]}
               >
-                <MicButton />
+                {isConverting ? (
+                  <ActivityIndicator size="small" color="#FF8A3D" />
+                ) : (
+                  <MicButton />
+                )}
               </TouchableOpacity>
             </View>
 
@@ -434,7 +442,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 10, // Add this line
       },
       inputView:{
-        height:"17%",
+        height:"20%",
         gap:5,
         // borderWidth:1,
         // Remove fixed height, let it grow
@@ -497,8 +505,8 @@ const styles = StyleSheet.create({
         elevation: 6,
       },
       micButtonConverting: {
-        backgroundColor: "#DDEEFF",
-        borderColor: "#3D85FF",
-        shadowColor: "#3D85FF",
+        backgroundColor: "#FFF2E6",
+        borderColor: "#FFB06E",
+        shadowColor: "#FFB06E",
       }
 })
