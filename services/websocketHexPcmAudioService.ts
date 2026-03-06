@@ -1,6 +1,6 @@
-import { WS_URL } from "@/constant";
+import { TEXT_TO_AUDIO_URL } from "@/constant";
 import { HexPcmAudioPlayer, PlaybackStatus } from "@/services/hexPcmAudioPlayer";
-
+import { SECRET_TOKEN } from "@/constant";
 export type ConnectionStatus = "idle" | "connecting" | "open" | "closed" | "error";
 type RNWebSocketCtor = new (
   url: string,
@@ -35,8 +35,8 @@ export class WebsocketHexPcmAudioService {
   private status: ConnectionStatus = "idle";
 
   constructor(options: WebsocketHexPcmAudioServiceOptions = {}) {
-    this.wsUrl = options.wsUrl ?? WS_URL;
-    this.authorization = options.authorization ?? "Ommind2026";
+    this.wsUrl = options.wsUrl ?? TEXT_TO_AUDIO_URL;
+    this.authorization = options.authorization ?? SECRET_TOKEN;
     this.fileFormat = options.fileFormat ?? "pcm";
     this.onPlaybackStatusChange = options.onPlaybackStatusChange;
     this.audioPlayer =

@@ -31,6 +31,7 @@ type ChatMessage = {
 const SpiritualMentorChat = () => {
     const { id, session_id } = useLocalSearchParams()
     const [keyboardHeight, setKeyboardHeight] = useState(0);
+    const [isMicPressed, setIsMicPressed] = useState(false);
     const {aiMessage,isAiLoading,aiError,aiMode,fetchMessage} = useFetchAiMessage(false,session_id);
     const { playAudio, playbackStatus, pause, resume, dispose } = useWebsocketHexPcmAudio();
     const [messages,setMessages] = useState<ChatMessage[]>([])
@@ -321,7 +322,13 @@ const SpiritualMentorChat = () => {
               {/* mic button */}
               <TouchableOpacity 
                 onPress={() => handleRecognition()} // Call without arguments for toggle behavior
-                style={{justifyContent:"center",alignItems:"center",marginRight:3}}
+                onPressIn={() => setIsMicPressed(true)}
+                onPressOut={() => setIsMicPressed(false)}
+                activeOpacity={0.85}
+                style={[
+                  styles.micButtonContainer,
+                  isMicPressed && styles.micButtonPressed,
+                ]}
               >
                 <MicButton />
               </TouchableOpacity>
@@ -382,7 +389,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 10, // Add this line
       },
       inputView:{
-        height:"15%",
+        height:"17%",
         gap:5,
         // borderWidth:1,
         // Remove fixed height, let it grow
@@ -396,6 +403,7 @@ const styles = StyleSheet.create({
       },
       inputChild:{
         flexDirection:"row",
+        alignItems: "center",
         // borderWidth:2,
         borderRadius:20,
         backgroundColor:"white",
@@ -415,10 +423,32 @@ const styles = StyleSheet.create({
         paddingBottom: Platform.OS === 'ios' ? 10 : 8,
         backgroundColor: "white",
         fontSize: 16,
+        textAlignVertical: "center",
         // borderWidth:3,
         // marginRight: 10,
         // textAlignVertical: 'top', // Ensures text starts from the top in Android multiline
       },
       sendButtonStyle: {
+      },
+      micButtonContainer: {
+        justifyContent: "center",
+        alignItems: "center",
+        marginRight: 3,
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        borderWidth: 1,
+        borderColor: "rgba(255, 255, 255, 0.0)",
+        backgroundColor: "rgba(255, 255, 255, 0.0)",
+      },
+      micButtonPressed: {
+        backgroundColor: "#FFE7D6",
+        borderColor: "#FF8A3D",
+        transform: [{ scale: 0.9 }],
+        shadowColor: "#FF8A3D",
+        shadowOpacity: 0.35,
+        shadowRadius: 10,
+        shadowOffset: { width: 0, height: 0 },
+        elevation: 6,
       }
 })
