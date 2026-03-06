@@ -235,14 +235,19 @@ const SpiritualMentorChat = () => {
     
 
     useEffect(()=>{
+      let loadingMessageTimeout: ReturnType<typeof setTimeout> | null = null;
       if (isAiLoading){
-        setTimeout(() => {
+        loadingMessageTimeout = setTimeout(() => {
           setMessages(prevMessages => [...prevMessages, { ai: "loading", id: generateRandomNumber() }]);
         }, 1000); 
       }
 
       scrollToLatestMessage(2000); 
-
+      return () => {
+        if (loadingMessageTimeout) {
+          clearTimeout(loadingMessageTimeout);
+        }
+      };
     },[isAiLoading])
 
     const handleMicPressIn = async () => {
@@ -380,7 +385,7 @@ const SpiritualMentorChat = () => {
                 ]}
               >
                 {isConverting ? (
-                  <ActivityIndicator size="small" color="#FF8A3D" />
+                  <ActivityIndicator size="small" color="#F8C63E" />
                 ) : (
                   <MicButton />
                 )}

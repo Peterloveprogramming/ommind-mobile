@@ -84,6 +84,9 @@ export default function useFetchAiMessage (testMode:boolean = true,session_id:st
           if (!responseSuccess){
             console.error("response was not successful",response.response,response.statusCode)
             showToastMessage("An error occurred while fetching messages",false)
+            setAiMessage(null);
+            setAiMode(null);
+            setIsAiError("error occurred while fetching")
             return;
           }
           //TODO: if the mode is GUIDED_MEDITATION then we want to 
@@ -94,8 +97,9 @@ export default function useFetchAiMessage (testMode:boolean = true,session_id:st
           setIsAiError(null)
         } catch (err) {
           console.error("Fetch error:", err);
-            setIsAiLoading(false)
-              setIsAiError("error occurred while fetching")
+            setAiMessage(null);
+            setAiMode(null);
+            setIsAiError("error occurred while fetching")
         } finally {
           setIsAiLoading(false)
         }
