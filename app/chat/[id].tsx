@@ -18,7 +18,7 @@ import { useHeaderHeight } from '@react-navigation/elements';
 import { useVoiceToText } from '@/services/useVoiceToText';
 
 const COMPOSER_BOTTOM_SPACE = 96;
-const ANDROID_KEYBOARD_CLEARANCE = 40;
+const ANDROID_KEYBOARD_CLEARANCE = 36;
 
 type ChatMessage = {
   id: number;
@@ -473,7 +473,7 @@ const styles = StyleSheet.create({
         flex:1,
         // Remove fixed height: '60%'
         maxHeight:80,
-        minHeight:50,
+        minHeight:70,
         // borderColor: '#ccc',
         borderRadius: 20, // Slightly smaller radius might look better with multiline
         paddingHorizontal: 15,
