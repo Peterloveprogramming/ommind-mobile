@@ -15,6 +15,7 @@ import { GUIDED_MEDITATION } from "@/constant";
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PlaybackStatus } from '@/services/hexPcmAudioPlayer';
 import { useHeaderHeight } from '@react-navigation/elements';
+import { useVoiceToText } from '@/services/useVoiceToText';
 
 const COMPOSER_BOTTOM_SPACE = 96;
 const ANDROID_KEYBOARD_CLEARANCE = 40;
@@ -32,10 +33,30 @@ const SpiritualMentorChat = () => {
     const { id, session_id } = useLocalSearchParams()
     const [keyboardHeight, setKeyboardHeight] = useState(0);
     const [isMicPressed, setIsMicPressed] = useState(false);
+    const [inputText, setInputText] = useState("");
+    const {showToastMessage} = useToast()
     const {aiMessage,isAiLoading,aiError,aiMode,fetchMessage} = useFetchAiMessage(false,session_id);
     const { playAudio, playbackStatus, pause, resume, dispose } = useWebsocketHexPcmAudio();
+    const {
+      isRecording,
+      isConverting,
+      startRecording,
+      stopRecordingAndTranscribe,
+    } = useVoiceToText({
+      onTranscript: (transcript) => {
+        setInputText((prevText) => {
+          const normalizedTranscript = transcript.trim();
+          if (!normalizedTranscript) return prevText;
+          if (!prevText.trim()) return normalizedTranscript;
+          return `${prevText} ${normalizedTranscript}`;
+        });
+      },
+      onError: (error) => {
+        console.error("Voice to text failed:", error);
+        showToastMessage("Voice recognition failed. Please try again.", false);
+      },
+    });
     const [messages,setMessages] = useState<ChatMessage[]>([])
-    const [inputText, setInputText] = useState(""); 
     const flatListRef = useRef<FlatList<ChatMessage> | null>(null);
     const insets = useSafeAreaInsets();
     const headerHeight = useHeaderHeight();
@@ -52,7 +73,6 @@ const SpiritualMentorChat = () => {
 
     console.log("session_id is",session_id)
     console.log("id is",id)
-    const {showToastMessage} = useToast()
     if (!session_id){
       showToastMessage("session_id is is not present",false);
     }
@@ -225,8 +245,30 @@ const SpiritualMentorChat = () => {
 
     },[isAiLoading])
 
-    const handleRecognition = async (_stopOnly: boolean = false) => {
-      // Placeholder to keep mic interactions wired until a replacement implementation is added.
+    const handleMicPressIn = async () => {
+      setIsMicPressed(true);
+      if (isGuidedMeditationInProgress || isAiLoading || isConverting) {
+        return;
+      }
+      try {
+        await startRecording();
+      } catch (error) {
+        console.error("Failed to start voice recording:", error);
+        showToastMessage("Unable to start recording. Check microphone permission.", false);
+      }
+    };
+
+    const handleMicPressOut = async () => {
+      setIsMicPressed(false);
+      if (!isRecording) {
+        return;
+      }
+      try {
+        await stopRecordingAndTranscribe();
+      } catch (error) {
+        console.error("Failed to transcribe recording:", error);
+        showToastMessage("Voice recognition failed. Please try again.", false);
+      }
     };
   
 
@@ -243,7 +285,6 @@ const SpiritualMentorChat = () => {
     if (isAiLoading){
       return;
     }
-    handleRecognition(true);
     const newMessage: ChatMessage = { human: inputText, id: generateRandomNumber() };
 
     // 1. Update state
@@ -321,13 +362,17 @@ const SpiritualMentorChat = () => {
 
               {/* mic button */}
               <TouchableOpacity 
-                onPress={() => handleRecognition()} // Call without arguments for toggle behavior
-                onPressIn={() => setIsMicPressed(true)}
-                onPressOut={() => setIsMicPressed(false)}
+                onPressIn={() => {
+                  void handleMicPressIn();
+                }}
+                onPressOut={() => {
+                  void handleMicPressOut();
+                }}
                 activeOpacity={0.85}
                 style={[
                   styles.micButtonContainer,
-                  isMicPressed && styles.micButtonPressed,
+                  (isMicPressed || isRecording) && styles.micButtonPressed,
+                  isConverting && styles.micButtonConverting,
                 ]}
               >
                 <MicButton />
@@ -450,5 +495,10 @@ const styles = StyleSheet.create({
         shadowRadius: 10,
         shadowOffset: { width: 0, height: 0 },
         elevation: 6,
+      },
+      micButtonConverting: {
+        backgroundColor: "#DDEEFF",
+        borderColor: "#3D85FF",
+        shadowColor: "#3D85FF",
       }
 })
