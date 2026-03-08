@@ -2,8 +2,12 @@ import MeditationCard from "@/comp/explore/MeditationCard";
 import { FONTS } from "@/theme";
 import React from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { useRouter } from "expo-router"; // Import useRouter for navigation
 
 const Explore = () => {
+
+  const router = useRouter();
+
   return (
     <View style={styles.container}>
       {/* <Text style={styles.title}>Coming Soon</Text> */}
@@ -25,7 +29,7 @@ const Explore = () => {
               <MeditationCard
                 numberOfSessions={5}
                 description="Calm Abiding 1: Foundation of Inner Stillness"
-                onPress={() => {}}
+                onPress={() => router.push("/meditation_session/session")}
               />
 
               <MeditationCard

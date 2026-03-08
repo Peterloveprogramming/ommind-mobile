@@ -106,6 +106,16 @@ export default function RootLayout() {
         />
 
         <Stack.Screen
+          name="meditation_session/session"
+          options={{
+            headerTitle: () => <View />,
+            headerShown: true,
+            headerLeft:()=> <BackButton onTouch={() => router.back()} />,
+            headerRight:()=><MoreButton onTouch={() => console.log("More pressed")} />
+            }}
+          />
+
+        <Stack.Screen
           name="authentication/registration_questions"
           options={{
             headerShown: true,
