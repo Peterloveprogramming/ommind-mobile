@@ -110,6 +110,11 @@ export default function RootLayout() {
           options={{
             headerTitle: () => <View />,
             headerShown: true,
+            headerTransparent: true,
+            headerShadowVisible: false,
+            headerStyle: {
+              backgroundColor: "transparent",
+            },
             headerLeft:()=> <BackButton onTouch={() => router.back()} />,
             headerRight:()=><MoreButton onTouch={() => console.log("More pressed")} />
             }}
