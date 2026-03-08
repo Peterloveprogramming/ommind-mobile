@@ -11,6 +11,7 @@ import lhamo_background_two from "@/assets/images/Lhamo/background_image_two.png
 import lhamo_background_three from "@/assets/images/Lhamo/background_image_three.png";
 import meditation_test from "@/assets/images/explore/calm/test.jpeg";
 import calm_abiding from "@/assets/images/meditation_session/calm_abiding.jpg";
+import bookmark from "@/assets/images/Bookmark.png";
 
 export const images = {
   welcome_background,
@@ -25,5 +26,6 @@ export const images = {
   lhamo_mini_loading,
   rinpoche_normal,
   meditation_test,
-  calm_abiding
+  calm_abiding,
+  bookmark,
 };
