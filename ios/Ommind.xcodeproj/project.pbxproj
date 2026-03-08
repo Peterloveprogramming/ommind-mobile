@@ -8,25 +8,25 @@
 
 /* Begin PBXBuildFile section */
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
-		2297D68B1FB7AF334629CBBE /* libPods-Ommind.a in Frameworks */ = {isa = PBXBuildFile; fileRef = ADB04AE97DD095746CD8EC61 /* libPods-Ommind.a */; };
-		2815EF3AAF1562FBA8769A67 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 000F6A8D6365930E581EB314 /* PrivacyInfo.xcprivacy */; };
+		3BCCE3BCED79223973872885 /* libPods-Ommind.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 2AF46BEDED3A3380B9E13D18 /* libPods-Ommind.a */; };
 		3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */; };
+		46BD0E7F2818654CC294A987 /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8653DD8E98A80EC004DA42BC /* ExpoModulesProvider.swift */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
-		ED75EA4EE2CD32695A57CBC3 /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51DD05B7F91E8A546373FA9E /* ExpoModulesProvider.swift */; };
+		D6DD878AEC1DD8AA0A376727 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 581C3F9515F4F8D1BB8FAB52 /* PrivacyInfo.xcprivacy */; };
 		F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11748412D0307B40044C1D9 /* AppDelegate.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		000F6A8D6365930E581EB314 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = Ommind/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		134E79EB08F1D5473D3857FA /* Pods-Ommind.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Ommind.release.xcconfig"; path = "Target Support Files/Pods-Ommind/Pods-Ommind.release.xcconfig"; sourceTree = "<group>"; };
 		13B07F961A680F5B00A75B9A /* Ommind.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Ommind.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = Ommind/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = Ommind/Info.plist; sourceTree = "<group>"; };
-		51DD05B7F91E8A546373FA9E /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-Ommind/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
+		2AF46BEDED3A3380B9E13D18 /* libPods-Ommind.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-Ommind.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		581C3F9515F4F8D1BB8FAB52 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = Ommind/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		8653DD8E98A80EC004DA42BC /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-Ommind/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
 		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = Ommind/SplashScreen.storyboard; sourceTree = "<group>"; };
-		ADB04AE97DD095746CD8EC61 /* libPods-Ommind.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-Ommind.a"; sourceTree = BUILT_PRODUCTS_DIR; };
-		AF086441314ECD649DCB5C43 /* Pods-Ommind.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Ommind.debug.xcconfig"; path = "Target Support Files/Pods-Ommind/Pods-Ommind.debug.xcconfig"; sourceTree = "<group>"; };
 		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
-		EB1EF2E830D197802018D1C0 /* Pods-Ommind.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Ommind.release.xcconfig"; path = "Target Support Files/Pods-Ommind/Pods-Ommind.release.xcconfig"; sourceTree = "<group>"; };
+		EA48B2DD37A44F1E4A322DB9 /* Pods-Ommind.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Ommind.debug.xcconfig"; path = "Target Support Files/Pods-Ommind/Pods-Ommind.debug.xcconfig"; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		F11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = Ommind/AppDelegate.swift; sourceTree = "<group>"; };
 		F11748442D0722820044C1D9 /* Ommind-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "Ommind-Bridging-Header.h"; path = "Ommind/Ommind-Bridging-Header.h"; sourceTree = "<group>"; };
@@ -37,13 +37,23 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				2297D68B1FB7AF334629CBBE /* libPods-Ommind.a in Frameworks */,
+				3BCCE3BCED79223973872885 /* libPods-Ommind.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		06FED1BC2C1324DBDBAC5A20 /* Pods */ = {
+			isa = PBXGroup;
+			children = (
+				EA48B2DD37A44F1E4A322DB9 /* Pods-Ommind.debug.xcconfig */,
+				134E79EB08F1D5473D3857FA /* Pods-Ommind.release.xcconfig */,
+			);
+			name = Pods;
+			path = Pods;
+			sourceTree = "<group>";
+		};
 		13B07FAE1A68108700A75B9A /* Ommind */ = {
 			isa = PBXGroup;
 			children = (
@@ -53,7 +63,7 @@
 				13B07FB51A68108700A75B9A /* Images.xcassets */,
 				13B07FB61A68108700A75B9A /* Info.plist */,
 				AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */,
-				000F6A8D6365930E581EB314 /* PrivacyInfo.xcprivacy */,
+				581C3F9515F4F8D1BB8FAB52 /* PrivacyInfo.xcprivacy */,
 			);
 			name = Ommind;
 			sourceTree = "<group>";
@@ -62,19 +72,17 @@
 			isa = PBXGroup;
 			children = (
 				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
-				ADB04AE97DD095746CD8EC61 /* libPods-Ommind.a */,
+				2AF46BEDED3A3380B9E13D18 /* libPods-Ommind.a */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
-		47DA5E8C733C6FD342DBFE20 /* Pods */ = {
+		452129E0967F5714403C96E6 /* ExpoModulesProviders */ = {
 			isa = PBXGroup;
 			children = (
-				AF086441314ECD649DCB5C43 /* Pods-Ommind.debug.xcconfig */,
-				EB1EF2E830D197802018D1C0 /* Pods-Ommind.release.xcconfig */,
+				C707E3DA2F104BC4FD1262BC /* Ommind */,
 			);
-			name = Pods;
-			path = Pods;
+			name = ExpoModulesProviders;
 			sourceTree = "<group>";
 		};
 		832341AE1AAA6A7D00B99B32 /* Libraries */ = {
@@ -91,8 +99,8 @@
 				832341AE1AAA6A7D00B99B32 /* Libraries */,
 				83CBBA001A601CBA00E9B192 /* Products */,
 				2D16E6871FA4F8E400B85C8A /* Frameworks */,
-				47DA5E8C733C6FD342DBFE20 /* Pods */,
-				C31BF6A2B2FBE7DA171A1FFF /* ExpoModulesProviders */,
+				06FED1BC2C1324DBDBAC5A20 /* Pods */,
+				452129E0967F5714403C96E6 /* ExpoModulesProviders */,
 			);
 			indentWidth = 2;
 			sourceTree = "<group>";
@@ -116,18 +124,10 @@
 			path = Ommind/Supporting;
 			sourceTree = "<group>";
 		};
-		C31BF6A2B2FBE7DA171A1FFF /* ExpoModulesProviders */ = {
+		C707E3DA2F104BC4FD1262BC /* Ommind */ = {
 			isa = PBXGroup;
 			children = (
-				F31F3554FA7E6C39CED9995A /* Ommind */,
-			);
-			name = ExpoModulesProviders;
-			sourceTree = "<group>";
-		};
-		F31F3554FA7E6C39CED9995A /* Ommind */ = {
-			isa = PBXGroup;
-			children = (
-				51DD05B7F91E8A546373FA9E /* ExpoModulesProvider.swift */,
+				8653DD8E98A80EC004DA42BC /* ExpoModulesProvider.swift */,
 			);
 			name = Ommind;
 			sourceTree = "<group>";
@@ -140,13 +140,13 @@
 			buildConfigurationList = 13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "Ommind" */;
 			buildPhases = (
 				08A4A3CD28434E44B6B9DE2E /* [CP] Check Pods Manifest.lock */,
-				1790A62B90E9F56C80EC80F2 /* [Expo] Configure project */,
+				51370891994A108EA6496FA5 /* [Expo] Configure project */,
 				13B07F871A680F5B00A75B9A /* Sources */,
 				13B07F8C1A680F5B00A75B9A /* Frameworks */,
 				13B07F8E1A680F5B00A75B9A /* Resources */,
 				00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */,
 				800E24972A6A228C8D4807E9 /* [CP] Copy Pods Resources */,
-				C8E377D5881407F2D8549EC2 /* [CP] Embed Pods Frameworks */,
+				3025AFBB0540F298BD0DD0ED /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -196,7 +196,7 @@
 				BB2F792D24A3F905000567C9 /* Expo.plist in Resources */,
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 				3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */,
-				2815EF3AAF1562FBA8769A67 /* PrivacyInfo.xcprivacy in Resources */,
+				D6DD878AEC1DD8AA0A376727 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -242,7 +242,37 @@
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
 		};
-		1790A62B90E9F56C80EC80F2 /* [Expo] Configure project */ = {
+		3025AFBB0540F298BD0DD0ED /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-Ommind/Pods-Ommind-frameworks.sh",
+				"${PODS_XCFRAMEWORKS_BUILD_DIR}/RNAudioAPI/libavcodec.framework/libavcodec",
+				"${PODS_XCFRAMEWORKS_BUILD_DIR}/RNAudioAPI/libavformat.framework/libavformat",
+				"${PODS_XCFRAMEWORKS_BUILD_DIR}/RNAudioAPI/libavutil.framework/libavutil",
+				"${PODS_XCFRAMEWORKS_BUILD_DIR}/RNAudioAPI/libswresample.framework/libswresample",
+				"${PODS_XCFRAMEWORKS_BUILD_DIR}/React-Core-prebuilt/React.framework/React",
+				"${PODS_XCFRAMEWORKS_BUILD_DIR}/ReactNativeDependencies/ReactNativeDependencies.framework/ReactNativeDependencies",
+				"${PODS_XCFRAMEWORKS_BUILD_DIR}/hermes-engine/Pre-built/hermes.framework/hermes",
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputPaths = (
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/libavcodec.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/libavformat.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/libavutil.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/libswresample.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/React.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/ReactNativeDependencies.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/hermes.framework",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Ommind/Pods-Ommind-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		51370891994A108EA6496FA5 /* [Expo] Configure project */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
@@ -298,36 +328,6 @@
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Ommind/Pods-Ommind-resources.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
-		C8E377D5881407F2D8549EC2 /* [CP] Embed Pods Frameworks */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-Ommind/Pods-Ommind-frameworks.sh",
-				"${PODS_XCFRAMEWORKS_BUILD_DIR}/RNAudioAPI/libavcodec.framework/libavcodec",
-				"${PODS_XCFRAMEWORKS_BUILD_DIR}/RNAudioAPI/libavformat.framework/libavformat",
-				"${PODS_XCFRAMEWORKS_BUILD_DIR}/RNAudioAPI/libavutil.framework/libavutil",
-				"${PODS_XCFRAMEWORKS_BUILD_DIR}/RNAudioAPI/libswresample.framework/libswresample",
-				"${PODS_XCFRAMEWORKS_BUILD_DIR}/React-Core-prebuilt/React.framework/React",
-				"${PODS_XCFRAMEWORKS_BUILD_DIR}/ReactNativeDependencies/ReactNativeDependencies.framework/ReactNativeDependencies",
-				"${PODS_XCFRAMEWORKS_BUILD_DIR}/hermes-engine/Pre-built/hermes.framework/hermes",
-			);
-			name = "[CP] Embed Pods Frameworks";
-			outputPaths = (
-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/libavcodec.framework",
-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/libavformat.framework",
-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/libavutil.framework",
-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/libswresample.framework",
-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/React.framework",
-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/ReactNativeDependencies.framework",
-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/hermes.framework",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Ommind/Pods-Ommind-frameworks.sh\"\n";
-			showEnvVarsInLog = 0;
-		};
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -336,7 +336,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */,
-				ED75EA4EE2CD32695A57CBC3 /* ExpoModulesProvider.swift in Sources */,
+				46BD0E7F2818654CC294A987 /* ExpoModulesProvider.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -345,7 +345,7 @@
 /* Begin XCBuildConfiguration section */
 		13B07F941A680F5B00A75B9A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = AF086441314ECD649DCB5C43 /* Pods-Ommind.debug.xcconfig */;
+			baseConfigurationReference = EA48B2DD37A44F1E4A322DB9 /* Pods-Ommind.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
@@ -381,7 +381,7 @@
 		};
 		13B07F951A680F5B00A75B9A /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = EB1EF2E830D197802018D1C0 /* Pods-Ommind.release.xcconfig */;
+			baseConfigurationReference = 134E79EB08F1D5473D3857FA /* Pods-Ommind.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;

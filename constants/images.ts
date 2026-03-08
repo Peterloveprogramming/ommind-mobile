@@ -9,7 +9,7 @@ import lhamo_mini_loading from "@/assets/images/rinpoche_mini_loading.png";
 import lhamo_background_one from "@/assets/images/Lhamo/background_image_one.png";
 import lhamo_background_two from "@/assets/images/Lhamo/background_image_two.png";
 import lhamo_background_three from "@/assets/images/Lhamo/background_image_three.png";
-
+import meditation_test from "@/assets/images/explore/calm/test.jpeg";
 
 export const images = {
   welcome_background,
@@ -23,5 +23,5 @@ export const images = {
   lhamo_mini,
   lhamo_mini_loading,
   rinpoche_normal,
-  
+  meditation_test,
 };
