@@ -7,7 +7,11 @@ const Explore = () => {
   return (
     <View style={styles.container}>
       {/* <Text style={styles.title}>Coming Soon</Text> */}
-      <View>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.verticalContent}
+      >
+        {/* Calm */}
         <View
           style={styles.rowContainer}
         >
@@ -40,11 +44,11 @@ const Explore = () => {
           </View>
         </View>
 
-
+        {/* Insight */}
         <View
           style={styles.rowContainer}
         >
-          <Text style={styles.title}>Calm</Text>
+          <Text style={styles.title}>Insight</Text>
           <View>
             <ScrollView
               horizontal
@@ -72,7 +76,212 @@ const Explore = () => {
             </ScrollView>
           </View>
         </View>
-      </View>
+
+
+         {/* Awareness */}
+        <View
+          style={styles.rowContainer}
+        >
+          <Text style={styles.title}>Awareness</Text>
+          <View>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.cardsRow}
+            >
+              <MeditationCard
+                numberOfSessions={5}
+                description="Calm Abiding 1: Foundation of Inner Stillness"
+                onPress={() => {}}
+              />
+
+              <MeditationCard
+                numberOfSessions={5}
+                description="Calm Abiding 1: Foundation of Inner Stillness"
+                onPress={() => {}}
+              />
+
+              <MeditationCard
+                numberOfSessions={5}
+                description="Calm Abiding 1: Foundation of Inner Stillness"
+                onPress={() => {}}
+              />
+
+            </ScrollView>
+          </View>
+        </View>
+
+
+         {/* Loving Kindness */}
+        <View
+          style={styles.rowContainer}
+        >
+          <Text style={styles.title}>Loving Kindness</Text>
+          <View>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.cardsRow}
+            >
+              <MeditationCard
+                numberOfSessions={5}
+                description="Calm Abiding 1: Foundation of Inner Stillness"
+                onPress={() => {}}
+              />
+
+              <MeditationCard
+                numberOfSessions={5}
+                description="Calm Abiding 1: Foundation of Inner Stillness"
+                onPress={() => {}}
+              />
+
+              <MeditationCard
+                numberOfSessions={5}
+                description="Calm Abiding 1: Foundation of Inner Stillness"
+                onPress={() => {}}
+              />
+
+            </ScrollView>
+          </View>
+        </View>
+
+
+        {/* Mindfulness */}
+        <View
+          style={styles.rowContainer}
+        >
+          <Text style={styles.title}>Mindfulness</Text>
+          <View>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.cardsRow}
+            >
+              <MeditationCard
+                numberOfSessions={5}
+                description="Calm Abiding 1: Foundation of Inner Stillness"
+                onPress={() => {}}
+              />
+
+              <MeditationCard
+                numberOfSessions={5}
+                description="Calm Abiding 1: Foundation of Inner Stillness"
+                onPress={() => {}}
+              />
+
+              <MeditationCard
+                numberOfSessions={5}
+                description="Calm Abiding 1: Foundation of Inner Stillness"
+                onPress={() => {}}
+              />
+
+            </ScrollView>
+          </View>
+        </View>
+
+
+
+        {/* Energy */}
+        <View
+          style={styles.rowContainer}
+        >
+          <Text style={styles.title}>Energy</Text>
+          <View>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.cardsRow}
+            >
+              <MeditationCard
+                numberOfSessions={5}
+                description="Calm Abiding 1: Foundation of Inner Stillness"
+                onPress={() => {}}
+              />
+
+              <MeditationCard
+                numberOfSessions={5}
+                description="Calm Abiding 1: Foundation of Inner Stillness"
+                onPress={() => {}}
+              />
+
+              <MeditationCard
+                numberOfSessions={5}
+                description="Calm Abiding 1: Foundation of Inner Stillness"
+                onPress={() => {}}
+              />
+
+            </ScrollView>
+          </View>
+        </View>
+
+
+        {/* Energy */}
+        <View
+          style={styles.rowContainer}
+        >
+          <Text style={styles.title}>Energy</Text>
+          <View>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.cardsRow}
+            >
+              <MeditationCard
+                numberOfSessions={5}
+                description="Calm Abiding 1: Foundation of Inner Stillness"
+                onPress={() => {}}
+              />
+
+              <MeditationCard
+                numberOfSessions={5}
+                description="Calm Abiding 1: Foundation of Inner Stillness"
+                onPress={() => {}}
+              />
+
+              <MeditationCard
+                numberOfSessions={5}
+                description="Calm Abiding 1: Foundation of Inner Stillness"
+                onPress={() => {}}
+              />
+
+            </ScrollView>
+          </View>
+        </View>
+
+        {/* Transcendence */}
+        <View
+          style={styles.rowContainer}
+        >
+          <Text style={styles.title}>Transcendence</Text>
+          <View>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.cardsRow}
+            >
+              <MeditationCard
+                numberOfSessions={5}
+                description="Calm Abiding 1: Foundation of Inner Stillness"
+                onPress={() => {}}
+              />
+
+              <MeditationCard
+                numberOfSessions={5}
+                description="Calm Abiding 1: Foundation of Inner Stillness"
+                onPress={() => {}}
+              />
+
+              <MeditationCard
+                numberOfSessions={5}
+                description="Calm Abiding 1: Foundation of Inner Stillness"
+                onPress={() => {}}
+              />
+
+            </ScrollView>
+          </View>
+        </View>
+        
+      </ScrollView>
     </View>
   );
 };
@@ -85,6 +294,9 @@ const styles = StyleSheet.create({
     paddingTop:50,
     paddingLeft:25
   },
+    verticalContent: {
+    paddingBottom: 24,
+  },
   rowContainer:{
     gap:10,
     marginBottom:15,
@@ -96,5 +308,6 @@ const styles = StyleSheet.create({
   cardsRow: {
     gap: 12,
     paddingRight: 15,
-  }
+  },
+
 });
