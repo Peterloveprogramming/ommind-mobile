@@ -12,6 +12,9 @@ import lhamo_background_three from "@/assets/images/Lhamo/background_image_three
 import meditation_test from "@/assets/images/explore/calm/test.jpeg";
 import calm_abiding from "@/assets/images/meditation_session/calm_abiding.jpg";
 import bookmark from "@/assets/images/Bookmark.png";
+import unchecked from "@/assets/images/meditation_session/unchecked.png";
+import checked from "@/assets/images/meditation_session/checked.png";
+import lock from "@/assets/images/meditation_session/Lock.png";
 
 export const images = {
   welcome_background,
@@ -28,4 +31,7 @@ export const images = {
   meditation_test,
   calm_abiding,
   bookmark,
+  unchecked,
+  checked,
+  lock,
 };
