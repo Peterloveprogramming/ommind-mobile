@@ -33,7 +33,8 @@ export type LambdaRequest = {
             "login" |
             "jwt_valid"|
             "save_registration_question_answers" |
-            "chat",
+            "chat" |
+            "get_audio_url",
 }
 
 // Lambda Result 
@@ -73,7 +74,6 @@ export namespace LambdaResult {
   }>;
 
 }
-
 
 
 
