@@ -1,5 +1,5 @@
-import React, { useEffect } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import React, { useEffect, useMemo, useState } from "react";
+import { GestureResponderEvent, LayoutChangeEvent, Pressable, StyleSheet, Text, View } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import {
   setAudioModeAsync,
@@ -11,12 +11,22 @@ import { FONTS } from "@/theme";
 import { useMeditationAudioService } from "@/services/useMeditationAudioService";
 import BaseButton from "../base/BaseButton";
 
+const SEEK_STEP_SECONDS = 10;
+
 const getSingleParam = (value?: string | string[]) => {
   if (Array.isArray(value)) {
     return value[0];
   }
 
   return value;
+};
+
+const formatTime = (timeInSeconds: number) => {
+  const safeTime = Number.isFinite(timeInSeconds) ? Math.max(timeInSeconds, 0) : 0;
+  const minutes = Math.floor(safeTime / 60);
+  const seconds = Math.floor(safeTime % 60);
+
+  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
 };
 
 const SessionPlayer = () => {
@@ -33,6 +43,7 @@ const SessionPlayer = () => {
   const bgmPlayer = useAudioPlayer(bgmUrl, { updateInterval: 500 });
   const voiceStatus = useAudioPlayerStatus(voicePlayer);
   const bgmStatus = useAudioPlayerStatus(bgmPlayer);
+  const [progressTrackWidth, setProgressTrackWidth] = useState(0);
 
   useEffect(() => {
     const meditationType = getSingleParam(params.type);
@@ -128,6 +139,41 @@ const SessionPlayer = () => {
     void bgmPlayer.seekTo(0);
   }, [bgmPlayer, voiceStatus.didJustFinish]);
 
+  const duration = voiceStatus.duration || 0;
+  const currentTime = voiceStatus.currentTime || 0;
+  const progress = duration > 0 ? Math.min(currentTime / duration, 1) : 0;
+  const progressPercentage = useMemo(() => `${progress * 100}%`, [progress]);
+
+  const seekToTime = async (seconds: number) => {
+    const clampedSeconds = Math.max(0, Math.min(seconds, duration || 0));
+
+    await Promise.all([
+      voicePlayer.seekTo(clampedSeconds),
+      bgmPlayer.seekTo(clampedSeconds),
+    ]);
+  };
+
+  const handleSkipBackward = () => {
+    void seekToTime(currentTime - SEEK_STEP_SECONDS);
+  };
+
+  const handleSkipForward = () => {
+    void seekToTime(currentTime + SEEK_STEP_SECONDS);
+  };
+
+  const handleProgressPress = (event: GestureResponderEvent) => {
+    if (!duration || !progressTrackWidth) {
+      return;
+    }
+
+    const nextTime = (event.nativeEvent.locationX / progressTrackWidth) * duration;
+    void seekToTime(nextTime);
+  };
+
+  const handleProgressLayout = (event: LayoutChangeEvent) => {
+    setProgressTrackWidth(event.nativeEvent.layout.width);
+  };
+
   const handlePlay = () => {
     if (!audioUrl || !bgmUrl) {
       console.log("play blocked: missing audio urls");
@@ -178,10 +224,38 @@ const SessionPlayer = () => {
         BGM: {bgmStatus.playing ? "Playing" : "Paused"} | Loaded: {bgmStatus.isLoaded ? "Yes" : "No"}
       </Text>
 
+      <View style={styles.timeline}>
+        <Pressable
+          style={styles.progressTrack}
+          onLayout={handleProgressLayout}
+          onPress={handleProgressPress}
+        >
+          <View style={[styles.progressFill, { width: progressPercentage }]} />
+        </Pressable>
+        <View style={styles.timeRow}>
+          <Text style={styles.timeText}>{formatTime(currentTime)}</Text>
+          <Text style={styles.timeText}>{formatTime(duration)}</Text>
+        </View>
+      </View>
+
       <View style={styles.actions}>
         <BaseButton
           text="Play"
           onPress={handlePlay}
+          height={48}
+          useIcon={false}
+          isLoading={false}
+        />
+        <BaseButton
+          text="-10s"
+          onPress={handleSkipBackward}
+          height={48}
+          useIcon={false}
+          isLoading={false}
+        />
+        <BaseButton
+          text="+10s"
+          onPress={handleSkipForward}
           height={48}
           useIcon={false}
           isLoading={false}
@@ -234,6 +308,32 @@ const styles = StyleSheet.create({
   actions: {
     gap: 12,
     marginVertical: 20,
+  },
+  timeline: {
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  progressTrack: {
+    width: "100%",
+    height: 10,
+    borderRadius: 999,
+    backgroundColor: "#E5E5EA",
+    overflow: "hidden",
+  },
+  progressFill: {
+    height: "100%",
+    borderRadius: 999,
+    backgroundColor: "#FFA800",
+  },
+  timeRow: {
+    marginTop: 8,
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  timeText: {
+    fontFamily: FONTS.figtreeMedium,
+    fontSize: 13,
+    color: "#8E8E93",
   },
   label: {
     fontFamily: FONTS.figtreeSemiBold,
