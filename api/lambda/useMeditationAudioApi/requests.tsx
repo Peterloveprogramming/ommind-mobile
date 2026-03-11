@@ -1,39 +1,12 @@
-import { useFetch } from "@/api/useFetch";
-import { LAMBDA_SERVICE_URL } from "@/constant";
-import { LambdaRequest, LambdaResult } from "@/api/types";
+import { useMeditationApi } from "@/api/lambda/meditation/requests";
 
-export type GetMeditationAudioInput = {
-  type: string;
-  course_number: number;
-  session_number: number;
-};
-
-export type MeditationAudioUrls = {
-  audio: string[];
-  bgm: string[];
-};
-
-export type GetMeditationAudioUrlResult = LambdaResult<MeditationAudioUrls | null>;
+export type {
+  GetMeditationAudioInput,
+  GetMeditationAudioUrlResult,
+  MeditationAudioUrls,
+} from "@/api/lambda/meditation/types";
 
 export const useGetMeditationAudioUrl = () => {
-  const { commonFetch } = useFetch<GetMeditationAudioUrlResult>({
-    url: LAMBDA_SERVICE_URL,
-    method: "POST",
-    clearUserInfoFromCacheIfUnauthorized: true,
-    useAuthFromCache: true,
-  });
-
-  const lambdaConfig: LambdaRequest = {
-    route: "get_audio_url",
-  };
-
-  const getMeditationAudioUrl = (input: GetMeditationAudioInput) =>
-    commonFetch({
-      input: {
-        ...lambdaConfig,
-        ...input,
-      },
-    });
-
+  const { getMeditationAudioUrl } = useMeditationApi();
   return { getMeditationAudioUrl };
 };

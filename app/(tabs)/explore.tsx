@@ -3,10 +3,8 @@ import { FONTS } from "@/theme";
 import React, { useEffect } from "react";
 import { FlatList, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router"; // Import useRouter for navigation
-import {
-  MeditationCoursesByType,
-} from "@/api/lambda/useMeditationCrouses/requests";
-import { useMeditationCrousesService } from "@/services/useMeditationCrousesService";
+import { MeditationCoursesByType } from "@/api/lambda/meditation/types";
+import { useMeditationCourses } from "@/services/meditation/useMeditationCourses";
 
 const COURSE_TYPES: Array<keyof MeditationCoursesByType> = ["calm", "awareness", "insight"];
 
@@ -16,7 +14,7 @@ const formatSectionTitle = (value: keyof MeditationCoursesByType) => {
 
 const Explore = () => {
   const router = useRouter();
-  const { result, error, fetchMeditationCourses } = useMeditationCrousesService();
+  const { result, error, fetchMeditationCourses } = useMeditationCourses();
   const coursesByType = result?.data?.courses;
 
   useEffect(() => {
