@@ -87,7 +87,7 @@ const MeditationSession = () => {
           <ScrollView
             showsVerticalScrollIndicator={false}
           >
-            <ImageBackground source={images.calm_abiding} style={styles.image} />
+            <ImageBackground   source={{ uri: "https://ommind-public.s3.eu-west-2.amazonaws.com/meditation/calm/1/calm.jpg" }} style={styles.image} />
             <View style={{padding:20,gap:5}}>
               {/* 5 is prop - numberOfSessions */}
               <Text style={{fontFamily:FONTS.figtreeMedium,fontSize:16,color:"#8B8B8B"}}>5 Sessions • Guided Meditation</Text>

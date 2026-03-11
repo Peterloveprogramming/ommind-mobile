@@ -1,12 +1,13 @@
 import { images } from "@/constants/images";
 import { FONTS } from "@/theme";
 import React from "react";
-import { ImageBackground, ImageSourcePropType, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ImageBackground, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 type MeditationCardProps = {
-  image_source?: ImageSourcePropType;
+  image_source?: string;
   numberOfSessions: number;
   description: string;
+  uuid:string,
   onPress: () => void;
 };
 
@@ -14,12 +15,17 @@ const MeditationCard = ({
   image_source = images.meditation_test,
   numberOfSessions,
   description,
+  uuid,
   onPress,
 }: MeditationCardProps) => {
   return (
     <TouchableOpacity onPress={onPress}>
       <View style={styles.card}>
-        <ImageBackground source={image_source} style={styles.image} imageStyle={styles.imageInner} />
+        <ImageBackground
+          source={image_source ? { uri: image_source } : images.meditation_test}
+          style={styles.image}
+          imageStyle={styles.imageInner}
+        />
 
         <View style={styles.rightPanel}>
           <Text style={styles.sessions}>{numberOfSessions} Sessions</Text>

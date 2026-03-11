@@ -34,7 +34,8 @@ export type LambdaRequest = {
             "jwt_valid"|
             "save_registration_question_answers" |
             "chat" |
-            "get_audio_url",
+            "get_audio_url" |
+            "get_all_courses",
 }
 
 // Lambda Result 
@@ -74,6 +75,5 @@ export namespace LambdaResult {
   }>;
 
 }
-
 
 
