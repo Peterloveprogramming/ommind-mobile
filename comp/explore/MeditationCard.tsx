@@ -1,4 +1,5 @@
 import { images } from "@/constants/images";
+import { MeditationCourse } from "@/api/lambda/meditation/types";
 import { FONTS } from "@/theme";
 import React from "react";
 import { ImageBackground, StyleSheet, Text, TouchableOpacity, View } from "react-native";
@@ -7,7 +8,6 @@ type MeditationCardProps = {
   image_source?: string;
   numberOfSessions: number;
   description: string;
-  uuid:string,
   onPress: () => void;
 };
 
@@ -15,7 +15,6 @@ const MeditationCard = ({
   image_source = images.meditation_test,
   numberOfSessions,
   description,
-  uuid,
   onPress,
 }: MeditationCardProps) => {
   return (

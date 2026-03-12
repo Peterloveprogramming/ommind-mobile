@@ -35,7 +35,8 @@ export type LambdaRequest = {
             "save_registration_question_answers" |
             "chat" |
             "get_audio_url" |
-            "get_all_courses",
+            "get_all_courses" |
+            "get_meditation_course_details",
 }
 
 // Lambda Result 
@@ -75,5 +76,4 @@ export namespace LambdaResult {
   }>;
 
 }
-
 

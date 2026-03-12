@@ -1,6 +1,8 @@
 import { useMeditationApi } from "@/api/lambda/meditation/requests";
 
 export type {
+  GetMeditationCourseDetailsInput,
+  GetMeditationCourseDetailsResult,
   GetMeditationCoursesResult,
   MeditationCourse,
   MeditationCourseDescriptionSection,
@@ -9,6 +11,6 @@ export type {
 } from "@/api/lambda/meditation/types";
 
 export const useGetMeditationCourses = () => {
-  const { getMeditationCourses } = useMeditationApi();
-  return { getMeditationCourses };
+  const { getMeditationCourses, getMeditationCourseDetails } = useMeditationApi();
+  return { getMeditationCourses, getMeditationCourseDetails };
 };

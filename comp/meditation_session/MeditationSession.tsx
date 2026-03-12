@@ -1,11 +1,13 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { StyleSheet, ImageBackground, View, ScrollView ,Text, TouchableOpacity, Image} from "react-native";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { MeditationCourse } from "@/api/lambda/meditation/types";
 import { images } from "@/constants/images";
 import { FONTS } from "@/theme";
 import BookmarkButton from "@/comp/headers/BookmarkButton";
 import BaseButton from "../base/BaseButton";
 import { colors } from "@/constants/colors";
+import { useMeditationCourses } from "@/services/meditation/useMeditationCourses";
 
 type SessionCardProps = {
   title: string;
@@ -82,6 +84,26 @@ const Tag = ({ tag }: TagProps) => {
 };
 
 const MeditationSession = () => {
+  const params = useLocalSearchParams<{ uuid?: string; type?: string }>();
+  const { detailsResult, fetchMeditationCourseDetails } = useMeditationCourses();
+
+  useEffect(() => {
+    if (!params.uuid || !params.type) {
+      return;
+    }
+
+    void fetchMeditationCourseDetails({
+      uuid: params.uuid,
+      type: params.type as MeditationCourse["type"],
+    });
+  }, [fetchMeditationCourseDetails, params.type, params.uuid]);
+
+  useEffect(() => {
+    if (detailsResult?.data?.course_details) {
+      console.log("Meditation course details:", detailsResult.data.course_details);
+    }
+  }, [detailsResult]);
+
   return (
     <View style={styles.container}>
           <ScrollView

@@ -34,6 +34,12 @@ export function useFetch <ResultType> ({
         input,
         fetchOptions
     }:CommonFetch)=>{
+        console.log("commonFetch request", {
+            url,
+            method,
+            route: input?.route,
+            input,
+        });
 
         if (useAuthFromCache){
             const userInfo = await getAuthInfo();

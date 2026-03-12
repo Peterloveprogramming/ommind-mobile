@@ -39,6 +39,7 @@ const Explore = () => {
               numberOfSessions={item.number_of_sessions}
               description={`${item.proper_type_name} ${item.course_number}: ${item.title}`}
               image_source={item.image_url}
+              type={item.type}
               onPress={() =>
                 router.push({
                   pathname: "/meditation_session/session",

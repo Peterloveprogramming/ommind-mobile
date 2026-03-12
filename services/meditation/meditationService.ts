@@ -1,11 +1,14 @@
 import {
   GetMeditationAudioInput,
   GetMeditationAudioUrlResult,
+  GetMeditationCourseDetailsInput,
+  GetMeditationCourseDetailsResult,
   GetMeditationCoursesResult,
 } from "@/api/lambda/meditation/types";
 
 export type MeditationAudioStatus = "idle" | "loading" | "success" | "error";
 export type MeditationCoursesStatus = "idle" | "loading" | "success" | "error";
+export type MeditationCourseDetailsStatus = "idle" | "loading" | "success" | "error";
 
 export type MeditationAudioServiceOptions = {
   onStatusChange?: (status: MeditationAudioStatus) => void;
@@ -19,10 +22,19 @@ export type MeditationCoursesServiceOptions = {
   onError?: (error: unknown) => void;
 };
 
+export type MeditationCourseDetailsServiceOptions = {
+  onStatusChange?: (status: MeditationCourseDetailsStatus) => void;
+  onResult?: (result: GetMeditationCourseDetailsResult) => void;
+  onError?: (error: unknown) => void;
+};
+
 type GetMeditationAudioUrlRequest = (
   input: GetMeditationAudioInput
 ) => Promise<GetMeditationAudioUrlResult>;
 type GetMeditationCoursesRequest = () => Promise<GetMeditationCoursesResult>;
+type GetMeditationCourseDetailsRequest = (
+  input: GetMeditationCourseDetailsInput
+) => Promise<GetMeditationCourseDetailsResult>;
 
 export class MeditationAudioService {
   private status: MeditationAudioStatus = "idle";
@@ -143,6 +155,70 @@ export class MeditationCoursesService {
   }
 
   private setStatus(status: MeditationCoursesStatus): void {
+    this.status = status;
+    this.onStatusChange?.(status);
+  }
+}
+
+export class MeditationCourseDetailsService {
+  private status: MeditationCourseDetailsStatus = "idle";
+  private lastResult: GetMeditationCourseDetailsResult | null = null;
+  private lastError: unknown = null;
+
+  private readonly request: GetMeditationCourseDetailsRequest;
+  private readonly onStatusChange?: (status: MeditationCourseDetailsStatus) => void;
+  private readonly onResult?: (result: GetMeditationCourseDetailsResult) => void;
+  private readonly onError?: (error: unknown) => void;
+
+  constructor(
+    request: GetMeditationCourseDetailsRequest,
+    options: MeditationCourseDetailsServiceOptions = {}
+  ) {
+    this.request = request;
+    this.onStatusChange = options.onStatusChange;
+    this.onResult = options.onResult;
+    this.onError = options.onError;
+  }
+
+  get courseDetailsStatus(): MeditationCourseDetailsStatus {
+    return this.status;
+  }
+
+  get result(): GetMeditationCourseDetailsResult | null {
+    return this.lastResult;
+  }
+
+  get error(): unknown {
+    return this.lastError;
+  }
+
+  async getCourseDetails(
+    input: GetMeditationCourseDetailsInput
+  ): Promise<GetMeditationCourseDetailsResult> {
+    this.lastError = null;
+    this.setStatus("loading");
+
+    try {
+      const result = await this.request(input);
+      this.lastResult = result;
+      this.onResult?.(result);
+      this.setStatus("success");
+      return result;
+    } catch (error) {
+      this.lastError = error;
+      this.setStatus("error");
+      this.onError?.(error);
+      throw error;
+    }
+  }
+
+  reset(): void {
+    this.lastResult = null;
+    this.lastError = null;
+    this.setStatus("idle");
+  }
+
+  private setStatus(status: MeditationCourseDetailsStatus): void {
     this.status = status;
     this.onStatusChange?.(status);
   }
