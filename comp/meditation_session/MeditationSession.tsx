@@ -1,7 +1,10 @@
 import React, { useEffect } from "react";
 import { StyleSheet, ImageBackground, View, ScrollView ,Text, TouchableOpacity, Image} from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { MeditationCourse } from "@/api/lambda/meditation/types";
+import {
+  MeditationCourse,
+  MeditationCourseDescriptionSection,
+} from "@/api/lambda/meditation/types";
 import { images } from "@/constants/images";
 import { FONTS } from "@/theme";
 import BookmarkButton from "@/comp/headers/BookmarkButton";
@@ -83,9 +86,24 @@ const Tag = ({ tag }: TagProps) => {
   );
 };
 
+const renderDescriptionSection = (section: MeditationCourseDescriptionSection) => {
+  return (
+    <>
+      {section.intro ? <Text style={styles.sessionDescriptionText}>{section.intro}</Text> : null}
+      {section.bullets?.map((bullet) => (
+        <Text key={bullet} style={styles.sessionDescriptionText}>
+          {"\u2022"} {bullet}
+        </Text>
+      ))}
+      {section.outro ? <Text style={styles.sessionDescriptionText}>{section.outro}</Text> : null}
+    </>
+  );
+};
+
 const MeditationSession = () => {
   const params = useLocalSearchParams<{ uuid?: string; type?: string }>();
-  const { detailsResult, fetchMeditationCourseDetails } = useMeditationCourses();
+  const { detailsResult, detailsStatus, fetchMeditationCourseDetails } = useMeditationCourses();
+  const courseDetails = detailsResult?.data?.course_details;
 
   useEffect(() => {
     if (!params.uuid || !params.type) {
@@ -104,19 +122,44 @@ const MeditationSession = () => {
     }
   }, [detailsResult]);
 
+  if (!courseDetails) {
+    return (
+      <View style={styles.loadingContainer}>
+        <Text style={styles.loadingTitle}>Meditation Course Is Loading</Text>
+        <Text style={styles.loadingDescription}>
+          Please wait while we prepare the course details for you.
+        </Text>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
           <ScrollView
             showsVerticalScrollIndicator={false}
           >
-            <ImageBackground   source={{ uri: "https://ommind-public.s3.eu-west-2.amazonaws.com/meditation/calm/1/calm.jpg" }} style={styles.image} />
+            <ImageBackground
+              source={
+                courseDetails?.image_url
+                  ? { uri: courseDetails.image_url }
+                  : images.meditation_test
+              }
+              style={styles.image}
+            />
             <View style={{padding:20,gap:5}}>
-              {/* 5 is prop - numberOfSessions */}
-              <Text style={{fontFamily:FONTS.figtreeMedium,fontSize:16,color:"#8B8B8B"}}>5 Sessions • Guided Meditation</Text>
+              <Text style={{fontFamily:FONTS.figtreeMedium,fontSize:16,color:"#8B8B8B"}}>
+                {courseDetails
+                  ? `${courseDetails.number_of_sessions} Sessions • Guided Meditation`
+                  : detailsStatus === "loading"
+                    ? "Loading course details..."
+                    : "Guided Meditation"}
+              </Text>
               
               <View style={styles.titleRow}>
                 <Text style={styles.titleText}>
-                  Calm Abiding 1: Foundation of Inner Stillness
+                  {courseDetails
+                    ? `${courseDetails.proper_type_name} ${courseDetails.course_number}: ${courseDetails.title}`
+                    : "Meditation Course"}
                 </Text>
                 <BookmarkButton onTouch={() => console.log("Bookmark pressed")} />
               </View>
@@ -131,51 +174,17 @@ const MeditationSession = () => {
                 isLoading={false}
               />
 
-
-              {/* flastlist */}
-              <SessionCard
-                title="Session 1: Grounding the Body and Posture"
-                completed={false}
-                locked={false}
-                courseNumber={1}
-                sessionNumber={1}
-                meditationType="calm"
-              />
-              <SessionCard
-                title="Session 2: Natural Breath Awareness"
-                completed={false}
-                locked={true}
-                courseNumber={1}
-                sessionNumber={2}
-                meditationType="calm_abiding"
-              />
-
-              <SessionCard
-                title="Session 3: Counting the Breath from 1 to 10"
-                completed={false}
-                locked={true}
-                courseNumber={1}
-                sessionNumber={3}
-                meditationType="calm_abiding"
-              />
-
-              <SessionCard
-                title="Session 4: Effort and Relaxed Awareness"
-                completed={false}
-                locked={true}
-                courseNumber={1}
-                sessionNumber={4}
-                meditationType="calm_abiding"
-              />
-
-              <SessionCard
-                title="Session 5: Mindfulness in Daily Life"
-                completed={false}
-                locked={true}
-                courseNumber={1}
-                sessionNumber={5}
-                meditationType="calm_abiding"
-              />
+              {courseDetails?.sessions.map((session, index) => (
+                <SessionCard
+                  key={session.session_number}
+                  title={`Session ${session.session_number}: ${session.session_title}`}
+                  completed={false}
+                  locked={index !== 0}
+                  courseNumber={courseDetails.course_number}
+                  sessionNumber={session.session_number}
+                  meditationType={courseDetails.type}
+                />
+              ))}
 
               <View
                 style={{marginVertical:10}}
@@ -184,66 +193,48 @@ const MeditationSession = () => {
                   style={styles.sessionTitleText}
                 >About This Series</Text>
 
-                <Text style={styles.sessionDescriptionText}>
-                  This course is not just about learning to meditate — it is about remembering your natural state of calm awareness. Rooted in the ancient practice of Śamatha (Calm Abiding), this first stage offers a foundational path to inner stability, clarity, and peace.
-                </Text>
-                <Text style={styles.sessionDescriptionText}>
-                  Over five carefully guided sessions, you will be gently led into deeper states of presence — through the body, the breath, and the stillness that lies beneath all thought. This course is designed for those who are new to meditation, or who feel called to reconnect with the essence of the practice from a deeper place.
-                </Text>
-                <Text style={styles.sessionDescriptionText}>
-                  There are no expectations, no need to "empty the mind" — only a soft returning, again and again, to the breath and the awareness that holds it.
-                </Text>
+                {courseDetails?.description.about_this_series.map((paragraph) => (
+                  <Text key={paragraph} style={styles.sessionDescriptionText}>
+                    {paragraph}
+                  </Text>
+                ))}
               </View>
 
-              {/* Tags */}
               <View
                 style={{flexDirection:"row",gap:5,flexWrap:"wrap",rowGap:8}}
               >
-                <Tag tag="Thought Observation" />
-                <Tag tag="Breathing" />
-                <Tag tag="Tranquality" />
-                <Tag tag="Mindfulness" />
-                <Tag tag="Tranquality" />
-                <Tag tag="Focus" />
-                <Tag tag="Calm" />
+                {courseDetails?.tags.map((tag) => (
+                  <Tag key={tag} tag={tag} />
+                ))}
               </View>
 
               <View style={{marginVertical:10}}>
                 <Text style={styles.sessionTitleText}>
                   Important: Who This Is For
                 </Text>
-                <Text style={styles.sessionDescriptionText}>
-                  This series is best suited for:{"\n"}
-                  {"\u2022"} Practitioners with some meditation experience{"\n"}
-                  {"\u2022"} Those who feel stable and grounded in daily life{"\n"}
-                  {"\u2022"} Listeners ready for a recognition-based approach rather than technique-based training{"\n"}
-                  If you are completely new to meditation, or currently navigating psychological instability, we recommend starting with OmMind’s foundational practices first.
-                </Text>
+                {courseDetails
+                  ? renderDescriptionSection(courseDetails.description.who_this_is_for)
+                  : null}
               </View>
 
               <View style={{marginVertical:10}}>
                 <Text style={styles.sessionTitleText}>
                   Source & Integrity
                 </Text>
-                <Text style={styles.sessionDescriptionText}>
-                  This series is inspired by classical Dzogchen teachings from the Nyingma tradition of Tibetan Buddhism, including the root text often known as Wisdom Self-Liberation, traditionally attributed to Guru Padmasambhava.{"\n"}
-                  The language has been carefully adapted for modern practitioners while remaining faithful to the core view of the Tibetan lineage.{"\n"}
-                  This is not a substitute for traditional transmission, but a respectful and responsible introduction.
-                </Text>
+                {courseDetails?.description.source_and_integrity.map((paragraph) => (
+                  <Text key={paragraph} style={styles.sessionDescriptionText}>
+                    {paragraph}
+                  </Text>
+                ))}
               </View>
 
               <View style={{marginTop:10,marginBottom:40}}>
                 <Text style={styles.sessionTitleText}>
                   What You Can Expect
                 </Text>
-                <Text style={styles.sessionDescriptionText}>
-                  {"\u2022"} Clear, direct guidance{"\n"}
-                  {"\u2022"} No striving or performance{"\n"}
-                  {"\u2022"} Repeated gentle recognition{"\n"}
-                  {"\u2022"} Integration into daily life{"\n"}
-                  Dzogchen is called the “Great Perfection” because nothing needs to be added.{"\n"}
-                  This series simply helps you notice that.
-                </Text>
+                {courseDetails
+                  ? renderDescriptionSection(courseDetails.description.what_you_can_expect)
+                  : null}
               </View>
             </View>
             
@@ -261,6 +252,27 @@ export default MeditationSession
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 32,
+    backgroundColor: "#FFFFFF",
+  },
+  loadingTitle: {
+    fontFamily: FONTS.figtreeSemiBold,
+    fontSize: 24,
+    color: "#0F0909",
+    marginBottom: 10,
+    textAlign: "center",
+  },
+  loadingDescription: {
+    fontFamily: FONTS.figtreeMedium,
+    fontSize: 16,
+    color: "#8B8B8B",
+    textAlign: "center",
+    lineHeight: 24,
   },
   image: {
     width: "100%",
