@@ -16,6 +16,7 @@ import bookmark_white from "@/assets/images/meditation_session/Bookmark_white.pn
 import unchecked from "@/assets/images/meditation_session/unchecked.png";
 import checked from "@/assets/images/meditation_session/checked.png";
 import lock from "@/assets/images/meditation_session/Lock.png";
+import progress_tracker from "@/assets/images/meditation_session/progress_tracker.png";
 
 export const images = {
   welcome_background,
@@ -36,4 +37,5 @@ export const images = {
   checked,
   lock,
   bookmark_white,
+  progress_tracker,
 };

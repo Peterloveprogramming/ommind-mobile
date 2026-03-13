@@ -1,12 +1,14 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
   GestureResponderEvent,
+  Image,
   ImageBackground,
   LayoutChangeEvent,
+  PanResponder,
+  Pressable,
   StyleSheet,
   Text,
   View,
-  Pressable,
 } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import {
@@ -15,12 +17,14 @@ import {
   useAudioPlayer,
   useAudioPlayerStatus,
 } from "expo-audio";
+import { images } from "@/constants/images";
 import { FONTS } from "@/theme";
 import { useMeditationAudioService } from "@/services/useMeditationAudioService";
 import BookmarkButtonWhite from "../buttons/BookmarkButtonWhite";
 import BaseButton from "../base/BaseButton";
 
 const SEEK_STEP_SECONDS = 10;
+const TRACKER_SIZE = 18;
 
 
 // const SessionPlayer = () => {
@@ -389,6 +393,7 @@ const SessionPlayer = () => {
   const voiceStatus = useAudioPlayerStatus(voicePlayer);
   const bgmStatus = useAudioPlayerStatus(bgmPlayer);
   const [progressTrackWidth, setProgressTrackWidth] = useState(0);
+  const [dragProgress, setDragProgress] = useState<number | null>(null);
 
   useEffect(() => {
     const meditationType = getSingleParam(params.type);
@@ -488,7 +493,15 @@ const SessionPlayer = () => {
   const duration = voiceStatus.duration || 0;
   const currentTime = voiceStatus.currentTime || 0;
   const progress = duration > 0 ? Math.min(currentTime / duration, 1) : 0;
-  const progressPercentage = useMemo(() => `${progress * 100}%`, [progress]);
+  const displayedProgress = dragProgress ?? progress;
+  const progressPercentage = useMemo(() => `${displayedProgress * 100}%`, [displayedProgress]);
+  const trackerOffset = useMemo(() => {
+    if (!progressTrackWidth) {
+      return -TRACKER_SIZE / 2;
+    }
+
+    return displayedProgress * progressTrackWidth - TRACKER_SIZE / 2;
+  }, [displayedProgress, progressTrackWidth]);
 
   const seekToTime = async (seconds: number) => {
     const clampedSeconds = Math.max(0, Math.min(seconds, duration || 0));
@@ -519,6 +532,39 @@ const SessionPlayer = () => {
   const handleProgressLayout = (event: LayoutChangeEvent) => {
     setProgressTrackWidth(event.nativeEvent.layout.width);
   };
+
+  const panResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => true,
+        onMoveShouldSetPanResponder: () => true,
+        onPanResponderGrant: () => {
+          setDragProgress(progress);
+        },
+        onPanResponderMove: (_, gestureState) => {
+          if (!progressTrackWidth) {
+            return;
+          }
+
+          const nextProgress = Math.max(0, Math.min(progress + gestureState.dx / progressTrackWidth, 1));
+          setDragProgress(nextProgress);
+        },
+        onPanResponderRelease: (_, gestureState) => {
+          if (!duration || !progressTrackWidth) {
+            setDragProgress(null);
+            return;
+          }
+
+          const nextProgress = Math.max(0, Math.min(progress + gestureState.dx / progressTrackWidth, 1));
+          setDragProgress(null);
+          void seekToTime(nextProgress * duration);
+        },
+        onPanResponderTerminate: () => {
+          setDragProgress(null);
+        },
+      }),
+    [duration, progress, progressTrackWidth],
+  );
 
   const handlePlay = () => {
     if (!audioUrl || !bgmUrl) {
@@ -585,13 +631,28 @@ const SessionPlayer = () => {
           </View>
 
           <View style={styles.timeline}>
-         <Pressable
-           style={styles.progressTrack}
-           onLayout={handleProgressLayout}
-           onPress={handleProgressPress}
-         >
-           <View style={[styles.progressFill, { width: progressPercentage }]} />
-         </Pressable>
+        <Pressable
+          style={styles.progressTrack}
+          onLayout={handleProgressLayout}
+          onPress={handleProgressPress}
+        >
+          <View style={[styles.progressFill, { width: progressPercentage }]} />
+          <View
+            style={[
+              styles.progressTrackerWrapper,
+              { transform: [{ translateX: trackerOffset }] },
+            ]}
+            pointerEvents="box-none"
+          >
+            <View {...panResponder.panHandlers} style={styles.progressTrackerTouchArea}>
+              <Image
+                source={images.progress_tracker}
+                style={styles.progressTracker}
+                resizeMode="contain"
+              />
+            </View>
+          </View>
+        </Pressable>
          <View style={styles.timeRow}>
            <Text style={styles.timeText}>{formatTime(currentTime)}</Text>
            <Text style={styles.timeText}>{formatTime(duration)}</Text>
@@ -641,13 +702,30 @@ const styles = StyleSheet.create({
     width: "100%",
     height: 10,
     borderRadius: 999,
-    backgroundColor: "#E5E5EA",
-    overflow: "hidden",
+    backgroundColor: "#A0A0A2",
+    overflow: "visible",
+    justifyContent: "center",
   },
   progressFill: {
     height: "100%",
     borderRadius: 999,
-    backgroundColor: "#FFA800",
+    backgroundColor: "#8A8A8B",
+  },
+  progressTrackerWrapper: {
+    position: "absolute",
+    left: 0,
+    top: "50%",
+    marginTop: -TRACKER_SIZE / 2,
+  },
+  progressTrackerTouchArea: {
+    width: TRACKER_SIZE,
+    height: TRACKER_SIZE,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  progressTracker: {
+    width: TRACKER_SIZE,
+    height: TRACKER_SIZE,
   },
   timeRow: {
     width: "100%",
