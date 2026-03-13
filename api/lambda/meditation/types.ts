@@ -28,6 +28,7 @@ export type MeditationCourse = {
     what_you_can_expect: MeditationCourseDescriptionSection;
     source_and_integrity: string[];
   };
+  background_url: string;
   tags: string[];
   created_at: string;
   updated_at: string;

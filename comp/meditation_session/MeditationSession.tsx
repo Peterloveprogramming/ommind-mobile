@@ -7,7 +7,7 @@ import {
 } from "@/api/lambda/meditation/types";
 import { images } from "@/constants/images";
 import { FONTS } from "@/theme";
-import BookmarkButton from "@/comp/headers/BookmarkButton";
+import BookmarkButton from "@/comp/buttons/BookmarkButton";
 import BaseButton from "../base/BaseButton";
 import { colors } from "@/constants/colors";
 import { useMeditationCourses } from "@/services/meditation/useMeditationCourses";
@@ -19,6 +19,8 @@ type SessionCardProps = {
   courseNumber: number;
   sessionNumber: number;
   meditationType: string;
+  imageUrl: string;
+  backgroundUrl: string;
 };
 
 type TagProps = {
@@ -32,6 +34,8 @@ const SessionCard = ({
   courseNumber,
   sessionNumber,
   meditationType,
+  imageUrl,
+  backgroundUrl,
 }: SessionCardProps) => {
   const router = useRouter();
   const showLock = locked;
@@ -72,6 +76,9 @@ const SessionCard = ({
           course_number: String(courseNumber),
           session_number: String(sessionNumber),
           type: meditationType,
+          image_url: imageUrl,
+          backgroundUrl:backgroundUrl,
+
         },
       })
     }
@@ -183,6 +190,8 @@ const MeditationSession = () => {
                   courseNumber={courseDetails.course_number}
                   sessionNumber={session.session_number}
                   meditationType={courseDetails.type}
+                  imageUrl={courseDetails.image_url}
+                  backgroundUrl={courseDetails.background_url}
                 />
               ))}
 
@@ -237,11 +246,6 @@ const MeditationSession = () => {
                   : null}
               </View>
             </View>
-            
-
-
-          
-            
           </ScrollView>
     </View>
   );

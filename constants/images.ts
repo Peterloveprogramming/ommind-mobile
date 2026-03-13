@@ -11,7 +11,8 @@ import lhamo_background_two from "@/assets/images/Lhamo/background_image_two.png
 import lhamo_background_three from "@/assets/images/Lhamo/background_image_three.png";
 import meditation_test from "@/assets/images/explore/calm/test.jpeg";
 import calm_abiding from "@/assets/images/meditation_session/calm_abiding.jpg";
-import bookmark from "@/assets/images/Bookmark.png";
+import bookmark from "@/assets/images/meditation_session/Bookmark.png";
+import bookmark_white from "@/assets/images/meditation_session/Bookmark_white.png";
 import unchecked from "@/assets/images/meditation_session/unchecked.png";
 import checked from "@/assets/images/meditation_session/checked.png";
 import lock from "@/assets/images/meditation_session/Lock.png";
@@ -34,4 +35,5 @@ export const images = {
   unchecked,
   checked,
   lock,
+  bookmark_white,
 };
