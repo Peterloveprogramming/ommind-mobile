@@ -8,6 +8,7 @@ import {
   Pressable,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from "react-native";
 import { useLocalSearchParams } from "expo-router";
@@ -658,6 +659,40 @@ const SessionPlayer = () => {
            <Text style={styles.timeText}>{formatTime(duration)}</Text>
          </View>
        </View>
+
+       {/* icons  */}
+       <View style={styles.iconRow}>
+        {/* <TouchableOpacity style={styles.iconButtonPreview} onPress={() => console.log("play_back_false pressed")}>
+          <Image source={images.play_back_false} style={styles.iconPreviewImage} resizeMode="contain" />
+        </TouchableOpacity> */}
+        <TouchableOpacity style={styles.iconButtonPreview} onPress={() => console.log("play_back_true pressed")}>
+          <Image source={images.play_back_true} style={styles.iconPreviewImage} resizeMode="contain" />
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.iconButtonPreview} onPress={() => console.log("skip_backwards pressed")}>
+          <Image source={images.skip_backwards} style={styles.iconPreviewImage} resizeMode="contain" />
+        </TouchableOpacity>
+
+        {/* <TouchableOpacity style={styles.iconButtonPreview} onPress={() => console.log("pause_icon pressed")}>
+          <Image source={images.pause_icon} style={styles.iconPreviewImage} resizeMode="contain" />
+        </TouchableOpacity> */}
+        <TouchableOpacity style={styles.iconButtonPreview} onPress={() => console.log("play_icon pressed")}>
+          <Image source={images.play_icon} style={styles.iconPreviewImage} resizeMode="contain" />
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.iconButtonPreview} onPress={() => console.log("skip_forwards pressed")}>
+          <Image source={images.skip_forwards} style={styles.iconPreviewImage} resizeMode="contain" />
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.iconButtonPreview} onPress={() => console.log("music_false pressed")}>
+          <Image source={images.music_false} style={styles.iconPreviewImage} resizeMode="contain" />
+        </TouchableOpacity>
+        {/* <TouchableOpacity style={styles.iconButtonPreview} onPress={() => console.log("music_true pressed")}>
+          <Image source={images.music_true} style={styles.iconPreviewImage} resizeMode="contain" />
+        </TouchableOpacity> */}
+
+
+       </View>
       </View>
     </ImageBackground>
   );
@@ -694,9 +729,10 @@ const styles = StyleSheet.create({
     width: 300,
   },
   timeline: {
-    width: "100%",
+    width: "95%",
     marginTop: 16,
     marginBottom: 8,
+    // borderWidth:1,
   },
   progressTrack: {
     width: "100%",
@@ -737,5 +773,24 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.figtreeMedium,
     fontSize: 13,
     color: "#8E8E93",
+  },
+  iconRow: {
+    // borderWidth:1,
+    width: "100%",
+    marginTop: 24,
+    flexDirection: "row",
+    // flexWrap: "wrap",
+    justifyContent: "space-between",
+    gap: 16,
+  },
+  iconButtonPreview: {
+    width: 30,
+    height: 30,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  iconPreviewImage: {
+    width: 32,
+    height: 32,
   },
 });

@@ -17,6 +17,14 @@ import unchecked from "@/assets/images/meditation_session/unchecked.png";
 import checked from "@/assets/images/meditation_session/checked.png";
 import lock from "@/assets/images/meditation_session/Lock.png";
 import progress_tracker from "@/assets/images/meditation_session/progress_tracker.png";
+import pause_icon from "@/assets/images/meditation_session/pause_icon.png";
+import play_icon from "@/assets/images/meditation_session/play_icon.png";
+import music_false from "@/assets/images/meditation_session/music_false.png";
+import music_true from "@/assets/images/meditation_session/music_true.png";
+import skip_forwards from "@/assets/images/meditation_session/skip_forwards.png";
+import skip_backwards from "@/assets/images/meditation_session/skip_backwards.png";
+import play_back_false from "@/assets/images/meditation_session/play_back_false.png";
+import play_back_true from "@/assets/images/meditation_session/play_back_true.png";
 
 export const images = {
   welcome_background,
@@ -38,4 +46,12 @@ export const images = {
   lock,
   bookmark_white,
   progress_tracker,
+  pause_icon,
+  play_icon,
+  music_false,
+  music_true,
+  skip_forwards,
+  skip_backwards,
+  play_back_false,
+  play_back_true,
 };
