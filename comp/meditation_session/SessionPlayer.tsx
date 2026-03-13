@@ -22,10 +22,9 @@ import { images } from "@/constants/images";
 import { FONTS } from "@/theme";
 import { useMeditationAudioService } from "@/services/useMeditationAudioService";
 import BookmarkButtonWhite from "../buttons/BookmarkButtonWhite";
-import BaseButton from "../base/BaseButton";
 
 const SEEK_STEP_SECONDS = 10;
-const TRACKER_SIZE = 18;
+const TRACKER_SIZE = 24;
 
 
 // const SessionPlayer = () => {
@@ -665,22 +664,26 @@ const SessionPlayer = () => {
         {/* <TouchableOpacity style={styles.iconButtonPreview} onPress={() => console.log("play_back_false pressed")}>
           <Image source={images.play_back_false} style={styles.iconPreviewImage} resizeMode="contain" />
         </TouchableOpacity> */}
-        <TouchableOpacity style={styles.iconButtonPreview} onPress={() => console.log("play_back_true pressed")}>
+       <TouchableOpacity style={styles.iconButtonPreview} onPress={() => console.log("play_back_true pressed")}>
           <Image source={images.play_back_true} style={styles.iconPreviewImage} resizeMode="contain" />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.iconButtonPreview} onPress={() => console.log("skip_backwards pressed")}>
+        <TouchableOpacity style={styles.iconButtonPreview} onPress={handleSkipBackward}>
           <Image source={images.skip_backwards} style={styles.iconPreviewImage} resizeMode="contain" />
         </TouchableOpacity>
 
-        {/* <TouchableOpacity style={styles.iconButtonPreview} onPress={() => console.log("pause_icon pressed")}>
-          <Image source={images.pause_icon} style={styles.iconPreviewImage} resizeMode="contain" />
-        </TouchableOpacity> */}
-        <TouchableOpacity style={styles.iconButtonPreview} onPress={() => console.log("play_icon pressed")}>
-          <Image source={images.play_icon} style={styles.iconPreviewImage} resizeMode="contain" />
+        <TouchableOpacity
+          style={styles.iconButtonPreview}
+          onPress={voiceStatus.playing ? handlePause : handlePlay}
+        >
+          <Image
+            source={voiceStatus.playing ? images.pause_icon : images.play_icon}
+            style={styles.iconPreviewImage}
+            resizeMode="contain"
+          />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.iconButtonPreview} onPress={() => console.log("skip_forwards pressed")}>
+        <TouchableOpacity style={styles.iconButtonPreview} onPress={handleSkipForward}>
           <Image source={images.skip_forwards} style={styles.iconPreviewImage} resizeMode="contain" />
         </TouchableOpacity>
 
@@ -736,7 +739,7 @@ const styles = StyleSheet.create({
   },
   progressTrack: {
     width: "100%",
-    height: 10,
+    height: 7,
     borderRadius: 999,
     backgroundColor: "#A0A0A2",
     overflow: "visible",
