@@ -673,12 +673,12 @@ const SessionPlayer = () => {
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={styles.iconButtonPreview}
+          style={styles.primaryIconButtonPreview}
           onPress={voiceStatus.playing ? handlePause : handlePlay}
         >
           <Image
             source={voiceStatus.playing ? images.pause_icon : images.play_icon}
-            style={styles.iconPreviewImage}
+            style={styles.primaryIconPreviewImage}
             resizeMode="contain"
           />
         </TouchableOpacity>
@@ -780,10 +780,11 @@ const styles = StyleSheet.create({
   iconRow: {
     // borderWidth:1,
     width: "100%",
-    marginTop: 24,
+    // marginTop: 24,
     flexDirection: "row",
     // flexWrap: "wrap",
     justifyContent: "space-between",
+    alignItems:"center",
     gap: 16,
   },
   iconButtonPreview: {
@@ -792,8 +793,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  primaryIconButtonPreview: {
+    width: 44,
+    height: 44,
+  },
   iconPreviewImage: {
-    width: 32,
-    height: 32,
+    width: 24,
+    height: 24,
+  },
+  primaryIconPreviewImage: {
+    width: 44,
+    height: 44,
   },
 });
