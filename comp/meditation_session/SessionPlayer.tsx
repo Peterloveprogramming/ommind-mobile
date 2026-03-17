@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   GestureResponderEvent,
   Image,
@@ -395,6 +395,12 @@ const SessionPlayer = () => {
   const [progressTrackWidth, setProgressTrackWidth] = useState(0);
   const [dragProgress, setDragProgress] = useState<number | null>(null);
   const [isBgmEnabled, setIsBgmEnabled] = useState(true);
+  const dragStartProgressRef = useRef(0);
+  const progressRef = useRef(0);
+  const durationRef = useRef(0);
+  const progressTrackWidthRef = useRef(0);
+  const voicePlayerRef = useRef(voicePlayer);
+  const bgmPlayerRef = useRef(bgmPlayer);
 
   useEffect(() => {
     const meditationType = getSingleParam(params.type);
@@ -498,6 +504,12 @@ const SessionPlayer = () => {
   const currentTime = voiceStatus.currentTime || 0;
   const progress = duration > 0 ? Math.min(currentTime / duration, 1) : 0;
   const displayedProgress = dragProgress ?? progress;
+  const clampProgress = (value: number) => Math.max(0, Math.min(value, 1));
+  progressRef.current = progress;
+  durationRef.current = duration;
+  progressTrackWidthRef.current = progressTrackWidth;
+  voicePlayerRef.current = voicePlayer;
+  bgmPlayerRef.current = bgmPlayer;
   const progressPercentage = useMemo(() => `${displayedProgress * 100}%`, [displayedProgress]);
   const trackerOffset = useMemo(() => {
     if (!progressTrackWidth) {
@@ -508,11 +520,11 @@ const SessionPlayer = () => {
   }, [displayedProgress, progressTrackWidth]);
 
   const seekToTime = async (seconds: number) => {
-    const clampedSeconds = Math.max(0, Math.min(seconds, duration || 0));
+    const clampedSeconds = Math.max(0, Math.min(seconds, durationRef.current || 0));
 
     await Promise.all([
-      voicePlayer.seekTo(clampedSeconds),
-      bgmPlayer.seekTo(clampedSeconds),
+      voicePlayerRef.current.seekTo(clampedSeconds),
+      bgmPlayerRef.current.seekTo(clampedSeconds),
     ]);
   };
 
@@ -543,31 +555,36 @@ const SessionPlayer = () => {
         onStartShouldSetPanResponder: () => true,
         onMoveShouldSetPanResponder: () => true,
         onPanResponderGrant: () => {
-          setDragProgress(progress);
+          dragStartProgressRef.current = progressRef.current;
+          setDragProgress(dragStartProgressRef.current);
         },
         onPanResponderMove: (_, gestureState) => {
-          if (!progressTrackWidth) {
+          if (!progressTrackWidthRef.current) {
             return;
           }
 
-          const nextProgress = Math.max(0, Math.min(progress + gestureState.dx / progressTrackWidth, 1));
+          const nextProgress = clampProgress(
+            dragStartProgressRef.current + gestureState.dx / progressTrackWidthRef.current,
+          );
           setDragProgress(nextProgress);
         },
         onPanResponderRelease: (_, gestureState) => {
-          if (!duration || !progressTrackWidth) {
+          if (!durationRef.current || !progressTrackWidthRef.current) {
             setDragProgress(null);
             return;
           }
 
-          const nextProgress = Math.max(0, Math.min(progress + gestureState.dx / progressTrackWidth, 1));
+          const nextProgress = clampProgress(
+            dragStartProgressRef.current + gestureState.dx / progressTrackWidthRef.current,
+          );
           setDragProgress(null);
-          void seekToTime(nextProgress * duration);
+          void seekToTime(nextProgress * durationRef.current);
         },
         onPanResponderTerminate: () => {
           setDragProgress(null);
         },
       }),
-    [duration, progress, progressTrackWidth],
+    [],
   );
 
   const handlePlay = () => {
