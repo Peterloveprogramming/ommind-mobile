@@ -394,6 +394,7 @@ const SessionPlayer = () => {
   const bgmStatus = useAudioPlayerStatus(bgmPlayer);
   const [progressTrackWidth, setProgressTrackWidth] = useState(0);
   const [dragProgress, setDragProgress] = useState<number | null>(null);
+  const [isBgmEnabled, setIsBgmEnabled] = useState(true);
 
   useEffect(() => {
     const meditationType = getSingleParam(params.type);
@@ -445,9 +446,12 @@ const SessionPlayer = () => {
 
     voicePlayer.volume = 1;
     voicePlayer.loop = false;
-    bgmPlayer.volume = 0.2;
     bgmPlayer.loop = true;
   }, [audioUrl, bgmUrl, bgmPlayer, voicePlayer]);
+
+  useEffect(() => {
+    bgmPlayer.volume = isBgmEnabled ? 0.2 : 0;
+  }, [bgmPlayer, isBgmEnabled]);
 
   useEffect(() => {
     console.log("voice status", {
@@ -605,6 +609,10 @@ const SessionPlayer = () => {
     void bgmPlayer.seekTo(0);
   };
 
+  const handleToggleBgm = () => {
+    setIsBgmEnabled((currentValue) => !currentValue);
+  };
+
   return (
     <ImageBackground
       source={backgroundUrl ? { uri: backgroundUrl } : undefined}
@@ -687,12 +695,13 @@ const SessionPlayer = () => {
           <Image source={images.skip_forwards} style={styles.iconPreviewImage} resizeMode="contain" />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.iconButtonPreview} onPress={() => console.log("music_false pressed")}>
-          <Image source={images.music_false} style={styles.iconPreviewImage} resizeMode="contain" />
+        <TouchableOpacity style={styles.iconButtonPreview} onPress={handleToggleBgm}>
+          <Image
+            source={isBgmEnabled ? images.music_true : images.music_false}
+            style={styles.iconPreviewImage}
+            resizeMode="contain"
+          />
         </TouchableOpacity>
-        {/* <TouchableOpacity style={styles.iconButtonPreview} onPress={() => console.log("music_true pressed")}>
-          <Image source={images.music_true} style={styles.iconPreviewImage} resizeMode="contain" />
-        </TouchableOpacity> */}
 
 
        </View>
