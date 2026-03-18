@@ -371,6 +371,19 @@ const getSingleParam = (value?: string | string[]) => {
   return value;
 };
 
+const parseSessionTitles = (value?: string) => {
+  if (!value) {
+    return {};
+  }
+
+  try {
+    const parsedValue = JSON.parse(value);
+    return typeof parsedValue === "object" && parsedValue !== null ? parsedValue as Record<string, string> : {};
+  } catch {
+    return {};
+  }
+};
+
 
 const SessionPlayer = () => {
   const router = useRouter();
@@ -378,6 +391,7 @@ const SessionPlayer = () => {
     image_url?: string | string[];
     backgroundUrl?: string | string[];
     title?: string | string[];
+    session_titles?: string | string[];
     type?: string | string[];
     course_number?: string | string[];
     session_number?: string | string[];
@@ -385,10 +399,13 @@ const SessionPlayer = () => {
   }>();
   const backgroundUrl = getSingleParam(params.backgroundUrl);
   const image_url = getSingleParam(params.image_url);
-  const title = getSingleParam(params.title);
+  const fallbackTitle = getSingleParam(params.title);
+  const sessionTitlesParam = getSingleParam(params.session_titles);
   const meditationType = getSingleParam(params.type);
   const courseNumber = Number(getSingleParam(params.course_number));
   const sessionNumber = Number(getSingleParam(params.session_number));
+  const sessionTitles = useMemo(() => parseSessionTitles(sessionTitlesParam), [sessionTitlesParam]);
+  const title = sessionTitles[String(sessionNumber)] ?? fallbackTitle;
 
   const { status, result, error, fetchMeditationAudioUrl } = useMeditationAudioService();
   const audioUrl = result?.data?.audio?.[0] ?? null;
@@ -511,6 +528,7 @@ const SessionPlayer = () => {
         title,
         course_number: String(courseNumber),
         session_number: String(sessionNumber + 1),
+        session_titles: sessionTitlesParam ?? "",
         type: meditationType,
         image_url: image_url ?? "",
         backgroundUrl: backgroundUrl ?? "",

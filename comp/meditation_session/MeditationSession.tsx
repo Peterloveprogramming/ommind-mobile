@@ -21,6 +21,7 @@ type SessionCardProps = {
   meditationType: string;
   imageUrl: string;
   backgroundUrl: string;
+  sessionTitles: string;
 };
 
 type TagProps = {
@@ -36,6 +37,7 @@ const SessionCard = ({
   meditationType,
   imageUrl,
   backgroundUrl,
+  sessionTitles,
 }: SessionCardProps) => {
   const router = useRouter();
   const showLock = locked;
@@ -78,7 +80,7 @@ const SessionCard = ({
           type: meditationType,
           image_url: imageUrl,
           backgroundUrl:backgroundUrl,
-
+          session_titles: sessionTitles,
         },
       })
     }
@@ -140,6 +142,13 @@ const MeditationSession = () => {
     );
   }
 
+  const sessionTitles = JSON.stringify(
+    courseDetails.sessions.reduce<Record<string, string>>((titlesBySession, session) => {
+      titlesBySession[String(session.session_number)] = `Session ${session.session_number}: ${session.session_title}`;
+      return titlesBySession;
+    }, {}),
+  );
+
   return (
     <View style={styles.container}>
           <ScrollView
@@ -192,6 +201,7 @@ const MeditationSession = () => {
                   meditationType={courseDetails.type}
                   imageUrl={courseDetails.image_url}
                   backgroundUrl={courseDetails.background_url}
+                  sessionTitles={sessionTitles}
                 />
               ))}
 
