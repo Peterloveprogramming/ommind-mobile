@@ -424,6 +424,7 @@ const SessionPlayer = () => {
   const voicePlayerRef = useRef(voicePlayer);
   const bgmPlayerRef = useRef(bgmPlayer);
   const isAdvancingSessionRef = useRef(false);
+  const hasAutoPlayedRef = useRef(false);
 
   useEffect(() => {
     if (!meditationType || Number.isNaN(courseNumber) || Number.isNaN(sessionNumber)) {
@@ -477,6 +478,29 @@ const SessionPlayer = () => {
   useEffect(() => {
     bgmPlayer.volume = isBgmEnabled ? 0.2 : 0;
   }, [bgmPlayer, isBgmEnabled]);
+
+  useEffect(() => {
+    if (hasAutoPlayedRef.current || !audioUrl || !bgmUrl) {
+      return;
+    }
+
+    if (!voiceStatus.isLoaded || !bgmStatus.isLoaded || voiceStatus.playing || bgmStatus.playing) {
+      return;
+    }
+
+    hasAutoPlayedRef.current = true;
+    bgmPlayer.play();
+    voicePlayer.play();
+  }, [
+    audioUrl,
+    bgmStatus.isLoaded,
+    bgmStatus.playing,
+    bgmPlayer,
+    voicePlayer,
+    bgmUrl,
+    voiceStatus.isLoaded,
+    voiceStatus.playing,
+  ]);
 
   useEffect(() => {
     console.log("voice status", {
