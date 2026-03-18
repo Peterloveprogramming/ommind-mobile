@@ -406,6 +406,10 @@ const SessionPlayer = () => {
   const sessionNumber = Number(getSingleParam(params.session_number));
   const sessionTitles = useMemo(() => parseSessionTitles(sessionTitlesParam), [sessionTitlesParam]);
   const title = sessionTitles[String(sessionNumber)] ?? fallbackTitle;
+  const sessionNumbers = useMemo(
+    () => Object.keys(sessionTitles).map(Number).filter((value) => !Number.isNaN(value)).sort((a, b) => a - b),
+    [sessionTitles],
+  );
 
   const { status, result, error, fetchMeditationAudioUrl } = useMeditationAudioService();
   const audioUrl = result?.data?.audio?.[0] ?? null;
@@ -543,22 +547,28 @@ const SessionPlayer = () => {
       return;
     }
 
+    const nextSessionNumber = sessionNumber + 1;
+    if (sessionNumbers.length > 0 && !sessionTitles[String(nextSessionNumber)]) {
+      return;
+    }
+
     isAdvancingSessionRef.current = true;
+    voicePlayer.pause();
     bgmPlayer.pause();
     void bgmPlayer.seekTo(0);
     router.replace({
       pathname: "/meditation_session/player",
       params: {
-        title,
+        title: sessionTitles[String(nextSessionNumber)] ?? title,
         course_number: String(courseNumber),
-        session_number: String(sessionNumber + 1),
+        session_number: String(nextSessionNumber),
         session_titles: sessionTitlesParam ?? "",
         type: meditationType,
         image_url: image_url ?? "",
         backgroundUrl: backgroundUrl ?? "",
       },
     });
-  }, [backgroundUrl, bgmPlayer, courseNumber, image_url, meditationType, router, sessionNumber, title, voiceStatus.didJustFinish]);
+  }, [backgroundUrl, bgmPlayer, courseNumber, image_url, meditationType, router, sessionNumber, sessionNumbers.length, sessionTitles, sessionTitlesParam, title, voicePlayer, voiceStatus.didJustFinish]);
 
   const duration = voiceStatus.duration || 0;
   const currentTime = voiceStatus.currentTime || 0;
@@ -596,12 +606,44 @@ const SessionPlayer = () => {
     ]);
   };
 
+  const navigateToSession = (nextSessionNumber: number) => {
+    if (
+      !meditationType ||
+      Number.isNaN(courseNumber) ||
+      Number.isNaN(nextSessionNumber) ||
+      nextSessionNumber < 1 ||
+      isAdvancingSessionRef.current
+    ) {
+      return;
+    }
+
+    if (sessionNumbers.length > 0 && !sessionTitles[String(nextSessionNumber)]) {
+      return;
+    }
+
+    isAdvancingSessionRef.current = true;
+    voicePlayer.pause();
+    bgmPlayer.pause();
+    router.replace({
+      pathname: "/meditation_session/player",
+      params: {
+        title: sessionTitles[String(nextSessionNumber)] ?? title,
+        course_number: String(courseNumber),
+        session_number: String(nextSessionNumber),
+        session_titles: sessionTitlesParam ?? "",
+        type: meditationType,
+        image_url: image_url ?? "",
+        backgroundUrl: backgroundUrl ?? "",
+      },
+    });
+  };
+
   const handleSkipBackward = () => {
-    void seekToTime(currentTime - SEEK_STEP_SECONDS);
+    navigateToSession(sessionNumber - 1);
   };
 
   const handleSkipForward = () => {
-    void seekToTime(currentTime + SEEK_STEP_SECONDS);
+    navigateToSession(sessionNumber + 1);
   };
 
   const handleProgressPress = (event: GestureResponderEvent) => {
