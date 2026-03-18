@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
+  ActivityIndicator,
   GestureResponderEvent,
   Image,
   ImageBackground,
@@ -11,7 +12,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import {
   setAudioModeAsync,
   setIsAudioActiveAsync,
@@ -372,6 +373,7 @@ const getSingleParam = (value?: string | string[]) => {
 
 
 const SessionPlayer = () => {
+  const router = useRouter();
   const params = useLocalSearchParams<{
     image_url?: string | string[];
     backgroundUrl?: string | string[];
@@ -384,6 +386,9 @@ const SessionPlayer = () => {
   const backgroundUrl = getSingleParam(params.backgroundUrl);
   const image_url = getSingleParam(params.image_url);
   const title = getSingleParam(params.title);
+  const meditationType = getSingleParam(params.type);
+  const courseNumber = Number(getSingleParam(params.course_number));
+  const sessionNumber = Number(getSingleParam(params.session_number));
 
   const { status, result, error, fetchMeditationAudioUrl } = useMeditationAudioService();
   const audioUrl = result?.data?.audio?.[0] ?? null;
@@ -401,12 +406,9 @@ const SessionPlayer = () => {
   const progressTrackWidthRef = useRef(0);
   const voicePlayerRef = useRef(voicePlayer);
   const bgmPlayerRef = useRef(bgmPlayer);
+  const isAdvancingSessionRef = useRef(false);
 
   useEffect(() => {
-    const meditationType = getSingleParam(params.type);
-    const courseNumber = Number(getSingleParam(params.course_number));
-    const sessionNumber = Number(getSingleParam(params.session_number));
-
     if (!meditationType || Number.isNaN(courseNumber) || Number.isNaN(sessionNumber)) {
         console.error("meditationType or courseNumber or sessionNumber is missing ")
       return;
@@ -417,7 +419,7 @@ const SessionPlayer = () => {
       course_number: courseNumber,
       session_number: sessionNumber,
     });
-  }, [fetchMeditationAudioUrl, params.course_number, params.session_number, params.type]);
+  }, [courseNumber, fetchMeditationAudioUrl, meditationType, sessionNumber]);
 
 
 
@@ -496,15 +498,37 @@ const SessionPlayer = () => {
       return;
     }
 
+    if (!meditationType || Number.isNaN(courseNumber) || Number.isNaN(sessionNumber) || isAdvancingSessionRef.current) {
+      return;
+    }
+
+    isAdvancingSessionRef.current = true;
     bgmPlayer.pause();
     void bgmPlayer.seekTo(0);
-  }, [bgmPlayer, voiceStatus.didJustFinish]);
+    router.replace({
+      pathname: "/meditation_session/player",
+      params: {
+        title,
+        course_number: String(courseNumber),
+        session_number: String(sessionNumber + 1),
+        type: meditationType,
+        image_url: image_url ?? "",
+        backgroundUrl: backgroundUrl ?? "",
+      },
+    });
+  }, [backgroundUrl, bgmPlayer, courseNumber, image_url, meditationType, router, sessionNumber, title, voiceStatus.didJustFinish]);
 
   const duration = voiceStatus.duration || 0;
   const currentTime = voiceStatus.currentTime || 0;
   const progress = duration > 0 ? Math.min(currentTime / duration, 1) : 0;
   const displayedProgress = dragProgress ?? progress;
   const clampProgress = (value: number) => Math.max(0, Math.min(value, 1));
+  const isAudioLoading =
+    status === "loading" ||
+    !voiceStatus.isLoaded ||
+    !bgmStatus.isLoaded ||
+    voiceStatus.isBuffering ||
+    bgmStatus.isBuffering;
   progressRef.current = progress;
   durationRef.current = duration;
   progressTrackWidthRef.current = progressTrackWidth;
@@ -655,6 +679,13 @@ const SessionPlayer = () => {
             <BookmarkButtonWhite onTouch={() => console.log("Bookmark pressed")} />
           </View>
 
+          {isAudioLoading ? (
+            <View style={styles.bufferingBadge}>
+              <ActivityIndicator size="small" color="#FFFFFF" />
+              <Text style={styles.bufferingText}>Buffering audio...</Text>
+            </View>
+          ) : null}
+
           <View style={styles.timeline}>
         <Pressable
           style={styles.progressTrack}
@@ -750,6 +781,24 @@ const styles = StyleSheet.create({
     marginRight: 12,
     fontFamily: FONTS.figtreeSemiBold,
     fontSize: 20,
+    color: "#FFFFFF",
+  },
+  bufferingBadge: {
+    alignSelf: "flex-start",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginTop: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: "rgba(255, 255, 255, 0.16)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.2)",
+  },
+  bufferingText: {
+    fontFamily: FONTS.figtreeMedium,
+    fontSize: 13,
     color: "#FFFFFF",
   },
   image:{
