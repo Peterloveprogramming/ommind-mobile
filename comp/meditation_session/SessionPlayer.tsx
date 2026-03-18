@@ -753,9 +753,11 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
   },
   image:{
-    marginTop: 125,
-    height: 300,
-    width: 300,
+  marginTop: 125,
+  height: 300,
+  width: 300,
+  borderRadius: 25,
+  overflow: "hidden",
   },
   timeline: {
     width: "95%",

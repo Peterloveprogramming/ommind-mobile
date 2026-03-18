@@ -170,7 +170,7 @@ const MeditationSession = () => {
                 </Text>
                 <BookmarkButton onTouch={() => console.log("Bookmark pressed")} />
               </View>
-              <Text style={{fontFamily:FONTS.figtreeMedium,color:"#8B8B8B",fontSize:16}}>By Ommind</Text>
+              <Text style={{fontFamily:FONTS.figtreeMedium,color:"#8B8B8B",fontSize:16}}>By OmMind</Text>
 
               <BaseButton
                 onPress={() => console.log("helloman")}
@@ -186,7 +186,7 @@ const MeditationSession = () => {
                   key={session.session_number}
                   title={`Session ${session.session_number}: ${session.session_title}`}
                   completed={false}
-                  locked={index !== 0}
+                  locked={false}
                   courseNumber={courseDetails.course_number}
                   sessionNumber={session.session_number}
                   meditationType={courseDetails.type}
