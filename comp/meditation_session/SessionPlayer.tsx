@@ -565,12 +565,14 @@ const SessionPlayer = () => {
   const progress = duration > 0 ? Math.min(currentTime / duration, 1) : 0;
   const displayedProgress = dragProgress ?? progress;
   const clampProgress = (value: number) => Math.max(0, Math.min(value, 1));
-  const isAudioLoading =
-    status === "loading" ||
-    !voiceStatus.isLoaded ||
-    !bgmStatus.isLoaded ||
-    voiceStatus.isBuffering ||
-    bgmStatus.isBuffering;
+  const isWaitingForInitialAudio =
+    !voiceStatus.playing &&
+    !bgmStatus.playing &&
+    (status === "loading" ||
+      !voiceStatus.isLoaded ||
+      !bgmStatus.isLoaded ||
+      voiceStatus.isBuffering ||
+      bgmStatus.isBuffering);
   progressRef.current = progress;
   durationRef.current = duration;
   progressTrackWidthRef.current = progressTrackWidth;
@@ -721,7 +723,7 @@ const SessionPlayer = () => {
             <BookmarkButtonWhite onTouch={() => console.log("Bookmark pressed")} />
           </View>
 
-          {isAudioLoading ? (
+          {isWaitingForInitialAudio ? (
             <View style={styles.bufferingBadge}>
               <ActivityIndicator size="small" color="#FFFFFF" />
               <Text style={styles.bufferingText}>Buffering audio...</Text>
