@@ -1,8 +1,6 @@
 import {Text,View,Image, TouchableOpacity} from 'react-native'
 import React from 'react'
 import { images } from '@/constants/images'
-import PauseButton from '@/assets/svg/chat/PauseButton'
-import PlayButton from '@/assets/svg/chat/PlayButton'
 
 type AiProps = {
     message: string;
@@ -37,7 +35,15 @@ const Ai = ({
                         justifyContent: "center",
                     }}
                 >
-                    {showPlayButton ? <PlayButton width={24} height={24} /> : <PauseButton width={24} height={24} />}
+                    <Image
+                        source={
+                            showPlayButton
+                              ? images.play_button_guided_meditation
+                              : images.pause_button_guided_meditation
+                        }
+                        style={{ width: 30, height: 30 }}
+                        resizeMode="contain"
+                    />
                 </TouchableOpacity>
             ) : null}
             </View>
