@@ -6,7 +6,6 @@ import { useEffect, useState } from "react";
 import BackButton from "@/comp/headers/BackButton";
 import MoreButton from "@/comp/headers/MoreButton";
 import LhamoHeader from "@/comp/headers/LhamoHeader";
-import OpenChatHistoryButton from "@/comp/headers/OpenChatHistoryButton";
 import * as SplashScreen from "expo-splash-screen";
 import { useFonts as useFigtree, Figtree_400Regular,Figtree_600SemiBold, Figtree_700Bold } from "@expo-google-fonts/figtree";
 import { useFonts as useInter, Inter_400Regular, Inter_600SemiBold, Inter_500Medium } from "@expo-google-fonts/inter";
@@ -150,7 +149,7 @@ export default function RootLayout() {
 
         
         <Stack.Screen
-          name="chat/[id]"
+          name="chat/index"
           options={{
             headerTitle: () => <LhamoHeader />,
             headerShown: true,
@@ -159,7 +158,7 @@ export default function RootLayout() {
           />
 
         <Stack.Screen
-          name="chat/history/[id]"
+          name="chat/history"
           options={{
             headerShown: false,
             presentation: "transparentModal",

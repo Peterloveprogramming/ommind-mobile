@@ -23,8 +23,8 @@ const Rinpoche = () => {
     <View style={styles.rinpocheContainer}>
       <TouchableOpacity 
            onPress={() => router.push({
-                pathname: '/chat/[id]',
-                params: { id: 1, session_id: generateUniqueId() }
+                pathname: '/chat',
+                params: { session_id: generateUniqueId() }
               })} 
       >
       <Image source={images.rinpoche_normal} style={styles.rinpocheImage} />

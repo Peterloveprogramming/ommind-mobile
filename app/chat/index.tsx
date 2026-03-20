@@ -31,7 +31,7 @@ type ChatMessage = {
 };
 
 const SpiritualMentorChat = () => {
-    const { id, session_id } = useLocalSearchParams()
+    const { session_id } = useLocalSearchParams<{ session_id?: string | string[] }>()
     const router = useRouter();
     const navigation = useNavigation();
     const [keyboardHeight, setKeyboardHeight] = useState(0);
@@ -79,25 +79,14 @@ const SpiritualMentorChat = () => {
         headerRight: () => (
           <OpenChatHistoryButton
             onTouch={() => {
-              if (!id) {
-                return;
-              }
-
-              router.push({
-                pathname: "/chat/history/[id]",
-                params: {
-                  id: String(id),
-                  ...(session_id ? { session_id: String(session_id) } : {}),
-                },
-              });
+              router.push("/chat/history");
             }}
           />
         ),
       });
-    }, [id, navigation, router, session_id]);
+    }, [navigation, router, session_id]);
 
     console.log("session_id is",session_id)
-    console.log("id is",id)
     if (!session_id){
       showToastMessage("session_id is is not present",false);
     }
