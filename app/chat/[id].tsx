@@ -237,6 +237,7 @@ const SpiritualMentorChat = () => {
     useEffect(()=>{
       let loadingMessageTimeout: ReturnType<typeof setTimeout> | null = null;
       if (isAiLoading){
+        console.log("ai is loading...")
         loadingMessageTimeout = setTimeout(() => {
           setMessages(prevMessages => [...prevMessages, { ai: "loading", id: generateRandomNumber() }]);
         }, 1000); 

@@ -420,6 +420,7 @@ const SessionPlayer = () => {
   const bgmStatus = useAudioPlayerStatus(bgmPlayer);
   const [progressTrackWidth, setProgressTrackWidth] = useState(0);
   const [dragProgress, setDragProgress] = useState<number | null>(null);
+  const [isPlaybackEnabled, setIsPlaybackEnabled] = useState(false);
   const [isBgmEnabled, setIsBgmEnabled] = useState(true);
   const dragStartProgressRef = useRef(0);
   const progressRef = useRef(0);
@@ -547,7 +548,7 @@ const SessionPlayer = () => {
       return;
     }
 
-    const nextSessionNumber = sessionNumber + 1;
+    const nextSessionNumber = isPlaybackEnabled ? sessionNumber : sessionNumber + 1;
     if (sessionNumbers.length > 0 && !sessionTitles[String(nextSessionNumber)]) {
       return;
     }
@@ -568,7 +569,7 @@ const SessionPlayer = () => {
         backgroundUrl: backgroundUrl ?? "",
       },
     });
-  }, [backgroundUrl, bgmPlayer, courseNumber, image_url, meditationType, router, sessionNumber, sessionNumbers.length, sessionTitles, sessionTitlesParam, title, voicePlayer, voiceStatus.didJustFinish]);
+  }, [backgroundUrl, bgmPlayer, courseNumber, image_url, isPlaybackEnabled, meditationType, router, sessionNumber, sessionNumbers.length, sessionTitles, sessionTitlesParam, title, voicePlayer, voiceStatus.didJustFinish]);
 
   const duration = voiceStatus.duration || 0;
   const currentTime = voiceStatus.currentTime || 0;
@@ -740,6 +741,10 @@ const SessionPlayer = () => {
     setIsBgmEnabled((currentValue) => !currentValue);
   };
 
+  const handleTogglePlayback = () => {
+    setIsPlaybackEnabled((currentValue) => !currentValue);
+  };
+
   return (
     <ImageBackground
       source={backgroundUrl ? { uri: backgroundUrl } : undefined}
@@ -803,11 +808,12 @@ const SessionPlayer = () => {
 
        {/* icons  */}
        <View style={styles.iconRow}>
-        {/* <TouchableOpacity style={styles.iconButtonPreview} onPress={() => console.log("play_back_false pressed")}>
-          <Image source={images.play_back_false} style={styles.iconPreviewImage} resizeMode="contain" />
-        </TouchableOpacity> */}
-       <TouchableOpacity style={styles.iconButtonPreview} onPress={() => console.log("play_back_true pressed")}>
-          <Image source={images.play_back_true} style={styles.iconPreviewImage} resizeMode="contain" />
+       <TouchableOpacity style={styles.iconButtonPreview} onPress={handleTogglePlayback}>
+          <Image
+            source={isPlaybackEnabled ? images.play_back_true : images.play_back_false}
+            style={styles.iconPreviewImage}
+            resizeMode="contain"
+          />
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.iconButtonPreview} onPress={handleSkipBackward}>
