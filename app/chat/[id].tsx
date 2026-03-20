@@ -1,13 +1,14 @@
 import { StyleSheet,Text,View,TextInput, Platform, TouchableOpacity,FlatList,KeyboardAvoidingView, Keyboard, ActivityIndicator} from 'react-native'
-import React, { useEffect } from 'react'
+import React, { useEffect, useLayoutEffect } from 'react'
 import { useState,useRef } from 'react'
-import { useLocalSearchParams } from 'expo-router'
+import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router'
 import { generateRandomNumber } from '@/utils/helper'
 import SendButton from '@/assets/svg/chat/SendButton'
 import MicButton from '@/assets/svg/chat/MicButton' 
 import PrecautionButton from '@/assets/svg/chat/PrecautionButton'
 import Ai from '@/comp/chat/Ai'
 import Human from '@/comp/chat/Human'
+import OpenChatHistoryButton from '@/comp/headers/OpenChatHistoryButton'
 import useFetchAiMessage from '@/services/useFetchAiMessage'
 import { useToast } from '@/context/useToast'
 import { useWebsocketHexPcmAudio } from "@/services/useWebsocketHexPcmAudio";
@@ -31,6 +32,8 @@ type ChatMessage = {
 
 const SpiritualMentorChat = () => {
     const { id, session_id } = useLocalSearchParams()
+    const router = useRouter();
+    const navigation = useNavigation();
     const [keyboardHeight, setKeyboardHeight] = useState(0);
     const [isMicPressed, setIsMicPressed] = useState(false);
     const [inputText, setInputText] = useState("");
@@ -70,6 +73,28 @@ const SpiritualMentorChat = () => {
       playbackStatus === "buffering" ||
       playbackStatus === "playing" ||
       playbackStatus === "paused";
+
+    useLayoutEffect(() => {
+      navigation.setOptions({
+        headerRight: () => (
+          <OpenChatHistoryButton
+            onTouch={() => {
+              if (!id) {
+                return;
+              }
+
+              router.push({
+                pathname: "/chat/history/[id]",
+                params: {
+                  id: String(id),
+                  ...(session_id ? { session_id: String(session_id) } : {}),
+                },
+              });
+            }}
+          />
+        ),
+      });
+    }, [id, navigation, router, session_id]);
 
     console.log("session_id is",session_id)
     console.log("id is",id)

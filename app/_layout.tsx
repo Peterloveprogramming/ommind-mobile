@@ -155,7 +155,18 @@ export default function RootLayout() {
             headerTitle: () => <LhamoHeader />,
             headerShown: true,
             headerLeft:()=> <BackButton onTouch={() => router.back()} />,
-            headerRight:()=><OpenChatHistoryButton onTouch={() => console.log("Open chat history pressed")} />
+            }}
+          />
+
+        <Stack.Screen
+          name="chat/history/[id]"
+          options={{
+            headerShown: false,
+            presentation: "transparentModal",
+            animation: "slide_from_left",
+            contentStyle: {
+              backgroundColor: "transparent",
+            },
             }}
           />
         </Stack>
