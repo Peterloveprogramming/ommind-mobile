@@ -27,6 +27,8 @@ import play_back_false from "@/assets/images/meditation_session/play_back_false.
 import play_back_true from "@/assets/images/meditation_session/play_back_true.png";
 import play_button_guided_meditation from "@/assets/images/ai_chat/play_button_guided_meditation.png";
 import pause_button_guided_meditation from "@/assets/images/ai_chat/pause_button_guided_meditation.png";
+import replay_button from "@/assets/images/ai_chat/replay_button.png";
+import favourite_button from "@/assets/images/ai_chat/favourite_button.png";
 
 export const images = {
   welcome_background,
@@ -58,4 +60,6 @@ export const images = {
   play_back_true,
   play_button_guided_meditation,
   pause_button_guided_meditation,
+  replay_button,
+  favourite_button,
 };
