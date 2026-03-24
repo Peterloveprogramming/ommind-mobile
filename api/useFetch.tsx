@@ -46,10 +46,11 @@ export function useFetch <ResultType> ({
             if (userInfo){
                 if (input){
                     input.jwt_token = userInfo.jwtToken
+                    input.user_id = userInfo.userId
                 }
             } 
         }
-        
+        console.log("the input is",input)
         const response = await fetch(url,{
             method,
             ...DEFAULT_FETCH_OPTIONS,//const

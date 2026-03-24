@@ -1,5 +1,9 @@
-import React from "react";
+import { LambdaResult } from "@/api/types";
+import useChatHistory from "@/services/useChatHistory";
+import { useRouter } from "expo-router";
+import React, { useEffect } from "react";
 import {
+  ActivityIndicator,
   ScrollView,
   StyleSheet,
   Text,
@@ -9,35 +13,27 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-const sampleHistory = [
-  {
-    id: "1",
-    title: "Morning grounding",
-    preview: "We talked about settling anxious thoughts before work.",
-    timestamp: "Today",
-  },
-  {
-    id: "2",
-    title: "Sleep reset",
-    preview: "Breathing pattern and a short evening routine.",
-    timestamp: "Yesterday",
-  },
-  {
-    id: "3",
-    title: "Meditation follow-up",
-    preview: "Questions after the guided meditation session.",
-    timestamp: "Mar 18",
-  },
-];
-
 type ChatHistoryPanelProps = {
   onClose: () => void;
 };
 
 const ChatHistoryPanel = ({ onClose }: ChatHistoryPanelProps) => {
+  const router = useRouter();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const panelWidth = width * 0.75;
+  const { chatHistories, isLoading, error, fetchChatHistories } = useChatHistory();
+
+  useEffect(() => {
+    void fetchChatHistories();
+  }, [fetchChatHistories]);
+
+  const handleHistoryPress = (historyItem: LambdaResult.ChatHistoryItem) => {
+    router.replace({
+      pathname: "/chat",
+      params: { session_id: historyItem.session_id },
+    });
+  };
 
   return (
     <View style={[styles.panel, { width: panelWidth, paddingTop: insets.top + 16 }]}>
@@ -53,20 +49,56 @@ const ChatHistoryPanel = ({ onClose }: ChatHistoryPanelProps) => {
       </View>
 
       <Text style={styles.description}>
-        This page is ready for your real history data and item layout.
+        Your recent Lhamo sessions are loaded from the API.
       </Text>
 
       <ScrollView
         contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 24 }]}
         showsVerticalScrollIndicator={false}
       >
-        {sampleHistory.map((item) => (
-          <TouchableOpacity key={item.id} style={styles.historyCard} activeOpacity={0.85}>
-            <Text style={styles.historyTime}>{item.timestamp}</Text>
-            <Text style={styles.historyTitle}>{item.title}</Text>
-            <Text style={styles.historyPreview}>{item.preview}</Text>
-          </TouchableOpacity>
-        ))}
+        {isLoading ? (
+          <View style={styles.stateCard}>
+            <ActivityIndicator size="small" color="#7C6F5E" />
+            <Text style={styles.stateText}>Loading chat history...</Text>
+          </View>
+        ) : null}
+
+        {!isLoading && error ? (
+          <View style={styles.stateCard}>
+            <Text style={styles.stateTitle}>Couldn't load history</Text>
+            <Text style={styles.stateText}>{error}</Text>
+            <TouchableOpacity
+              onPress={() => {
+                void fetchChatHistories();
+              }}
+              style={styles.retryButton}
+            >
+              <Text style={styles.retryButtonText}>Try again</Text>
+            </TouchableOpacity>
+          </View>
+        ) : null}
+
+        {!isLoading && !error && chatHistories.length === 0 ? (
+          <View style={styles.stateCard}>
+            <Text style={styles.stateTitle}>No chat history yet</Text>
+            <Text style={styles.stateText}>Your completed sessions will appear here.</Text>
+          </View>
+        ) : null}
+
+        {!isLoading &&
+          !error &&
+          chatHistories.map((item) => (
+            <TouchableOpacity
+              key={item.session_id}
+              style={styles.historyCard}
+              activeOpacity={0.85}
+              onPress={() => handleHistoryPress(item)}
+            >
+              <Text style={styles.historyTime}>Session</Text>
+              <Text style={styles.historyTitle}>{item.title}</Text>
+              <Text style={styles.historyPreview}>{item.session_id}</Text>
+            </TouchableOpacity>
+          ))}
       </ScrollView>
     </View>
   );
@@ -148,6 +180,38 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
     color: "#4B5563",
+  },
+  stateCard: {
+    backgroundColor: "#FFFDF8",
+    borderRadius: 18,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: "#E9E1D2",
+    alignItems: "center",
+    gap: 10,
+  },
+  stateTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#1F2937",
+    textAlign: "center",
+  },
+  stateText: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: "#4B5563",
+    textAlign: "center",
+  },
+  retryButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: "#E7DDCB",
+  },
+  retryButtonText: {
+    color: "#4B5563",
+    fontSize: 13,
+    fontWeight: "600",
   },
 });
 

@@ -34,6 +34,7 @@ export type LambdaRequest = {
             "jwt_valid"|
             "save_registration_question_answers" |
             "chat" |
+            "get_chat_history" |
             "get_audio_url" |
             "get_all_courses" |
             "get_meditation_course_details",
@@ -75,5 +76,11 @@ export namespace LambdaResult {
     jwt_token: string;
   }>;
 
-}
+  export type ChatHistoryItem = {
+    title: string;
+    session_id: string;
+  };
 
+  export type GetChatHistoryResult = LambdaResult<ChatHistoryItem[]>;
+
+}

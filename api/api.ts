@@ -3,6 +3,7 @@ import {useGetTodo} from './useTodoApi/requests'
 import {useCreateUser, useLoginUser} from './lambda/useUserApi/requests'
 import {useSaveAnswersForRegistrationQuestions} from './lambda/useRegistrationQuestionApi/requests'
 import { useChatAi } from "./lambda/useAiChatApi/requests";
+import { useGetChatHistory } from "./lambda/useChatHistoryApi/requests";
 //Supplier
 export const useSupplierApi = () => {
     const {
@@ -93,6 +94,18 @@ export const useChatAiApi =() => {
     return {
         chatAi:{
             chatAi
+        }
+    }
+}
+
+export const useChatHistoryApi = () => {
+    const {
+        getChatHistory
+    } = useGetChatHistory()
+
+    return {
+        getChatHistory: {
+            getChatHistory
         }
     }
 }
