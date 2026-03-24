@@ -26,7 +26,7 @@ const ChatHistoryPanel = ({ onClose }: ChatHistoryPanelProps) => {
 
   useEffect(() => {
     void fetchChatHistories();
-  }, [fetchChatHistories]);
+  }, []);
 
   const handleHistoryPress = (historyItem: LambdaResult.ChatHistoryItem) => {
     router.replace({
