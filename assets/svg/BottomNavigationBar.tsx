@@ -1,7 +1,6 @@
 
-
 import * as React from "react";
-import { View,Text,TouchableOpacity,StyleSheet,Image} from "react-native";
+import { View, TouchableOpacity, StyleSheet, Image, ActivityIndicator } from "react-native";
 import Svg, {
   ForeignObject,
   Path,
@@ -11,23 +10,52 @@ import Svg, {
   Stop,
 } from "react-native-svg";
 import {images} from "@/constants/images";
-import { useRouter } from 'expo-router';
+import { usePathname, useRouter } from 'expo-router';
 import { generateUniqueId } from '@/utils/helper';
 /* SVGR has dropped some elements not supported by react-native-svg: div */
 
 
 const Rinpoche = () => {
   const router = useRouter(); // Initialize the router
+  const pathname = usePathname();
+  const [isNavigating, setIsNavigating] = React.useState(false);
+
+  React.useEffect(() => {
+    setIsNavigating(false);
+  }, [pathname]);
+
+  const handlePress = () => {
+    if (isNavigating) {
+      return;
+    }
+
+    setIsNavigating(true);
+    setTimeout(() => {
+      setIsNavigating(false);
+    }, 1500);
+
+    router.push({
+      pathname: '/chat',
+      params: { session_id: generateUniqueId() }
+    });
+  };
+
   return (
   
     <View style={styles.rinpocheContainer}>
       <TouchableOpacity 
-           onPress={() => router.push({
-                pathname: '/chat',
-                params: { session_id: generateUniqueId() }
-              })} 
+           onPress={handlePress}
+           disabled={isNavigating}
+           activeOpacity={isNavigating ? 1 : 0.7}
       >
-      <Image source={images.rinpoche_normal} style={styles.rinpocheImage} />
+      <View>
+        <Image source={images.rinpoche_normal} style={[styles.rinpocheImage, isNavigating && styles.rinpocheImageDisabled]} />
+        {isNavigating ? (
+          <View style={styles.loadingOverlay}>
+            <ActivityIndicator color="#FFFFFF" size="small" />
+          </View>
+        ) : null}
+      </View>
       </TouchableOpacity> 
     </View>
   );
@@ -96,5 +124,17 @@ const styles = StyleSheet.create({
     height: "100%",
     resizeMode: "contain",
     // borderWidth:3,
+  },
+  rinpocheImageDisabled: {
+    opacity: 0.6,
+  },
+  loadingOverlay: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });
