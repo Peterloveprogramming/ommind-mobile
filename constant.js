@@ -1,5 +1,5 @@
 // const URL = "https://api.hulolo.xyz";
-const URL = "https://eb6b-185-13-153-44.ngrok-free.app";
+const URL = "https://00b2-185-13-153-51.ngrok-free.app";
 
 //export constants 
 export const LAMBDA_SERVICE_URL=URL + "/2015-03-31/functions/function/invocations"
@@ -14,4 +14,4 @@ const DEBUG = true
 //mode constants
 export const GENERAL = "general"
 export const MEDITATION = "meditation"
-export const GUIDED_MEDITATION = "guided meditation"
+export const GUIDED_MEDITATION = "guided_meditation"

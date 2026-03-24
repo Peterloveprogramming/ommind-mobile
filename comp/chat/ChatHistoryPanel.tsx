@@ -31,7 +31,10 @@ const ChatHistoryPanel = ({ onClose }: ChatHistoryPanelProps) => {
   const handleHistoryPress = (historyItem: LambdaResult.ChatHistoryItem) => {
     router.replace({
       pathname: "/chat",
-      params: { session_id: historyItem.session_id },
+      params: {
+        session_id: historyItem.session_id,
+        existing_chat: "true",
+      },
     });
   };
 
