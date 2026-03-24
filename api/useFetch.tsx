@@ -29,7 +29,7 @@ export function useFetch <ResultType> ({
         useAuthFromCache=true
     }:UseFetchProps){
     const router = useRouter();
-
+    
     const commonFetch = async({
         input,
         fetchOptions

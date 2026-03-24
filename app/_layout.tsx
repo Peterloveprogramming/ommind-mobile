@@ -151,8 +151,10 @@ export default function RootLayout() {
         <Stack.Screen
           name="chat/index"
           options={{
+            title: "",
             headerTitle: () => <LhamoHeader />,
             headerShown: true,
+            headerBackTitleVisible: false,
             headerLeft:()=> <BackButton onTouch={() => router.back()} />,
             }}
           />
