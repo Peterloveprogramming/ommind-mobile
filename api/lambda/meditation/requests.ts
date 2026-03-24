@@ -15,7 +15,7 @@ export const useMeditationApi = () => {
   >({
     url: LAMBDA_SERVICE_URL,
     method: "POST",
-    clearUserInfoFromCacheIfUnauthorized: true,
+    clearUserInfoFromCacheIfUnauthorized: false,
     useAuthFromCache: true,
   });
 
