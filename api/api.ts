@@ -4,6 +4,7 @@ import {useCreateUser, useLoginUser} from './lambda/useUserApi/requests'
 import {useSaveAnswersForRegistrationQuestions} from './lambda/useRegistrationQuestionApi/requests'
 import { useChatAi } from "./lambda/useAiChatApi/requests";
 import { useGetChatHistory } from "./lambda/useChatHistoryApi/requests";
+import { useGetChatMessagesBySessionId } from "./lambda/useChatMessagesApi/requests";
 //Supplier
 export const useSupplierApi = () => {
     const {
@@ -106,6 +107,18 @@ export const useChatHistoryApi = () => {
     return {
         getChatHistory: {
             getChatHistory
+        }
+    }
+}
+
+export const useChatMessagesApi = () => {
+    const {
+        getChatMessagesBySessionId
+    } = useGetChatMessagesBySessionId()
+
+    return {
+        getChatMessagesBySessionId: {
+            getChatMessagesBySessionId
         }
     }
 }

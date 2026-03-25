@@ -35,6 +35,7 @@ export type LambdaRequest = {
             "save_registration_question_answers" |
             "chat" |
             "get_chat_history" |
+            "get_chat_messages_by_session_id" |
             "get_audio_url" |
             "get_all_courses" |
             "get_meditation_course_details",
@@ -82,5 +83,25 @@ export namespace LambdaResult {
   };
 
   export type GetChatHistoryResult = LambdaResult<ChatHistoryItem[]>;
+
+  export type ChatMessageItem = {
+    id: number;
+    session_id: string;
+    user_id: number;
+    content: string;
+    role: string;
+    model: string | null;
+    classification: string | null;
+    needs_stage: string | null;
+    needs_categorization_reasoning: string | null;
+    needs_categorization_confidence: number | null;
+    rating: number | null;
+    archived: boolean;
+    created_at: string | null;
+    updated_at: string | null;
+    deleted_at: string | null;
+  };
+
+  export type GetChatMessagesBySessionIdResult = LambdaResult<ChatMessageItem[]>;
 
 }

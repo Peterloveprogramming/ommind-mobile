@@ -17,6 +17,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PlaybackStatus } from '@/services/hexPcmAudioPlayer';
 import { useHeaderHeight } from '@react-navigation/elements';
 import { useVoiceToText } from '@/services/useVoiceToText';
+import useChatMessagesBySessionId from '@/services/useChatMessagesBySessionId';
 
 const COMPOSER_BOTTOM_SPACE = 96;
 const ANDROID_KEYBOARD_CLEARANCE = 36;
@@ -31,14 +32,17 @@ type ChatMessage = {
 };
 
 const SpiritualMentorChat = () => {
-    const { session_id } = useLocalSearchParams<{ session_id?: string | string[] }>()
+    const { session_id, existing_chat } = useLocalSearchParams<{ session_id?: string | string[]; existing_chat?: string | string[] }>()
     const router = useRouter();
     const navigation = useNavigation();
     const [keyboardHeight, setKeyboardHeight] = useState(0);
     const [isMicPressed, setIsMicPressed] = useState(false);
     const [inputText, setInputText] = useState("");
+    const normalizedSessionId = Array.isArray(session_id) ? session_id[0] : session_id;
+    const isExistingChat = (Array.isArray(existing_chat) ? existing_chat[0] : existing_chat) === "true";
     const {showToastMessage} = useToast()
-    const {aiMessage,isAiLoading,aiError,aiMode,fetchMessage} = useFetchAiMessage(false,session_id);
+    const {aiMessage,isAiLoading,aiError,aiMode,fetchMessage} = useFetchAiMessage(false,normalizedSessionId ?? "");
+    const { fetchChatMessages } = useChatMessagesBySessionId();
     const { playAudio, playbackStatus, pause, resume, dispose } = useWebsocketHexPcmAudio();
     const {
       isRecording,
@@ -86,11 +90,38 @@ const SpiritualMentorChat = () => {
       });
     }, [navigation, router, session_id]);
 
-    console.log("session_id is",session_id)
-    if (!session_id){
-      showToastMessage("session_id is is not present",false);
-    }
+    useEffect(() => {
+      if (!normalizedSessionId) {
+        showToastMessage("session_id is not present", false);
+      }
+    }, [normalizedSessionId, showToastMessage]);
 
+    useEffect(() => {
+      if (!normalizedSessionId || !isExistingChat) {
+        return;
+      }
+
+      void (async () => {
+        const historyMessages = await fetchChatMessages({
+          sessionId: normalizedSessionId,
+          offset: 0,
+          limit: 25,
+        });
+
+        setMessages(
+          historyMessages.map((message) => ({
+            id: message.id,
+            human: message.role === "user" ? message.content : undefined,
+            ai: message.role !== "user" ? message.content : undefined,
+            mode: null,
+            showSpinner: false,
+            isPlaybackPaused: false,
+          }))
+        );
+      })();
+    }, []);
+
+    console.log("messages are",messages)
     const updateLatestGuidedMeditationMessage = (status: PlaybackStatus) => {
       setMessages(prevMessages => {
         const guidedMessageIndex = [...prevMessages]
