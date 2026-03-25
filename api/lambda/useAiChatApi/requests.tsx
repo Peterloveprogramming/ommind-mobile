@@ -7,7 +7,7 @@ type chatAiProps = {
     "question":string,
 }
 export const useChatAi = () => {
-    const {commonFetch} = useFetch<LambdaResult>({
+    const {commonFetch} = useFetch<LambdaResult.ChatResult>({
         url: LAMBDA_SERVICE_URL,
         method:"POST",
         clearUserInfoFromCacheIfUnauthorized:true,
@@ -27,4 +27,3 @@ export const useChatAi = () => {
     };
     return { chatAi };
 }
-

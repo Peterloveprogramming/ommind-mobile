@@ -47,9 +47,9 @@ export type LambdaRequest = {
 //     response:"string"
 //     data:{[key:string]:any} | void;
 // }
-export type LambdaResult <T = void> = {
+export type LambdaResult <T = void, R = string> = {
     statusCode:number,
-    response:string,
+    response:R,
     data:T
 }
 
@@ -103,5 +103,9 @@ export namespace LambdaResult {
   };
 
   export type GetChatMessagesBySessionIdResult = LambdaResult<ChatMessageItem[]>;
+
+  export type ChatResult = LambdaResult<ChatMessageItem, ChatMessageItem> & {
+    mode?: string | null;
+  };
 
 }

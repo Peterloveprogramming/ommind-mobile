@@ -18,14 +18,16 @@ import { PlaybackStatus } from '@/services/hexPcmAudioPlayer';
 import { useHeaderHeight } from '@react-navigation/elements';
 import { useVoiceToText } from '@/services/useVoiceToText';
 import useChatMessagesBySessionId from '@/services/useChatMessagesBySessionId';
+import { LambdaResult } from '@/api/types';
 
 const COMPOSER_BOTTOM_SPACE = 96;
 const ANDROID_KEYBOARD_CLEARANCE = 36;
 
 type ChatMessage = {
-  id: number;
-  ai?: string;
-  human?: string;
+  id?: number;
+  role: "user" | "ai";
+  chatMessage?: LambdaResult.ChatMessageItem | null;
+  status?: "loading" | "ready";
   mode?: string | null;
   showSpinner?: boolean;
   isPlaybackPaused?: boolean;
@@ -105,15 +107,15 @@ const SpiritualMentorChat = () => {
         const historyMessages = await fetchChatMessages({
           sessionId: normalizedSessionId,
           offset: 0,
-          limit: 25,
+          limit: 50,
         });
 
         setMessages(
           historyMessages.map((message) => ({
-            id: message.id,
-            human: message.role === "user" ? message.content : undefined,
-            ai: message.role !== "user" ? message.content : undefined,
-            mode: null,
+            role: message.role === "user" ? "user" : "ai",
+            chatMessage: message,
+            status: "ready",
+            mode: message.classification,
             showSpinner: false,
             isPlaybackPaused: false,
           }))
@@ -141,7 +143,9 @@ const SpiritualMentorChat = () => {
           if (status === "ended") {
             return {
               ...message,
-              ai: "Guided meditation ended",
+              chatMessage: message.chatMessage
+                ? { ...message.chatMessage, content: "Guided meditation ended" }
+                : message.chatMessage,
               showSpinner: false,
               isPlaybackPaused: false,
             };
@@ -150,7 +154,9 @@ const SpiritualMentorChat = () => {
           if (status === "paused") {
             return {
               ...message,
-              ai: "Guided meditation paused",
+              chatMessage: message.chatMessage
+                ? { ...message.chatMessage, content: "Guided meditation paused" }
+                : message.chatMessage,
               isPlaybackPaused: true,
             };
           }
@@ -158,7 +164,9 @@ const SpiritualMentorChat = () => {
           if (status === "playing" || status === "buffering") {
             return {
               ...message,
-              ai: "Guided meditation playing",
+              chatMessage: message.chatMessage
+                ? { ...message.chatMessage, content: "Guided meditation playing" }
+                : message.chatMessage,
               isPlaybackPaused: false,
             };
           }
@@ -192,16 +200,25 @@ const SpiritualMentorChat = () => {
           const nextAiMessage: ChatMessage =
             aiMode === GUIDED_MEDITATION
               ? {
-                  ai: "Guided meditation playing",
-                  id: generateRandomNumber(),
+                  role: "ai",
+                  chatMessage: {
+                    ...aiMessage,
+                    content: "Guided meditation playing",
+                  },
+                  status: "ready",
                   mode: GUIDED_MEDITATION,
                   showSpinner: true,
                   isPlaybackPaused: false,
                 }
-              : { ai: String(aiMessage), id: generateRandomNumber(), mode: aiMode };
+              : {
+                  role: "ai",
+                  chatMessage: aiMessage,
+                  status: "ready",
+                  mode: aiMode,
+                };
           const lastMessage = prevMessages[prevMessages.length - 1];
 
-          if (lastMessage && lastMessage.ai === "loading") {
+          if (lastMessage && lastMessage.status === "loading") {
             return [
               ...prevMessages.slice(0, -1),
               nextAiMessage
@@ -222,7 +239,7 @@ const SpiritualMentorChat = () => {
         Keyboard.dismiss();
         (async () => {
           try {
-            await playAudio(String(aiMessage));
+            await playAudio(aiMessage.content);
           } catch (error) {
             console.error("Play audio failed:", error);
           }
@@ -270,7 +287,7 @@ const SpiritualMentorChat = () => {
 
       setMessages(prevMessages => {
         const lastMessage = prevMessages[prevMessages.length - 1];
-        if (!lastMessage || lastMessage.ai !== "loading") {
+        if (!lastMessage || lastMessage.status !== "loading") {
           return prevMessages;
         }
 
@@ -284,7 +301,10 @@ const SpiritualMentorChat = () => {
       if (isAiLoading){
         console.log("ai is loading...")
         loadingMessageTimeout = setTimeout(() => {
-          setMessages(prevMessages => [...prevMessages, { ai: "loading", id: generateRandomNumber() }]);
+          setMessages(prevMessages => [
+            ...prevMessages,
+            { id: generateRandomNumber(), role: "ai", status: "loading" },
+          ]);
         }, 1000); 
       }
 
@@ -340,7 +360,28 @@ const SpiritualMentorChat = () => {
       showToastMessage("Voice note is currently converting. Please wait a moment.", false);
       return;
     }
-    const newMessage: ChatMessage = { human: inputText, id: generateRandomNumber() };
+    const optimisticMessageId = generateRandomNumber();
+    const newMessage: ChatMessage = {
+      role: "user",
+      chatMessage: {
+        id: optimisticMessageId,
+        session_id: normalizedSessionId ?? "",
+        user_id: 0,
+        content: inputText,
+        role: "user",
+        model: null,
+        classification: null,
+        needs_stage: null,
+        needs_categorization_reasoning: null,
+        needs_categorization_confidence: null,
+        rating: null,
+        archived: false,
+        created_at: null,
+        updated_at: null,
+        deleted_at: null,
+      },
+      status: "ready",
+    };
 
     // 1. Update state
     setMessages(prevMessages => [...prevMessages, newMessage]);
@@ -380,19 +421,34 @@ const SpiritualMentorChat = () => {
                 keyboardShouldPersistTaps="handled"
                 keyboardDismissMode={Platform.OS === "ios" ? "interactive" : "on-drag"}
                 onContentSizeChange={() => scrollToLatestMessage(0)}
-                keyExtractor={(item) => item.id.toString()} 
+                keyExtractor={(item) => String(item.chatMessage?.id ?? item.id)} 
                 renderItem={({ item }) => { 
-                  if (item.ai) {
+                  if (item.status === "loading") {
                       return (
                         <Ai
-                          message={item.ai}
+                          message="loading"
                           showPlaybackControl={item.showSpinner}
                           showPlayButton={item.isPlaybackPaused}
                           onPlaybackControlPress={handleGuidedMeditationPlaybackPress}
                         />
                       );
-                  } else if (item.human) {
-                      return <Human message={item.human} />;
+                  }
+
+                  if (!item.chatMessage) {
+                    return null;
+                  }
+
+                  if (item.role === "ai") {
+                      return (
+                        <Ai
+                          message={item.chatMessage.content}
+                          showPlaybackControl={item.showSpinner}
+                          showPlayButton={item.isPlaybackPaused}
+                          onPlaybackControlPress={handleGuidedMeditationPlaybackPress}
+                        />
+                      );
+                  } else if (item.role === "user") {
+                      return <Human message={item.chatMessage.content} />;
                   }
                     return null;
                 }}

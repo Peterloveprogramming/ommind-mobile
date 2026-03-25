@@ -1,5 +1,6 @@
 import { useChatAiApi } from "@/api/api";
 import { useState,useCallback } from "react"
+import { LambdaResult } from "@/api/types";
 import { checkIfLambdaResultIsSuccess } from "@/utils/helper";
 import { useToast } from "@/context/useToast";
 import { GENERAL } from "@/constant";
@@ -15,10 +16,10 @@ const getRandomQuote = () => {
 };
 
 export default function useFetchAiMessage (testMode:boolean = true,session_id:string) {
-    const [aiMessage,setAiMessage] = useState<String|null>();
+    const [aiMessage,setAiMessage] = useState<LambdaResult.ChatMessageItem | null>(null);
     const [aiMode, setAiMode] = useState<string | null>(null);
     const [isAiLoading,setIsAiLoading] = useState<boolean>(false);
-    const [aiError,setIsAiError] = useState<String|null>();
+    const [aiError,setIsAiError] = useState<string | null>(null);
     const {chatAi:{chatAi}} = useChatAiApi()
     const {showToastMessage} = useToast()
 
@@ -32,7 +33,23 @@ export default function useFetchAiMessage (testMode:boolean = true,session_id:st
             await new Promise(resolve => setTimeout(resolve, 6000)); // Use await for delay
 
             const randomQuote = getRandomQuote();
-            setAiMessage(randomQuote);
+            setAiMessage({
+              id: Date.now(),
+              session_id,
+              user_id: 0,
+              content: randomQuote,
+              role: "assistant",
+              model: null,
+              classification: GENERAL,
+              needs_stage: null,
+              needs_categorization_reasoning: null,
+              needs_categorization_confidence: null,
+              rating: null,
+              archived: false,
+              created_at: null,
+              updated_at: null,
+              deleted_at: null,
+            });
             setAiMode(GENERAL);
 
         } catch (error) { 
@@ -91,8 +108,14 @@ export default function useFetchAiMessage (testMode:boolean = true,session_id:st
           }
           //TODO: if the mode is GUIDED_MEDITATION then we want to 
           console.log("the response is",response)
-          setAiMessage(response.response)
-          setAiMode(typeof (response as { mode?: unknown }).mode === "string" ? (response as { mode: string }).mode : null)
+          setAiMessage(response.data ?? response.response ?? null)
+          setAiMode(
+            typeof response.mode === "string"
+              ? response.mode
+              : typeof response.data?.classification === "string"
+                ? response.data.classification
+                : null
+          )
           setIsAiLoading(false)
           setIsAiError(null)
         } catch (err) {
@@ -103,7 +126,7 @@ export default function useFetchAiMessage (testMode:boolean = true,session_id:st
         } finally {
           setIsAiLoading(false)
         }
-    }, []);
+    }, [chatAi, session_id, showToastMessage]);
     let fetchMessage 
 
     if (testMode){
