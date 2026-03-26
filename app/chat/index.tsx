@@ -97,7 +97,6 @@ const SpiritualMentorChat = () => {
         showToastMessage("session_id is not present", false);
       }
     }, [normalizedSessionId, showToastMessage]);
-
     useEffect(() => {
       let isCancelled = false;
 
@@ -448,6 +447,8 @@ const SpiritualMentorChat = () => {
                           showPlaybackControl={item.showPlayBackControl}
                           showPlayButton={item.isPlaybackPaused}
                           onPlaybackControlPress={handleGuidedMeditationPlaybackPress}
+                          message_id={item.id}
+                          session_id={session_id}
                         />
                       );
                   }
@@ -463,6 +464,8 @@ const SpiritualMentorChat = () => {
                           showPlaybackControl={item.showPlayBackControl}
                           showPlayButton={item.isPlaybackPaused}
                           onPlaybackControlPress={handleGuidedMeditationPlaybackPress}
+                          message_id={item.id}
+                          session_id={session_id}
                         />
                       );
                   } else if (item.role === "human") {

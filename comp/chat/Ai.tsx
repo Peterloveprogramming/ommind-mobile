@@ -10,6 +10,8 @@ type AiProps = {
     onReplayPress?: () => void;
     onFavouritePress?: () => void;
     showRating?:boolean;
+    message_id?:string|number;
+    session_id?:string|number
   };
 
   
@@ -21,9 +23,11 @@ const Ai = ({
     onReplayPress,
     onFavouritePress,
     showRating = true,
+    message_id,
+    session_id,
 }:AiProps) => {
     const [selectedRating, setSelectedRating] = useState(0);
-
+    console.log('message id and session id are',message_id,session_id)
     if (message == "loading"){
         return <Image source={images.lhamo_mini_loading}/>
     } else {
@@ -97,7 +101,7 @@ const Ai = ({
                         style={{height:1,borderWidth:0.5,width:"100%",borderColor:"#AFAFAF"}}
                     />
                         
-                        <View style={{ padding:15, flexDirection: "row", alignItems: "center", gap: 3 }}>
+                        <View style={{ padding:10, flexDirection: "row", alignItems: "center", gap: 3 }}>
                             <View 
                                 style={{flexDirection: "row",gap:3,backgroundColor:"#AFAFAF",paddingVertical:10, paddingHorizontal:10,borderWidth:0.5,borderColor:"#ffffff",borderRadius:50}}
                             >
