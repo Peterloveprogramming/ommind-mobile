@@ -25,7 +25,7 @@ const ANDROID_KEYBOARD_CLEARANCE = 36;
 
 type ChatMessage = {
   id?: number;
-  role: "user" | "ai";
+  role: "human" | "ai";
   chatMessage?: LambdaResult.ChatMessageItem | null;
   status?: "loading" | "ready";
   mode?: string | null;
@@ -110,9 +110,11 @@ const SpiritualMentorChat = () => {
           limit: 50,
         });
 
+        console.log("raw historyMessages", historyMessages);
+
         setMessages(
           historyMessages.map((message) => ({
-            role: message.role === "user" ? "user" : "ai",
+            role: message.role === "human" ? "human" : "ai",
             chatMessage: message,
             status: "ready",
             mode: message.classification,
@@ -362,13 +364,13 @@ const SpiritualMentorChat = () => {
     }
     const optimisticMessageId = generateRandomNumber();
     const newMessage: ChatMessage = {
-      role: "user",
+      role: "human",
       chatMessage: {
         id: optimisticMessageId,
         session_id: normalizedSessionId ?? "",
         user_id: 0,
         content: inputText,
-        role: "user",
+        role: "human",
         model: null,
         classification: null,
         needs_stage: null,
@@ -447,7 +449,7 @@ const SpiritualMentorChat = () => {
                           onPlaybackControlPress={handleGuidedMeditationPlaybackPress}
                         />
                       );
-                  } else if (item.role === "user") {
+                  } else if (item.role === "human") {
                       return <Human message={item.chatMessage.content} />;
                   }
                     return null;
