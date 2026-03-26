@@ -1,5 +1,5 @@
 import {Text,View,Image, TouchableOpacity} from 'react-native'
-import React from 'react'
+import React, { useState } from 'react'
 import { images } from '@/constants/images'
 
 type AiProps = {
@@ -20,73 +20,112 @@ const Ai = ({
     onPlaybackControlPress,
     onReplayPress,
     onFavouritePress,
-    showRating = false,
+    showRating = true,
 }:AiProps) => {
+    const [selectedRating, setSelectedRating] = useState(0);
+
     if (message == "loading"){
         return <Image source={images.lhamo_mini_loading}/>
     } else {
     return (
         <View style={{gap:10,marginBottom:10}}>
             <Image source={images.lhamo_mini}/>
-            <View style={{backgroundColor:"#8C8C8A",padding:15,maxWidth:"90%",borderRadius:10,flexDirection:"row",alignItems:"center",gap:8}}>
-            <Text style={{fontSize:16, color:"#FFFFFF",flexShrink:1}}>{message}</Text>
-            {showPlaybackControl ? (
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
-                    <TouchableOpacity
-                        onPress={onPlaybackControlPress}
-                        hitSlop={6}
-                        style={{
-                            width: 30,
-                            height: 30,
-                            alignItems: "center",
-                            justifyContent: "center",
-                        }}
-                    >
-                        <Image
-                            source={
-                                showPlayButton
-                                  ? images.play_button_guided_meditation
-                                  : images.pause_button_guided_meditation
-                            }
-                            style={{ width: 30, height: 30 }}
-                            resizeMode="contain"
-                        />
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        onPress={onReplayPress}
-                        hitSlop={6}
-                        style={{
-                            width: 30,
-                            height: 30,
-                            alignItems: "center",
-                            justifyContent: "center",
-                        }}
-                    >
-                        <Image
-                            source={images.replay_button}
-                            style={{ width: 30, height: 30 }}
-                            resizeMode="contain"
-                        />
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        onPress={onFavouritePress}
-                        hitSlop={6}
-                        style={{
-                            width: 30,
-                            height: 30,
-                            alignItems: "center",
-                            justifyContent: "center",
-                        }}
-                    >
-                        <Image
-                            source={images.favourite_button}
-                            style={{ width: 30, height: 30 }}
-                            resizeMode="contain"
-                        />
-                    </TouchableOpacity>
+            <View style={{backgroundColor:"#8C8C8A",maxWidth:"90%",borderRadius:10}}>
+                <View style={{padding:15,gap:12}}>
+                    <Text style={{fontSize:16, color:"#FFFFFF",flexShrink:1}}>{message}</Text>
+                    {showPlaybackControl ? (
+                        <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
+                            <TouchableOpacity
+                                onPress={onPlaybackControlPress}
+                                hitSlop={6}
+                                style={{
+                                    width: 30,
+                                    height: 30,
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                }}
+                            >
+                                <Image
+                                    source={
+                                        showPlayButton
+                                          ? images.play_button_guided_meditation
+                                          : images.pause_button_guided_meditation
+                                    }
+                                    style={{ width: 30, height: 30 }}
+                                    resizeMode="contain"
+                                />
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                onPress={onReplayPress}
+                                hitSlop={6}
+                                style={{
+                                    width: 30,
+                                    height: 30,
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                }}
+                            >
+                                <Image
+                                    source={images.replay_button}
+                                    style={{ width: 30, height: 30 }}
+                                    resizeMode="contain"
+                                />
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                onPress={onFavouritePress}
+                                hitSlop={6}
+                                style={{
+                                    width: 30,
+                                    height: 30,
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                }}
+                            >
+                                <Image
+                                    source={images.favourite_button}
+                                    style={{ width: 30, height: 30 }}
+                                    resizeMode="contain"
+                                />
+                            </TouchableOpacity>
+                        </View>
+                    ) : null}
                 </View>
-            ) : null}
-           
+             
+                {showRating ? (
+                    <>
+                    <View 
+                        style={{height:1,borderWidth:0.5,width:"100%",borderColor:"#AFAFAF"}}
+                    />
+                    
+                    <View style={{ padding:15, flexDirection: "row", alignItems: "center", gap: 3 }}>
+                        <View 
+                            style={{flexDirection: "row",gap:3,backgroundColor:"#AFAFAF",paddingVertical:10, paddingHorizontal:10,borderWidth:0.5,borderColor:"#ffffff",borderRadius:50}}
+                        >
+                        <Text style={{
+                            fontSize:15,
+                            color:"#ffffff"
+                        }}>Rate this Response:</Text>
+                        {Array.from({ length: 5 }, (_, index) => {
+                            const isFilled = index < selectedRating;
+
+                            return (
+                                <TouchableOpacity
+                                    key={index}
+                                    onPress={() => setSelectedRating(index + 1)}
+                                    hitSlop={6}
+                                >
+                                    <Image
+                                        source={isFilled ? images.star_filled : images.star_unfilled}
+                                        style={{ width: 24, height: 24 }}
+                                        resizeMode="contain"
+                                    />
+                                </TouchableOpacity>
+                            );
+                        })}
+                    </View>
+                    </View>
+                    </>
+                ) : null}
             </View>
         </View>
         )

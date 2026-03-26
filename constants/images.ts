@@ -29,6 +29,8 @@ import play_button_guided_meditation from "@/assets/images/ai_chat/play_button_g
 import pause_button_guided_meditation from "@/assets/images/ai_chat/pause_button_guided_meditation.png";
 import replay_button from "@/assets/images/ai_chat/replay_button.png";
 import favourite_button from "@/assets/images/ai_chat/favourite_button.png";
+import star_unfilled from "@/assets/images/ai_chat/star_unfilled.png";
+import star_filled from "@/assets/images/ai_chat/star_filled.png";
 import open_chat_history from "@/assets/images/header/open_chat_history.png";
 
 export const images = {
@@ -63,5 +65,7 @@ export const images = {
   pause_button_guided_meditation,
   replay_button,
   favourite_button,
+  star_unfilled,
+  star_filled,
   open_chat_history,
 };
