@@ -9,6 +9,7 @@ type AiProps = {
     onPlaybackControlPress?: () => void;
     onReplayPress?: () => void;
     onFavouritePress?: () => void;
+    showRating?:boolean;
   };
 
   
@@ -19,6 +20,7 @@ const Ai = ({
     onPlaybackControlPress,
     onReplayPress,
     onFavouritePress,
+    showRating = false,
 }:AiProps) => {
     if (message == "loading"){
         return <Image source={images.lhamo_mini_loading}/>
@@ -84,6 +86,7 @@ const Ai = ({
                     </TouchableOpacity>
                 </View>
             ) : null}
+           
             </View>
         </View>
         )

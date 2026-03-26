@@ -1,4 +1,5 @@
 import { LambdaResult } from "@/api/types";
+import BaseButton from "@/comp/base/BaseButton";
 import useChatHistory from "@/services/useChatHistory";
 import { generateUniqueId } from "@/utils/helper";
 import { useRouter } from "expo-router";
@@ -123,13 +124,14 @@ const ChatHistoryPanel = ({ onClose }: ChatHistoryPanelProps) => {
         </TouchableOpacity>
       </View>
 
-      <TouchableOpacity
+      <BaseButton
+        text="New chat"
         onPress={handleNewChatPress}
-        activeOpacity={0.85}
+        height={52}
+        useIcon={false}
+        isLoading={false}
         style={styles.newChatButton}
-      >
-        <Text style={styles.newChatButtonText}>New chat</Text>
-      </TouchableOpacity>
+      />
 
       <ScrollView
         contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 24 }]}
@@ -230,7 +232,6 @@ const styles = StyleSheet.create({
     gap: 14,
   },
   newChatButton: {
-    backgroundColor: "#1F2937",
     borderRadius: 18,
     paddingVertical: 14,
     paddingHorizontal: 16,
