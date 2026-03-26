@@ -122,7 +122,7 @@ const SpiritualMentorChat = () => {
                 : message,
             status: "ready",
             mode: message.classification,
-            showPlayBackControl: message.classification === GUIDED_MEDITATION,
+            showPlayBackControl: false,
             isPlaybackPaused: true,
           }))
         );
