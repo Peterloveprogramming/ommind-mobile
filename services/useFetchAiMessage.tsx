@@ -108,13 +108,9 @@ export default function useFetchAiMessage (testMode:boolean = true,session_id:st
           }
           //TODO: if the mode is GUIDED_MEDITATION then we want to 
           console.log("the response is",response)
-          setAiMessage(response.data ?? response.response ?? null)
+          setAiMessage(response.data ?? null)
           setAiMode(
-            typeof response.mode === "string"
-              ? response.mode
-              : typeof response.data?.classification === "string"
-                ? response.data.classification
-                : null
+            response.data.classification
           )
           setIsAiLoading(false)
           setIsAiError(null)

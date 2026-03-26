@@ -29,7 +29,7 @@ type ChatMessage = {
   chatMessage?: LambdaResult.ChatMessageItem | null;
   status?: "loading" | "ready";
   mode?: string | null;
-  showSpinner?: boolean;
+  showPlayBackControl?: boolean;
   isPlaybackPaused?: boolean;
 };
 
@@ -114,12 +114,16 @@ const SpiritualMentorChat = () => {
 
         setMessages(
           historyMessages.map((message) => ({
+            id: message.id,
             role: message.role === "human" ? "human" : "ai",
-            chatMessage: message,
+            chatMessage:
+              message.classification === GUIDED_MEDITATION && message.role == "ai"
+                ? { ...message, content: "Guided meditation ended" }
+                : message,
             status: "ready",
             mode: message.classification,
-            showSpinner: false,
-            isPlaybackPaused: false,
+            showPlayBackControl: message.classification === GUIDED_MEDITATION,
+            isPlaybackPaused: true,
           }))
         );
       })();
@@ -130,7 +134,7 @@ const SpiritualMentorChat = () => {
       setMessages(prevMessages => {
         const guidedMessageIndex = [...prevMessages]
           .reverse()
-          .findIndex(message => message.mode === GUIDED_MEDITATION && message.showSpinner);
+          .findIndex(message => message.mode === GUIDED_MEDITATION && message.showPlayBackControl);
 
         if (guidedMessageIndex === -1) {
           return prevMessages;
@@ -148,7 +152,7 @@ const SpiritualMentorChat = () => {
               chatMessage: message.chatMessage
                 ? { ...message.chatMessage, content: "Guided meditation ended" }
                 : message.chatMessage,
-              showSpinner: false,
+              showPlayBackControl: false,
               isPlaybackPaused: false,
             };
           }
@@ -200,7 +204,7 @@ const SpiritualMentorChat = () => {
       if (aiMessage) {
         setMessages(prevMessages => {
           const nextAiMessage: ChatMessage =
-            aiMode === GUIDED_MEDITATION
+            aiMessage.classification === GUIDED_MEDITATION
               ? {
                   role: "ai",
                   chatMessage: {
@@ -208,15 +212,14 @@ const SpiritualMentorChat = () => {
                     content: "Guided meditation playing",
                   },
                   status: "ready",
-                  mode: GUIDED_MEDITATION,
-                  showSpinner: true,
+                  showPlayBackControl: true,
                   isPlaybackPaused: false,
                 }
               : {
                   role: "ai",
                   chatMessage: aiMessage,
                   status: "ready",
-                  mode: aiMode,
+                  
                 };
           const lastMessage = prevMessages[prevMessages.length - 1];
 
@@ -429,7 +432,7 @@ const SpiritualMentorChat = () => {
                       return (
                         <Ai
                           message="loading"
-                          showPlaybackControl={item.showSpinner}
+                          showPlaybackControl={item.showPlayBackControl}
                           showPlayButton={item.isPlaybackPaused}
                           onPlaybackControlPress={handleGuidedMeditationPlaybackPress}
                         />
@@ -444,7 +447,7 @@ const SpiritualMentorChat = () => {
                       return (
                         <Ai
                           message={item.chatMessage.content}
-                          showPlaybackControl={item.showSpinner}
+                          showPlaybackControl={item.showPlayBackControl}
                           showPlayButton={item.isPlaybackPaused}
                           onPlaybackControlPress={handleGuidedMeditationPlaybackPress}
                         />
