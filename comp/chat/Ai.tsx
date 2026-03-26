@@ -96,33 +96,43 @@ const Ai = ({
                     <View 
                         style={{height:1,borderWidth:0.5,width:"100%",borderColor:"#AFAFAF"}}
                     />
-                    
-                    <View style={{ padding:15, flexDirection: "row", alignItems: "center", gap: 3 }}>
-                        <View 
-                            style={{flexDirection: "row",gap:3,backgroundColor:"#AFAFAF",paddingVertical:10, paddingHorizontal:10,borderWidth:0.5,borderColor:"#ffffff",borderRadius:50}}
-                        >
-                        <Text style={{
-                            fontSize:15,
-                            color:"#ffffff"
-                        }}>Rate this Response:</Text>
-                        {Array.from({ length: 5 }, (_, index) => {
-                            const isFilled = index < selectedRating;
+                        
+                        <View style={{ padding:15, flexDirection: "row", alignItems: "center", gap: 3 }}>
+                            <View 
+                                style={{flexDirection: "row",gap:3,backgroundColor:"#AFAFAF",paddingVertical:10, paddingHorizontal:10,borderWidth:0.5,borderColor:"#ffffff",borderRadius:50}}
+                            >
+                            <Text style={{
+                                fontSize:15,
+                                color:"#ffffff"
+                            }}>Rate this Response:</Text>
+                            {Array.from({ length: 5 }, (_, index) => {
+                                const isFilled = index < selectedRating;
 
-                            return (
-                                <TouchableOpacity
-                                    key={index}
-                                    onPress={() => setSelectedRating(index + 1)}
-                                    hitSlop={6}
-                                >
-                                    <Image
-                                        source={isFilled ? images.star_filled : images.star_unfilled}
-                                        style={{ width: 24, height: 24 }}
-                                        resizeMode="contain"
-                                    />
-                                </TouchableOpacity>
-                            );
-                        })}
-                    </View>
+                                return (
+                                    <TouchableOpacity
+                                        key={index}
+                                        onPress={() => setSelectedRating(index + 1)}
+                                        hitSlop={6}
+                                    >
+                                        <Image
+                                            source={isFilled ? images.star_filled : images.star_unfilled}
+                                            style={{ width: 24, height: 24 }}
+                                            resizeMode="contain"
+                                        />
+                                    </TouchableOpacity>
+                                );
+                            })}
+                        </View>
+                        
+                        <TouchableOpacity
+                            style={{marginLeft:3}}
+                        >
+                            <Image
+                                source={images.report}
+                                style={{ width: 30, height: 30 }}
+                                resizeMode="contain"
+                            />
+                        </TouchableOpacity>
                     </View>
                     </>
                 ) : null}

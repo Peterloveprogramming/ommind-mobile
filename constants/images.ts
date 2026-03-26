@@ -31,6 +31,8 @@ import replay_button from "@/assets/images/ai_chat/replay_button.png";
 import favourite_button from "@/assets/images/ai_chat/favourite_button.png";
 import star_unfilled from "@/assets/images/ai_chat/star_unfilled.png";
 import star_filled from "@/assets/images/ai_chat/star_filled.png";
+import report from "@/assets/images/ai_chat/report.png";
+
 import open_chat_history from "@/assets/images/header/open_chat_history.png";
 
 export const images = {
@@ -68,4 +70,5 @@ export const images = {
   star_unfilled,
   star_filled,
   open_chat_history,
+  report
 };
