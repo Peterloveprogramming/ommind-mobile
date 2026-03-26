@@ -1,7 +1,8 @@
 import { LambdaResult } from "@/api/types";
 import useChatHistory from "@/services/useChatHistory";
+import { generateUniqueId } from "@/utils/helper";
 import { useRouter } from "expo-router";
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo } from "react";
 import {
   ActivityIndicator,
   ScrollView,
@@ -28,7 +29,44 @@ const ChatHistoryPanel = ({ onClose }: ChatHistoryPanelProps) => {
     void fetchChatHistories();
   }, []);
 
+  const groupedChatHistories = useMemo(() => {
+    const now = new Date();
+    const sevenDaysAgo = new Date(now);
+    sevenDaysAgo.setDate(now.getDate() - 7);
+
+    const sortedHistories = [...chatHistories].sort((firstItem, secondItem) => {
+      const firstTime = firstItem.last_message_at ? new Date(firstItem.last_message_at).getTime() : 0;
+      const secondTime = secondItem.last_message_at ? new Date(secondItem.last_message_at).getTime() : 0;
+      const normalizedFirstTime = Number.isNaN(firstTime) ? 0 : firstTime;
+      const normalizedSecondTime = Number.isNaN(secondTime) ? 0 : secondTime;
+      return normalizedSecondTime - normalizedFirstTime;
+    });
+
+    return sortedHistories.reduce(
+      (groups, historyItem) => {
+        const lastMessageAt = historyItem.last_message_at ? new Date(historyItem.last_message_at) : null;
+        const isWithinSevenDays =
+          lastMessageAt !== null &&
+          !Number.isNaN(lastMessageAt.getTime()) &&
+          lastMessageAt >= sevenDaysAgo;
+
+        if (isWithinSevenDays) {
+          groups.withinSevenDays.push(historyItem);
+        } else {
+          groups.earlier.push(historyItem);
+        }
+
+        return groups;
+      },
+      {
+        withinSevenDays: [] as LambdaResult.ChatHistoryItem[],
+        earlier: [] as LambdaResult.ChatHistoryItem[],
+      }
+    );
+  }, [chatHistories]);
+
   const handleHistoryPress = (historyItem: LambdaResult.ChatHistoryItem) => {
+    onClose();
     router.replace({
       pathname: "/chat",
       params: {
@@ -37,6 +75,40 @@ const ChatHistoryPanel = ({ onClose }: ChatHistoryPanelProps) => {
       },
     });
   };
+
+  const handleNewChatPress = () => {
+    onClose();
+    router.replace({
+      pathname: "/chat",
+      params: {
+        session_id: generateUniqueId(),
+        existing_chat: "false",
+      },
+    });
+  };
+
+  const renderHistorySection = (
+    title: string,
+    historyItems: LambdaResult.ChatHistoryItem[]
+  ) => (
+    <View style={styles.section} key={title}>
+      <Text style={styles.sectionTitle}>{title}</Text>
+      {historyItems.length === 0 ? (
+        <Text style={styles.emptySectionText}>No chats in this section.</Text>
+      ) : (
+        historyItems.map((item) => (
+          <TouchableOpacity
+            key={item.session_id}
+            style={styles.historyCard}
+            activeOpacity={0.85}
+            onPress={() => handleHistoryPress(item)}
+          >
+            <Text style={styles.historyTitle}>{item.title}</Text>
+          </TouchableOpacity>
+        ))
+      )}
+    </View>
+  );
 
   return (
     <View style={[styles.panel, { width: panelWidth, paddingTop: insets.top + 16 }]}>
@@ -51,9 +123,13 @@ const ChatHistoryPanel = ({ onClose }: ChatHistoryPanelProps) => {
         </TouchableOpacity>
       </View>
 
-      <Text style={styles.description}>
-        Your recent Lhamo sessions are loaded from the API.
-      </Text>
+      <TouchableOpacity
+        onPress={handleNewChatPress}
+        activeOpacity={0.85}
+        style={styles.newChatButton}
+      >
+        <Text style={styles.newChatButtonText}>New chat</Text>
+      </TouchableOpacity>
 
       <ScrollView
         contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 24 }]}
@@ -88,20 +164,12 @@ const ChatHistoryPanel = ({ onClose }: ChatHistoryPanelProps) => {
           </View>
         ) : null}
 
-        {!isLoading &&
-          !error &&
-          chatHistories.map((item) => (
-            <TouchableOpacity
-              key={item.session_id}
-              style={styles.historyCard}
-              activeOpacity={0.85}
-              onPress={() => handleHistoryPress(item)}
-            >
-              <Text style={styles.historyTime}>Session</Text>
-              <Text style={styles.historyTitle}>{item.title}</Text>
-              <Text style={styles.historyPreview}>{item.session_id}</Text>
-            </TouchableOpacity>
-          ))}
+        {!isLoading && !error && chatHistories.length > 0 ? (
+          <>
+            {renderHistorySection("Within 7 days", groupedChatHistories.withinSevenDays)}
+            {renderHistorySection("Earlier", groupedChatHistories.earlier)}
+          </>
+        ) : null}
       </ScrollView>
     </View>
   );
@@ -110,7 +178,7 @@ const ChatHistoryPanel = ({ onClose }: ChatHistoryPanelProps) => {
 const styles = StyleSheet.create({
   panel: {
     height: "100%",
-    backgroundColor: "#F8F3E8",
+    backgroundColor: "#FFFFFF",
     borderTopRightRadius: 24,
     borderBottomRightRadius: 24,
     paddingHorizontal: 18,
@@ -160,6 +228,33 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     gap: 14,
+  },
+  newChatButton: {
+    backgroundColor: "#1F2937",
+    borderRadius: 18,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    marginBottom: 18,
+  },
+  newChatButtonText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "700",
+    textAlign: "center",
+  },
+  section: {
+    gap: 10,
+  },
+  sectionTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#7C6F5E",
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
+  },
+  emptySectionText: {
+    fontSize: 14,
+    color: "#6B7280",
   },
   historyCard: {
     backgroundColor: "#FFFDF8",

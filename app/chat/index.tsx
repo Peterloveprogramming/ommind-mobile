@@ -99,8 +99,16 @@ const SpiritualMentorChat = () => {
     }, [normalizedSessionId, showToastMessage]);
 
     useEffect(() => {
+      let isCancelled = false;
+
+      void dispose();
+      setMessages([]);
+      setInputText("");
+
       if (!normalizedSessionId || !isExistingChat) {
-        return;
+        return () => {
+          isCancelled = true;
+        };
       }
 
       void (async () => {
@@ -110,7 +118,9 @@ const SpiritualMentorChat = () => {
           limit: 50,
         });
 
-        console.log("raw historyMessages", historyMessages);
+        if (isCancelled) {
+          return;
+        }
 
         setMessages(
           historyMessages.map((message) => ({
@@ -127,9 +137,12 @@ const SpiritualMentorChat = () => {
           }))
         );
       })();
+
+      return () => {
+        isCancelled = true;
+      };
     }, []);
 
-    console.log("messages are",messages)
     const updateLatestGuidedMeditationMessage = (status: PlaybackStatus) => {
       setMessages(prevMessages => {
         const guidedMessageIndex = [...prevMessages]
