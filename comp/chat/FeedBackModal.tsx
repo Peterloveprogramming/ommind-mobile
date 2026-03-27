@@ -80,6 +80,11 @@ const FeedBackModal = ({
 
   const characterCount = useMemo(() => comment.length, [comment]);
 
+  const handleClose = () => {
+    setSelectedIssues([]);
+    onClose();
+  };
+
   const handleDetailedRatingChange = (key: keyof DetailedRatings, rating: number) => {
     setDetailedRatings((current) => ({
       ...current,
@@ -115,7 +120,7 @@ const FeedBackModal = ({
       console.log("feedback submitted", payload);
     }
 
-    onClose();
+    handleClose();
   };
 
   const renderStars = (
@@ -143,7 +148,7 @@ const FeedBackModal = ({
   );
 
   return (
-    <Modal transparent animationType="fade" visible={visible} onRequestClose={onClose}>
+    <Modal transparent animationType="fade" visible={visible} onRequestClose={handleClose}>
       <View style={styles.overlay}>
         <View style={styles.card}>
           <ScrollView
@@ -153,7 +158,7 @@ const FeedBackModal = ({
           >
             <View style={styles.headerRow}>
               <Text style={styles.title}>Help us improve this response</Text>
-              <Pressable onPress={onClose} style={styles.closeButton} hitSlop={8}>
+              <Pressable onPress={handleClose} style={styles.closeButton} hitSlop={8}>
                 <Ionicons name="close" size={22} color="#F2F2F2" />
               </Pressable>
             </View>

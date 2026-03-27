@@ -38,8 +38,13 @@ const ReportProblem = ({
   session_id,
   message_id,
 }: ReportProblemProps) => {
-  const [selectedReason, setSelectedReason] = useState<string | null>(null);
+  const [selectedReasons, setSelectedReasons] = useState<string[]>([]);
   const [details, setDetails] = useState(DEFAULT_DETAILS_TEXT);
+
+  const handleClose = () => {
+    setSelectedReasons([]);
+    onClose();
+  };
 
   const wordCount = useMemo(() => {
     const trimmedDetails = details.trim();
@@ -63,15 +68,23 @@ const ReportProblem = ({
   };
 
   const handleSubmit = () => {
-    console.log("session id and message id and reason",session_id,message_id,selectedReason)
+    console.log("session id and message id and reasons", session_id, message_id, selectedReasons);
     const payload = {
       session_id,
       message_id,
-      reason: selectedReason,
+      reasons: selectedReasons,
       details: details === DEFAULT_DETAILS_TEXT ? "" : details.trim(),
     };
 
     void payload;
+  };
+
+  const handleReasonToggle = (option: string) => {
+    setSelectedReasons((current) =>
+      current.includes(option)
+        ? current.filter((reason) => reason !== option)
+        : [...current, option]
+    );
   };
 
   return (
@@ -79,13 +92,13 @@ const ReportProblem = ({
       transparent
       animationType="fade"
       visible={visible}
-      onRequestClose={onClose}
+      onRequestClose={handleClose}
     >
-      <Pressable style={styles.overlay} onPress={onClose}>
+      <Pressable style={styles.overlay} onPress={handleClose}>
         <Pressable style={styles.modalCard} onPress={(event) => event.stopPropagation()}>
           <View style={styles.header}>
             <Text style={styles.title}>Report a problem</Text>
-            <TouchableOpacity onPress={onClose} hitSlop={8} style={styles.closeButton}>
+            <TouchableOpacity onPress={handleClose} hitSlop={8} style={styles.closeButton}>
               <Ionicons name="close" size={22} color="#F2F2F2" />
             </TouchableOpacity>
           </View>
@@ -101,13 +114,13 @@ const ReportProblem = ({
 
             <View style={styles.optionGroup}>
               {REPORT_OPTIONS.map((option) => {
-                const isSelected = selectedReason === option;
+                const isSelected = selectedReasons.includes(option);
 
                 return (
                   <TouchableOpacity
                     key={option}
                     style={[styles.optionChip, isSelected && styles.optionChipSelected]}
-                    onPress={() => setSelectedReason(option)}
+                    onPress={() => handleReasonToggle(option)}
                     activeOpacity={0.85}
                   >
                     <Text style={[styles.optionChipText, isSelected && styles.optionChipTextSelected]}>
