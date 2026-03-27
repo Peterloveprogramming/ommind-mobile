@@ -447,8 +447,8 @@ const SpiritualMentorChat = () => {
                           showPlaybackControl={item.showPlayBackControl}
                           showPlayButton={item.isPlaybackPaused}
                           onPlaybackControlPress={handleGuidedMeditationPlaybackPress}
-                          message_id={item.id}
-                          session_id={session_id}
+                          message_id={item.chatMessage.id}
+                          session_id={item.chatMessage.session_id}
                         />
                       );
                   }
@@ -464,8 +464,8 @@ const SpiritualMentorChat = () => {
                           showPlaybackControl={item.showPlayBackControl}
                           showPlayButton={item.isPlaybackPaused}
                           onPlaybackControlPress={handleGuidedMeditationPlaybackPress}
-                          message_id={item.id}
-                          session_id={session_id}
+                          message_id={item.chatMessage.id}
+                          session_id={item.chatMessage.session_id}
                         />
                       );
                   } else if (item.role === "human") {

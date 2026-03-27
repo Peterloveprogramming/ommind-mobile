@@ -1,5 +1,5 @@
 // const URL = "https://api.hulolo.xyz";
-const URL = "https://00b2-185-13-153-51.ngrok-free.app";
+const URL = "https://44d0-185-13-153-77.ngrok-free.app";
 
 //export constants 
 export const LAMBDA_SERVICE_URL=URL + "/2015-03-31/functions/function/invocations"
