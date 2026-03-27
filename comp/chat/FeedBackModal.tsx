@@ -1,7 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useMemo, useState } from "react";
 import {
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -149,92 +151,101 @@ const FeedBackModal = ({
 
   return (
     <Modal transparent animationType="fade" visible={visible} onRequestClose={handleClose}>
-      <View style={styles.overlay}>
-        <View style={styles.card}>
-          <ScrollView
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-            contentContainerStyle={styles.content}
-          >
-            <View style={styles.headerRow}>
-              <Text style={styles.title}>Help us improve this response</Text>
-              <Pressable onPress={handleClose} style={styles.closeButton} hitSlop={8}>
-                <Ionicons name="close" size={22} color="#F2F2F2" />
-              </Pressable>
-            </View>
+      <KeyboardAvoidingView
+        style={styles.keyboardContainer}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
+        <View style={styles.overlay}>
+          <View style={styles.card}>
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              keyboardDismissMode="interactive"
+              contentContainerStyle={styles.content}
+            >
+              <View style={styles.headerRow}>
+                <Text style={styles.title}>Help us improve this response</Text>
+                <Pressable onPress={handleClose} style={styles.closeButton} hitSlop={8}>
+                  <Ionicons name="close" size={22} color="#F2F2F2" />
+                </Pressable>
+              </View>
 
-            {renderStars(overallRating, onOverallRatingChange, 30, 10)}
+              {renderStars(overallRating, onOverallRatingChange, 30, 10)}
 
-            <View style={styles.divider} />
+              <View style={styles.divider} />
 
-            <Text style={styles.sectionTitle}>Detailed Feedback</Text>
+              <Text style={styles.sectionTitle}>Detailed Feedback</Text>
 
-            <View style={styles.detailRows}>
-              {DETAIL_OPTIONS.map((item) => (
-                <View key={item.key} style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>{item.label}</Text>
-                  {renderStars(
-                    detailedRatings[item.key],
-                    (rating) => handleDetailedRatingChange(item.key, rating),
-                    24,
-                    6
-                  )}
-                </View>
-              ))}
-            </View>
+              <View style={styles.detailRows}>
+                {DETAIL_OPTIONS.map((item) => (
+                  <View key={item.key} style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>{item.label}</Text>
+                    {renderStars(
+                      detailedRatings[item.key],
+                      (rating) => handleDetailedRatingChange(item.key, rating),
+                      24,
+                      6
+                    )}
+                  </View>
+                ))}
+              </View>
 
-            <Text style={[styles.sectionTitle, styles.issueSectionTitle]}>What was the issue?</Text>
+              <Text style={[styles.sectionTitle, styles.issueSectionTitle]}>What was the issue?</Text>
 
-            <View style={styles.chipsContainer}>
-              {ISSUE_OPTIONS.map((issue) => {
-                const selected = selectedIssues.includes(issue);
+              <View style={styles.chipsContainer}>
+                {ISSUE_OPTIONS.map((issue) => {
+                  const selected = selectedIssues.includes(issue);
 
-                return (
-                  <Pressable
-                    key={issue}
-                    onPress={() => handleIssueToggle(issue)}
-                    style={[styles.chip, selected && styles.chipSelected]}
-                  >
-                    <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
-                      {issue}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
+                  return (
+                    <Pressable
+                      key={issue}
+                      onPress={() => handleIssueToggle(issue)}
+                      style={[styles.chip, selected && styles.chipSelected]}
+                    >
+                      <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
+                        {issue}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
 
-            <Text style={[styles.sectionTitle, styles.optionalLabel]}>Optional:</Text>
+              <Text style={[styles.sectionTitle, styles.optionalLabel]}>Optional:</Text>
 
-            <View style={styles.inputWrapper}>
-              <TextInput
-                value={comment}
-                onChangeText={handleCommentChange}
-                placeholder="Tell us what could be improved..."
-                placeholderTextColor="#B5B5B5"
-                multiline
-                maxLength={MAX_COMMENT_LENGTH}
-                textAlignVertical="top"
-                style={styles.input}
-              />
-              <Text style={styles.counterText}>
-                {characterCount}/{MAX_COMMENT_LENGTH}
-              </Text>
-            </View>
+              <View style={styles.inputWrapper}>
+                <TextInput
+                  value={comment}
+                  onChangeText={handleCommentChange}
+                  placeholder="Tell us what could be improved..."
+                  placeholderTextColor="#B5B5B5"
+                  multiline
+                  maxLength={MAX_COMMENT_LENGTH}
+                  textAlignVertical="top"
+                  style={styles.input}
+                />
+                <Text style={styles.counterText}>
+                  {characterCount}/{MAX_COMMENT_LENGTH}
+                </Text>
+              </View>
 
-            <View style={styles.submitRow}>
-              <Pressable onPress={handleSubmit} style={styles.submitButton}>
-                <Ionicons name="paper-plane-outline" size={18} color="#FFFFFF" />
-                <Text style={styles.submitText}>Submit</Text>
-              </Pressable>
-            </View>
-          </ScrollView>
+              <View style={styles.submitRow}>
+                <Pressable onPress={handleSubmit} style={styles.submitButton}>
+                  <Ionicons name="paper-plane-outline" size={18} color="#FFFFFF" />
+                  <Text style={styles.submitText}>Submit</Text>
+                </Pressable>
+              </View>
+            </ScrollView>
+          </View>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 };
 
 const styles = StyleSheet.create({
+  keyboardContainer: {
+    flex: 1,
+  },
   overlay: {
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.62)",
@@ -263,6 +274,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 22,
     paddingBottom: 26,
+    flexGrow: 1,
   },
   headerRow: {
     flexDirection: "row",

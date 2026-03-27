@@ -1,7 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useMemo, useState } from "react";
 import {
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -94,82 +96,91 @@ const ReportProblem = ({
       visible={visible}
       onRequestClose={handleClose}
     >
-      <Pressable style={styles.overlay} onPress={handleClose}>
-        <Pressable style={styles.modalCard} onPress={(event) => event.stopPropagation()}>
-          <View style={styles.header}>
-            <Text style={styles.title}>Report a problem</Text>
-            <TouchableOpacity onPress={handleClose} hitSlop={8} style={styles.closeButton}>
-              <Ionicons name="close" size={22} color="#F2F2F2" />
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.divider} />
-
-          <ScrollView
-            contentContainerStyle={styles.content}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-          >
-            <Text style={styles.sectionTitle}>What went wrong?</Text>
-
-            <View style={styles.optionGroup}>
-              {REPORT_OPTIONS.map((option) => {
-                const isSelected = selectedReasons.includes(option);
-
-                return (
-                  <TouchableOpacity
-                    key={option}
-                    style={[styles.optionChip, isSelected && styles.optionChipSelected]}
-                    onPress={() => handleReasonToggle(option)}
-                    activeOpacity={0.85}
-                  >
-                    <Text style={[styles.optionChipText, isSelected && styles.optionChipTextSelected]}>
-                      {option}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-
-            <View style={styles.detailsGroup}>
-              <Text style={styles.label}>Optional:</Text>
-              <View style={styles.inputWrapper}>
-                <TextInput
-                  value={details}
-                  onFocus={() => {
-                    if (details === DEFAULT_DETAILS_TEXT) {
-                      setDetails("");
-                    }
-                  }}
-                  onBlur={() => {
-                    if (!details.trim()) {
-                      setDetails(DEFAULT_DETAILS_TEXT);
-                    }
-                  }}
-                  onChangeText={handleChangeDetails}
-                  multiline
-                  textAlignVertical="top"
-                  placeholderTextColor="#D0D0D0"
-                  style={styles.input}
-                />
-                <Text style={styles.wordCount}>{wordCount}/{MAX_WORDS}</Text>
-              </View>
-            </View>
-
-            <View style={styles.submitRow}>
-              <TouchableOpacity style={styles.submitButton} onPress={handleSubmit} activeOpacity={0.85}>
-                <Ionicons name="paper-plane-outline" size={18} color="#FFFFFF" />
-                <Text style={styles.submitText}>Submit</Text>
+      <KeyboardAvoidingView
+        style={styles.keyboardContainer}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
+        <Pressable style={styles.overlay} onPress={handleClose}>
+          <Pressable style={styles.modalCard} onPress={(event) => event.stopPropagation()}>
+            <View style={styles.header}>
+              <Text style={styles.title}>Report a problem</Text>
+              <TouchableOpacity onPress={handleClose} hitSlop={8} style={styles.closeButton}>
+                <Ionicons name="close" size={22} color="#F2F2F2" />
               </TouchableOpacity>
             </View>
-          </ScrollView>
+
+            <View style={styles.divider} />
+
+            <ScrollView
+              contentContainerStyle={styles.content}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              keyboardDismissMode="interactive"
+            >
+              <Text style={styles.sectionTitle}>What went wrong?</Text>
+
+              <View style={styles.optionGroup}>
+                {REPORT_OPTIONS.map((option) => {
+                  const isSelected = selectedReasons.includes(option);
+
+                  return (
+                    <TouchableOpacity
+                      key={option}
+                      style={[styles.optionChip, isSelected && styles.optionChipSelected]}
+                      onPress={() => handleReasonToggle(option)}
+                      activeOpacity={0.85}
+                    >
+                      <Text style={[styles.optionChipText, isSelected && styles.optionChipTextSelected]}>
+                        {option}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+              <View style={styles.detailsGroup}>
+                <Text style={styles.label}>Optional:</Text>
+                <View style={styles.inputWrapper}>
+                  <TextInput
+                    value={details}
+                    onFocus={() => {
+                      if (details === DEFAULT_DETAILS_TEXT) {
+                        setDetails("");
+                      }
+                    }}
+                    onBlur={() => {
+                      if (!details.trim()) {
+                        setDetails(DEFAULT_DETAILS_TEXT);
+                      }
+                    }}
+                    onChangeText={handleChangeDetails}
+                    multiline
+                    textAlignVertical="top"
+                    placeholderTextColor="#D0D0D0"
+                    style={styles.input}
+                  />
+                  <Text style={styles.wordCount}>{wordCount}/{MAX_WORDS}</Text>
+                </View>
+              </View>
+
+              <View style={styles.submitRow}>
+                <TouchableOpacity style={styles.submitButton} onPress={handleSubmit} activeOpacity={0.85}>
+                  <Ionicons name="paper-plane-outline" size={18} color="#FFFFFF" />
+                  <Text style={styles.submitText}>Submit</Text>
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
+          </Pressable>
         </Pressable>
-      </Pressable>
+      </KeyboardAvoidingView>
     </Modal>
   );
 };
 
 const styles = StyleSheet.create({
+  keyboardContainer: {
+    flex: 1,
+  },
   overlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.48)",
@@ -219,6 +230,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 20,
     paddingBottom: 26,
+    flexGrow: 1,
   },
   sectionTitle: {
     fontSize: 17,
