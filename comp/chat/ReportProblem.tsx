@@ -1,6 +1,5 @@
-import BaseButton from "@/comp/base/BaseButton";
+import { Ionicons } from "@expo/vector-icons";
 import React, { useMemo, useState } from "react";
-import { COLORS } from "@/theme.js";
 import {
   Modal,
   Pressable,
@@ -85,20 +84,21 @@ const ReportProblem = ({
       <Pressable style={styles.overlay} onPress={onClose}>
         <Pressable style={styles.modalCard} onPress={(event) => event.stopPropagation()}>
           <View style={styles.header}>
-            <View>
-              <Text style={styles.title}>Report a Problem</Text>
-              <Text style={styles.subtitle}>Tell us what went wrong with this response.</Text>
-            </View>
-            <TouchableOpacity onPress={onClose} hitSlop={8}>
-              <Text style={styles.closeText}>Close</Text>
+            <Text style={styles.title}>Report a problem</Text>
+            <TouchableOpacity onPress={onClose} hitSlop={8} style={styles.closeButton}>
+              <Ionicons name="close" size={22} color="#F2F2F2" />
             </TouchableOpacity>
           </View>
+
+          <View style={styles.divider} />
 
           <ScrollView
             contentContainerStyle={styles.content}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
           >
+            <Text style={styles.sectionTitle}>What went wrong?</Text>
+
             <View style={styles.optionGroup}>
               {REPORT_OPTIONS.map((option) => {
                 const isSelected = selectedReason === option;
@@ -119,34 +119,36 @@ const ReportProblem = ({
             </View>
 
             <View style={styles.detailsGroup}>
-              <Text style={styles.label}>More details</Text>
-              <TextInput
-                value={details}
-                onFocus={() => {
-                  if (details === DEFAULT_DETAILS_TEXT) {
-                    setDetails("");
-                  }
-                }}
-                onBlur={() => {
-                  if (!details.trim()) {
-                    setDetails(DEFAULT_DETAILS_TEXT);
-                  }
-                }}
-                onChangeText={handleChangeDetails}
-                multiline
-                textAlignVertical="top"
-                style={styles.input}
-              />
-              <Text style={styles.wordCount}>{wordCount}/{MAX_WORDS} words</Text>
+              <Text style={styles.label}>Optional:</Text>
+              <View style={styles.inputWrapper}>
+                <TextInput
+                  value={details}
+                  onFocus={() => {
+                    if (details === DEFAULT_DETAILS_TEXT) {
+                      setDetails("");
+                    }
+                  }}
+                  onBlur={() => {
+                    if (!details.trim()) {
+                      setDetails(DEFAULT_DETAILS_TEXT);
+                    }
+                  }}
+                  onChangeText={handleChangeDetails}
+                  multiline
+                  textAlignVertical="top"
+                  placeholderTextColor="#D0D0D0"
+                  style={styles.input}
+                />
+                <Text style={styles.wordCount}>{wordCount}/{MAX_WORDS}</Text>
+              </View>
             </View>
 
-            <BaseButton
-              text="Submit"
-              onPress={handleSubmit}
-              height={48}
-              useIcon={false}
-              isLoading={false}
-            />
+            <View style={styles.submitRow}>
+              <TouchableOpacity style={styles.submitButton} onPress={handleSubmit} activeOpacity={0.85}>
+                <Ionicons name="paper-plane-outline" size={18} color="#FFFFFF" />
+                <Text style={styles.submitText}>Submit</Text>
+              </TouchableOpacity>
+            </View>
           </ScrollView>
         </Pressable>
       </Pressable>
@@ -157,94 +159,128 @@ const ReportProblem = ({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.45)",
+    backgroundColor: "rgba(0,0,0,0.48)",
     justifyContent: "center",
     alignItems: "center",
-    padding: 20,
+    padding: 12,
   },
   modalCard: {
     width: "100%",
-    maxWidth: 380,
-    maxHeight: "85%",
-    backgroundColor: "#F8F3E8",
-    borderRadius: 24,
-    padding: 20,
+    maxWidth: 560,
+    maxHeight: "92%",
+    backgroundColor: "#5A5A5A",
+    borderRadius: 28,
+    overflow: "hidden",
   },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "flex-start",
+    alignItems: "center",
     gap: 12,
-    marginBottom: 16,
+    paddingHorizontal: 20,
+    paddingTop: 28,
+    paddingBottom: 18,
   },
   title: {
     fontSize: 22,
     fontWeight: "700",
-    color: "#1F2937",
-    marginBottom: 4,
+    color: "#FFFFFF",
   },
-  subtitle: {
-    fontSize: 14,
-    lineHeight: 20,
-    color: "#6B7280",
-    maxWidth: 260,
+  closeButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#777777",
+    alignItems: "center",
+    justifyContent: "center",
   },
-  closeText: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#6B7280",
+  divider: {
+    height: 1,
+    backgroundColor: "rgba(255,255,255,0.55)",
   },
   content: {
-    gap: 18,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 26,
+  },
+  sectionTitle: {
+    fontSize: 17,
+    fontWeight: "700",
+    color: "#FFFFFF",
+    marginBottom: 16,
   },
   optionGroup: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 10,
+    marginBottom: 20,
   },
   optionChip: {
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 999,
-    backgroundColor: "#FFFDF8",
-    borderWidth: 1,
-    borderColor: "#E1D6C2",
+    backgroundColor: "transparent",
+    borderWidth: 1.5,
+    borderColor: "rgba(255,255,255,0.9)",
   },
   optionChipSelected: {
-    backgroundColor: COLORS.brandYellow,
-    borderColor: COLORS.brandYellow,
+    backgroundColor: "#F1C44E",
+    borderColor: "#F1C44E",
   },
   optionChipText: {
-    fontSize: 13,
-    color: "#4B5563",
+    fontSize: 14,
+    color: "#FFFFFF",
     textTransform: "capitalize",
   },
   optionChipTextSelected: {
-    color: "#ffff",
+    color: "#FFFFFF",
   },
   detailsGroup: {
-    gap: 8,
+    gap: 12,
   },
   label: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#1F2937",
+    fontSize: 17,
+    fontWeight: "700",
+    color: "#FFFFFF",
   },
-  input: {
-    minHeight: 120,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "#D9CCB6",
-    backgroundColor: "#FFFDF8",
+  inputWrapper: {
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: "rgba(255,255,255,0.8)",
+    backgroundColor: "#6A6A6A",
     paddingHorizontal: 14,
     paddingVertical: 12,
-    fontSize: 15,
-    color: "#1F2937",
+    marginBottom: 18,
+  },
+  input: {
+    minHeight: 80,
+    fontSize: 16,
+    color: "#FFFFFF",
+    padding: 0,
   },
   wordCount: {
     fontSize: 12,
-    color: "#6B7280",
+    color: "#F3F3F3",
     textAlign: "right",
+    marginTop: 8,
+  },
+  submitRow: {
+    alignItems: "center",
+  },
+  submitButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: "#F1C44E",
+    borderRadius: 999,
+    paddingHorizontal: 22,
+    paddingVertical: 12,
+  },
+  submitText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "700",
   },
 });
 
