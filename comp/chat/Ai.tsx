@@ -1,6 +1,7 @@
 import {Text,View,Image, TouchableOpacity} from 'react-native'
 import React, { useState } from 'react'
 import { images } from '@/constants/images'
+import FeedBackModal, { FeedBackPayload } from './FeedBackModal';
 import ReportProblem from './ReportProblem';
 
 type AiProps = {
@@ -12,7 +13,8 @@ type AiProps = {
     onFavouritePress?: () => void;
     showRating?:boolean;
     message_id?:string|number;
-    session_id?:string|number
+    session_id?:string|number;
+    onFeedbackSubmit?: (payload: FeedBackPayload) => void;
   };
 
   
@@ -26,9 +28,27 @@ const Ai = ({
     showRating = true,
     message_id,
     session_id,
+    onFeedbackSubmit,
 }:AiProps) => {
     const [selectedRating, setSelectedRating] = useState(0);
     const [isReportProblemVisible, setIsReportProblemVisible] = useState(false);
+    const [isFeedBackModalVisible, setIsFeedBackModalVisible] = useState(false);
+
+    const handleFeedBackModalClose = () => {
+        setIsFeedBackModalVisible(false);
+        setSelectedRating(0);
+    };
+
+    const handleRatingPress = (rating:number) => {
+        setSelectedRating(rating);
+
+        if (rating <= 3) {
+            setIsFeedBackModalVisible(true);
+        } else {
+            setIsFeedBackModalVisible(false);
+        }
+    };
+
     if (message == "loading"){
         return <Image source={images.lhamo_mini_loading}/>
     } else {
@@ -117,7 +137,7 @@ const Ai = ({
                                     return (
                                         <TouchableOpacity
                                             key={index}
-                                            onPress={() => setSelectedRating(index + 1)}
+                                            onPress={() => handleRatingPress(index + 1)}
                                             hitSlop={6}
                                         >
                                             <Image
@@ -150,6 +170,15 @@ const Ai = ({
                 onClose={() => setIsReportProblemVisible(false)}
                 session_id={session_id}
                 message_id={message_id}
+            />
+            <FeedBackModal
+                visible={isFeedBackModalVisible}
+                onClose={handleFeedBackModalClose}
+                overallRating={selectedRating}
+                onOverallRatingChange={setSelectedRating}
+                session_id={session_id}
+                message_id={message_id}
+                onSubmit={onFeedbackSubmit}
             />
         </>
         )
