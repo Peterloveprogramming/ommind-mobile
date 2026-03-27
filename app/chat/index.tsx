@@ -18,6 +18,7 @@ import { PlaybackStatus } from '@/services/hexPcmAudioPlayer';
 import { useHeaderHeight } from '@react-navigation/elements';
 import { useVoiceToText } from '@/services/useVoiceToText';
 import useChatMessagesBySessionId from '@/services/useChatMessagesBySessionId';
+import useMessageRating from '@/services/useMessageRating';
 import { LambdaResult } from '@/api/types';
 
 const COMPOSER_BOTTOM_SPACE = 96;
@@ -45,6 +46,7 @@ const SpiritualMentorChat = () => {
     const {showToastMessage} = useToast()
     const {aiMessage,isAiLoading,aiError,aiMode,fetchMessage} = useFetchAiMessage(false,normalizedSessionId ?? "");
     const { fetchChatMessages } = useChatMessagesBySessionId();
+    const { submitMessageRating, isLoading: isMessageRatingLoading } = useMessageRating();
     const { playAudio, playbackStatus, pause, resume, dispose } = useWebsocketHexPcmAudio();
     const {
       isRecording,
@@ -360,7 +362,7 @@ const SpiritualMentorChat = () => {
     };
   
 
-  const handleSend = () => {
+    const handleSend = () => {
 
     //checks 
     if (inputText.trim().length === 0) {
@@ -412,6 +414,32 @@ const SpiritualMentorChat = () => {
     // 4. Scroll to end (after state update has likely rendered)
     scrollToLatestMessage(500);
   };
+
+  const handlePositiveRatingSelect = async ({
+    rating,
+    message_id,
+    session_id: messageSessionId,
+  }: {
+    rating: number;
+    message_id?: string | number;
+    session_id?: string | number;
+  }) => {
+    if (rating <= 3 || !message_id || !messageSessionId || isMessageRatingLoading) {
+      return;
+    }
+
+    await submitMessageRating({
+      message_id,
+      session_id: messageSessionId,
+      rating,
+      helpfulness: null,
+      accuracy: null,
+      clarity: null,
+      tone: null,
+      issues: null,
+      other_details: null,
+    });
+  };
     
     return (
       <View style={styles.Parent}>
@@ -447,8 +475,10 @@ const SpiritualMentorChat = () => {
                           showPlaybackControl={item.showPlayBackControl}
                           showPlayButton={item.isPlaybackPaused}
                           onPlaybackControlPress={handleGuidedMeditationPlaybackPress}
-                          message_id={item.chatMessage.id}
-                          session_id={item.chatMessage.session_id}
+                          message_id={item.chatMessage?.id}
+                          session_id={item.chatMessage?.session_id}
+                          isRatingLoading={isMessageRatingLoading}
+                          onPositiveRatingSelect={handlePositiveRatingSelect}
                         />
                       );
                   }
@@ -466,6 +496,8 @@ const SpiritualMentorChat = () => {
                           onPlaybackControlPress={handleGuidedMeditationPlaybackPress}
                           message_id={item.chatMessage.id}
                           session_id={item.chatMessage.session_id}
+                          isRatingLoading={isMessageRatingLoading}
+                          onPositiveRatingSelect={handlePositiveRatingSelect}
                         />
                       );
                   } else if (item.role === "human") {

@@ -1,4 +1,4 @@
-import {Text,View,Image, TouchableOpacity} from 'react-native'
+import {Text,View,Image, TouchableOpacity, ActivityIndicator} from 'react-native'
 import React, { useState } from 'react'
 import { images } from '@/constants/images'
 import FeedBackModal, { FeedBackPayload } from './FeedBackModal';
@@ -15,6 +15,12 @@ type AiProps = {
     message_id?:string|number;
     session_id?:string|number;
     onFeedbackSubmit?: (payload: FeedBackPayload) => void;
+    isRatingLoading?: boolean;
+    onPositiveRatingSelect?: (payload: {
+        rating: number;
+        message_id?: string | number;
+        session_id?: string | number;
+    }) => void;
   };
 
   
@@ -29,6 +35,8 @@ const Ai = ({
     message_id,
     session_id,
     onFeedbackSubmit,
+    isRatingLoading = false,
+    onPositiveRatingSelect,
 }:AiProps) => {
     const [selectedRating, setSelectedRating] = useState(0);
     const [isReportProblemVisible, setIsReportProblemVisible] = useState(false);
@@ -40,12 +48,21 @@ const Ai = ({
     };
 
     const handleRatingPress = (rating:number) => {
+        if (isRatingLoading) {
+            return;
+        }
+
         setSelectedRating(rating);
 
         if (rating <= 3) {
             setIsFeedBackModalVisible(true);
         } else {
             setIsFeedBackModalVisible(false);
+            onPositiveRatingSelect?.({
+                rating,
+                message_id,
+                session_id,
+            });
         }
     };
 
@@ -131,35 +148,43 @@ const Ai = ({
                                     fontSize:15,
                                     color:"#ffffff"
                                 }}>Rate this Response:</Text>
-                                {Array.from({ length: 5 }, (_, index) => {
-                                    const isFilled = index < selectedRating;
+                                {isRatingLoading ? (
+                                    <View style={{justifyContent:"center", marginLeft:6, minWidth: 32}}>
+                                        <ActivityIndicator size="small" color="#ffffff" />
+                                    </View>
+                                ) : (
+                                    Array.from({ length: 5 }, (_, index) => {
+                                        const isFilled = index < selectedRating;
 
-                                    return (
-                                        <TouchableOpacity
-                                            key={index}
-                                            onPress={() => handleRatingPress(index + 1)}
-                                            hitSlop={6}
-                                        >
-                                            <Image
-                                                source={isFilled ? images.star_filled : images.star_unfilled}
-                                                style={{ width: 24, height: 24 }}
-                                                resizeMode="contain"
-                                            />
-                                        </TouchableOpacity>
-                                    );
-                                })}
+                                        return (
+                                            <TouchableOpacity
+                                                key={index}
+                                                onPress={() => handleRatingPress(index + 1)}
+                                                hitSlop={6}
+                                            >
+                                                <Image
+                                                    source={isFilled ? images.star_filled : images.star_unfilled}
+                                                    style={{ width: 24, height: 24 }}
+                                                    resizeMode="contain"
+                                                />
+                                            </TouchableOpacity>
+                                        );
+                                    })
+                                )}
                             </View>
                             
-                            <TouchableOpacity
-                                style={{marginLeft:3}}
-                                onPress={() => setIsReportProblemVisible(true)}
-                            >
-                                <Image
-                                    source={images.report}
-                                    style={{ width: 30, height: 30 }}
-                                    resizeMode="contain"
-                                />
-                            </TouchableOpacity>
+                            {isRatingLoading ? null : (
+                                <TouchableOpacity
+                                    style={{marginLeft:3}}
+                                    onPress={() => setIsReportProblemVisible(true)}
+                                >
+                                    <Image
+                                        source={images.report}
+                                        style={{ width: 30, height: 30 }}
+                                        resizeMode="contain"
+                                    />
+                                </TouchableOpacity>
+                            )}
                         </View>
                         </>
                     ) : null}

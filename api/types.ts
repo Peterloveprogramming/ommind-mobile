@@ -36,6 +36,7 @@ export type LambdaRequest = {
             "chat" |
             "get_chat_history" |
             "get_chat_messages_by_session_id" |
+            "add_message_rating" |
             "get_audio_url" |
             "get_all_courses" |
             "get_meditation_course_details",
@@ -67,6 +68,23 @@ export type LoginUserInput = {
 
 
 export namespace LambdaResult {
+  export type MessageRatingItem = {
+    id?: number;
+    user_id?: number;
+    message_id?: number;
+    session_id?: string;
+    rating?: number;
+    helpfulness?: number | null;
+    accuracy?: number | null;
+    clarity?: number | null;
+    tone?: number | null;
+    issues?: string[] | null;
+    other_details?: string | null;
+    created_at?: string | null;
+    updated_at?: string | null;
+    [key: string]: unknown;
+  };
+
   export type CreateUserResult = LambdaResult<{
     jwt_token: string;
     user_id: number;
@@ -108,5 +126,7 @@ export namespace LambdaResult {
   export type ChatResult = LambdaResult<ChatMessageItem, ChatMessageItem> & {
     mode?: string | null;
   };
+
+  export type AddMessageRatingResult = LambdaResult<MessageRatingItem | null>;
 
 }

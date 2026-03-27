@@ -5,6 +5,7 @@ import {useSaveAnswersForRegistrationQuestions} from './lambda/useRegistrationQu
 import { useChatAi } from "./lambda/useAiChatApi/requests";
 import { useGetChatHistory } from "./lambda/useChatHistoryApi/requests";
 import { useGetChatMessagesBySessionId } from "./lambda/useChatMessagesApi/requests";
+import { useAddMessageRating } from "./lambda/useMessageRatingApi/requests";
 //Supplier
 export const useSupplierApi = () => {
     const {
@@ -119,6 +120,18 @@ export const useChatMessagesApi = () => {
     return {
         getChatMessagesBySessionId: {
             getChatMessagesBySessionId
+        }
+    }
+}
+
+export const useMessageRatingApi = () => {
+    const {
+        addMessageRating
+    } = useAddMessageRating()
+
+    return {
+        addMessageRating: {
+            addMessageRating
         }
     }
 }
