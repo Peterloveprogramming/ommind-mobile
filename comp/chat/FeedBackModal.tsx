@@ -68,14 +68,13 @@ const FeedBackModal = ({
   onSubmit,
 }: FeedBackModalProps) => {
   const [detailedRatings, setDetailedRatings] = useState<DetailedRatings>({
-    helpfulness: 4,
-    accuracy: 4,
-    clarity: 4,
-    tone: 4,
+    helpfulness: 3,
+    accuracy: 3,
+    clarity: 3,
+    tone: 3,
   });
   const [selectedIssues, setSelectedIssues] = useState<string[]>([
-    "Not relevant",
-    "Missing meditation steps",
+  
   ]);
   const [comment, setComment] = useState("");
 
@@ -234,22 +233,26 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.62)",
-    justifyContent: "center",
+    justifyContent: "flex-end",
     alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 24,
+    paddingHorizontal: 8,
+    paddingBottom: 0,
   },
   card: {
-    width: "88%",
+    width: "100%",
     maxWidth: 560,
-    maxHeight: "92%",
+    maxHeight: "78%",
     backgroundColor: "#5A5A5A",
-    borderRadius: 26,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
     shadowColor: "#000000",
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.35,
     shadowRadius: 20,
     elevation: 12,
+    overflow: "hidden",
   },
   content: {
     paddingHorizontal: 20,
