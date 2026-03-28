@@ -33,6 +33,7 @@ type ChatMessage = {
   mode?: string | null;
   showPlayBackControl?: boolean;
   isPlaybackPaused?: boolean;
+  showRating?: boolean;
 };
 
 const SpiritualMentorChat = () => {
@@ -136,6 +137,7 @@ const SpiritualMentorChat = () => {
             mode: message.classification,
             showPlayBackControl: false,
             isPlaybackPaused: true,
+            showRating: false,
           }))
         );
       })();
@@ -229,12 +231,13 @@ const SpiritualMentorChat = () => {
                   status: "ready",
                   showPlayBackControl: true,
                   isPlaybackPaused: false,
+                  showRating: true,
                 }
               : {
                   role: "ai",
                   chatMessage: aiMessage,
                   status: "ready",
-                  
+                  showRating: true,
                 };
           const lastMessage = prevMessages[prevMessages.length - 1];
 
@@ -505,6 +508,7 @@ const SpiritualMentorChat = () => {
                           showPlaybackControl={item.showPlayBackControl}
                           showPlayButton={item.isPlaybackPaused}
                           onPlaybackControlPress={handleGuidedMeditationPlaybackPress}
+                          showRating={item.showRating}
                           message_id={item.chatMessage?.id}
                           session_id={item.chatMessage?.session_id}
                           isRatingLoading={isMessageRatingLoading}
@@ -525,6 +529,7 @@ const SpiritualMentorChat = () => {
                           showPlaybackControl={item.showPlayBackControl}
                           showPlayButton={item.isPlaybackPaused}
                           onPlaybackControlPress={handleGuidedMeditationPlaybackPress}
+                          showRating={item.showRating}
                           message_id={item.chatMessage.id}
                           session_id={item.chatMessage.session_id}
                           isRatingLoading={isMessageRatingLoading}
