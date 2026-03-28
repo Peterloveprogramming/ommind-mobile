@@ -44,7 +44,7 @@ type DetailedRatings = {
 export type FeedBackPayload = {
   overallRating: number;
   detailedRatings: DetailedRatings;
-  selectedIssues: string[];
+  selectedIssues: string;
   comment: string;
   session_id?: string | number;
   message_id?: string | number;
@@ -57,7 +57,7 @@ type FeedBackModalProps = {
   onOverallRatingChange: (rating: number) => void;
   session_id?: string | number;
   message_id?: string | number;
-  onSubmit?: (payload: FeedBackPayload) => void;
+  onSubmit?: (payload: FeedBackPayload) => Promise<boolean | null> | boolean | null;
 };
 
 const FeedBackModal = ({
@@ -84,8 +84,12 @@ const FeedBackModal = ({
 
   const handleClose = () => {
     setSelectedIssues([]);
+    setComment("");
     onClose();
   };
+
+  const getNormalizedIssueValue = (issue: string) =>
+    issue.toLowerCase().replace(/\s+/g, "_");
 
   const handleDetailedRatingChange = (key: keyof DetailedRatings, rating: number) => {
     setDetailedRatings((current) => ({
@@ -106,23 +110,27 @@ const FeedBackModal = ({
     setComment(value.slice(0, MAX_COMMENT_LENGTH));
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const payload: FeedBackPayload = {
       overallRating,
       detailedRatings,
-      selectedIssues,
+      selectedIssues: selectedIssues.map(getNormalizedIssueValue).join(","),
       comment: comment.trim(),
       session_id,
       message_id,
     };
 
-    onSubmit?.(payload);
+    const didSubmit = await onSubmit?.(payload);
 
     if (!onSubmit) {
       console.log("feedback submitted", payload);
+      handleClose();
+      return;
     }
 
-    handleClose();
+    if (didSubmit) {
+      handleClose();
+    }
   };
 
   const renderStars = (

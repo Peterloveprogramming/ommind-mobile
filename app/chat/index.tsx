@@ -20,6 +20,7 @@ import { useVoiceToText } from '@/services/useVoiceToText';
 import useChatMessagesBySessionId from '@/services/useChatMessagesBySessionId';
 import useMessageRating from '@/services/useMessageRating';
 import { LambdaResult } from '@/api/types';
+import { FeedBackPayload } from '@/comp/chat/FeedBackModal';
 
 const COMPOSER_BOTTOM_SPACE = 96;
 const ANDROID_KEYBOARD_CLEARANCE = 36;
@@ -425,10 +426,10 @@ const SpiritualMentorChat = () => {
     session_id?: string | number;
   }) => {
     if (rating <= 3 || !message_id || !messageSessionId || isMessageRatingLoading) {
-      return;
+      return false;
     }
 
-    await submitMessageRating({
+    const response = await submitMessageRating({
       message_id,
       session_id: messageSessionId,
       rating,
@@ -439,6 +440,35 @@ const SpiritualMentorChat = () => {
       issues: null,
       other_details: null,
     });
+
+    return Boolean(response);
+  };
+
+  const handleFeedbackSubmit = async ({
+    overallRating,
+    detailedRatings,
+    selectedIssues,
+    comment,
+    message_id,
+    session_id: messageSessionId,
+  }: FeedBackPayload) => {
+    if (!message_id || !messageSessionId || isMessageRatingLoading) {
+      return false;
+    }
+
+    const response = await submitMessageRating({
+      message_id,
+      session_id: messageSessionId,
+      rating: overallRating,
+      helpfulness: detailedRatings.helpfulness,
+      accuracy: detailedRatings.accuracy,
+      clarity: detailedRatings.clarity,
+      tone: detailedRatings.tone,
+      issues: selectedIssues ? [selectedIssues] : null,
+      other_details: comment || null,
+    });
+
+    return Boolean(response);
   };
     
     return (
@@ -478,6 +508,7 @@ const SpiritualMentorChat = () => {
                           message_id={item.chatMessage?.id}
                           session_id={item.chatMessage?.session_id}
                           isRatingLoading={isMessageRatingLoading}
+                          onFeedbackSubmit={handleFeedbackSubmit}
                           onPositiveRatingSelect={handlePositiveRatingSelect}
                         />
                       );
@@ -497,6 +528,7 @@ const SpiritualMentorChat = () => {
                           message_id={item.chatMessage.id}
                           session_id={item.chatMessage.session_id}
                           isRatingLoading={isMessageRatingLoading}
+                          onFeedbackSubmit={handleFeedbackSubmit}
                           onPositiveRatingSelect={handlePositiveRatingSelect}
                         />
                       );

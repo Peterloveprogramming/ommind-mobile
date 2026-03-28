@@ -3,6 +3,7 @@ import React, { useState } from 'react'
 import { images } from '@/constants/images'
 import FeedBackModal, { FeedBackPayload } from './FeedBackModal';
 import ReportProblem from './ReportProblem';
+import { Ionicons } from '@expo/vector-icons';
 
 type AiProps = {
     message: string;
@@ -14,13 +15,13 @@ type AiProps = {
     showRating?:boolean;
     message_id?:string|number;
     session_id?:string|number;
-    onFeedbackSubmit?: (payload: FeedBackPayload) => void;
+    onFeedbackSubmit?: (payload: FeedBackPayload) => Promise<boolean | null> | boolean | null;
     isRatingLoading?: boolean;
     onPositiveRatingSelect?: (payload: {
         rating: number;
         message_id?: string | number;
         session_id?: string | number;
-    }) => void;
+    }) => Promise<boolean | null> | boolean | null;
   };
 
   
@@ -41,13 +42,20 @@ const Ai = ({
     const [selectedRating, setSelectedRating] = useState(0);
     const [isReportProblemVisible, setIsReportProblemVisible] = useState(false);
     const [isFeedBackModalVisible, setIsFeedBackModalVisible] = useState(false);
+    const [hasSubmittedRating, setHasSubmittedRating] = useState(false);
+    const [showThankYouCard, setShowThankYouCard] = useState(false);
+
+    const handleRatingSuccess = () => {
+        setHasSubmittedRating(true);
+        setShowThankYouCard(true);
+    };
 
     const handleFeedBackModalClose = () => {
         setIsFeedBackModalVisible(false);
         setSelectedRating(0);
     };
 
-    const handleRatingPress = (rating:number) => {
+    const handleRatingPress = async (rating:number) => {
         if (isRatingLoading) {
             return;
         }
@@ -58,13 +66,30 @@ const Ai = ({
             setIsFeedBackModalVisible(true);
         } else {
             setIsFeedBackModalVisible(false);
-            onPositiveRatingSelect?.({
+            const didSubmit = await onPositiveRatingSelect?.({
                 rating,
                 message_id,
                 session_id,
             });
+
+            if (didSubmit) {
+                handleRatingSuccess();
+            }
         }
     };
+
+    const handleFeedbackSubmit = async (payload: FeedBackPayload): Promise<boolean | null> => {
+        const didSubmit = onFeedbackSubmit ? await onFeedbackSubmit(payload) : null;
+
+        if (didSubmit) {
+            handleFeedBackModalClose();
+            handleRatingSuccess();
+        }
+
+        return didSubmit ?? null;
+    };
+
+    const shouldShowRating = showRating && !hasSubmittedRating;
 
     if (message == "loading"){
         return <Image source={images.lhamo_mini_loading}/>
@@ -134,7 +159,7 @@ const Ai = ({
                         ) : null}
                     </View>
                 
-                    {showRating ? (
+                    {shouldShowRating ? (
                         <>
                         <View 
                             style={{height:1,borderWidth:0.5,width:"100%",borderColor:"#AFAFAF"}}
@@ -189,6 +214,55 @@ const Ai = ({
                         </>
                     ) : null}
                 </View>
+
+                {showThankYouCard ? (
+                    <View
+                        style={{
+                            marginTop: 8,
+                            alignSelf: "center",
+                            width: "82%",
+                            backgroundColor: "#5A5A5A",
+                            borderRadius: 22,
+                            paddingHorizontal: 18,
+                            paddingVertical: 18,
+                            alignItems: "center",
+                        }}
+                    >
+                        <View
+                            style={{
+                                width: 48,
+                                height: 48,
+                                borderRadius: 24,
+                                backgroundColor: "#8A8A8A",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                marginBottom: 14,
+                            }}
+                        >
+                            <Ionicons name="checkmark" size={28} color="#FFFFFF" />
+                        </View>
+                        <Text style={{ color: "#FFFFFF", fontSize: 18, fontWeight: "700", marginBottom: 10 }}>
+                            Thank you for your feedback!
+                        </Text>
+                        <Text style={{ color: "#FFFFFF", fontSize: 14, textAlign: "center", lineHeight: 22 }}>
+                            Your input helps us improve.
+                        </Text>
+                        <Text style={{ color: "#FFFFFF", fontSize: 14, textAlign: "center", lineHeight: 22, marginBottom: 16 }}>
+                            We appreciate your help!{"\uD83D\uDC9B"}
+                        </Text>
+                        <TouchableOpacity
+                            onPress={() => setShowThankYouCard(false)}
+                            style={{
+                                backgroundColor: "#F7C948",
+                                borderRadius: 999,
+                                paddingHorizontal: 22,
+                                paddingVertical: 10,
+                            }}
+                        >
+                            <Text style={{ color: "#FFFFFF", fontSize: 16, fontWeight: "700" }}>OK</Text>
+                        </TouchableOpacity>
+                    </View>
+                ) : null}
             </View>
             <ReportProblem
                 visible={isReportProblemVisible}
@@ -203,7 +277,7 @@ const Ai = ({
                 onOverallRatingChange={setSelectedRating}
                 session_id={session_id}
                 message_id={message_id}
-                onSubmit={onFeedbackSubmit}
+                onSubmit={handleFeedbackSubmit}
             />
         </>
         )
