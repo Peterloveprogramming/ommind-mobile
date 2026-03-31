@@ -37,6 +37,7 @@ export type LambdaRequest = {
             "get_chat_history" |
             "get_chat_messages_by_session_id" |
             "add_message_rating" |
+            "add_message_report" |
             "get_audio_url" |
             "get_all_courses" |
             "get_meditation_course_details",
@@ -78,6 +79,17 @@ export namespace LambdaResult {
     accuracy?: number | null;
     clarity?: number | null;
     tone?: number | null;
+    issues?: string[] | null;
+    other_details?: string | null;
+    created_at?: string | null;
+    updated_at?: string | null;
+    [key: string]: unknown;
+  };
+
+  export type MessageReportItem = {
+    id?: number;
+    user_id?: number;
+    message_id?: number;
     issues?: string[] | null;
     other_details?: string | null;
     created_at?: string | null;
@@ -128,5 +140,6 @@ export namespace LambdaResult {
   };
 
   export type AddMessageRatingResult = LambdaResult<MessageRatingItem | null>;
+  export type AddMessageReportResult = LambdaResult<MessageReportItem | null>;
 
 }

@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useMemo, useState } from "react";
 import {
+  ActivityIndicator,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -12,6 +13,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import useMessageReport from "@/services/useMessageReport";
 
 const REPORT_OPTIONS = [
   "audio not playing",
@@ -42,9 +44,13 @@ const ReportProblem = ({
 }: ReportProblemProps) => {
   const [selectedReasons, setSelectedReasons] = useState<string[]>([]);
   const [details, setDetails] = useState(DEFAULT_DETAILS_TEXT);
+  const [validationError, setValidationError] = useState("");
+  const { submitMessageReport, isLoading } = useMessageReport();
 
   const handleClose = () => {
     setSelectedReasons([]);
+    setDetails(DEFAULT_DETAILS_TEXT);
+    setValidationError("");
     onClose();
   };
 
@@ -69,19 +75,33 @@ const ReportProblem = ({
     setDetails(words.slice(0, MAX_WORDS).join(" "));
   };
 
-  const handleSubmit = () => {
-    console.log("session id and message id and reasons", session_id, message_id, selectedReasons);
-    const payload = {
-      session_id,
-      message_id,
-      reasons: selectedReasons,
-      details: details === DEFAULT_DETAILS_TEXT ? "" : details.trim(),
-    };
+  const handleSubmit = async () => {
+    if (!selectedReasons.length) {
+      setValidationError("Select at least one issue.");
+      return;
+    }
 
-    void payload;
+    if (!message_id || isLoading) {
+      return;
+    }
+
+    const normalizedIssues = selectedReasons
+      .map((reason) => reason.toLowerCase().replace(/\s+/g, "_"))
+      .join(",");
+
+    const response = await submitMessageReport({
+      message_id,
+      issues: [normalizedIssues],
+      other_details: details === DEFAULT_DETAILS_TEXT ? null : details.trim() || null,
+    });
+
+    if (response) {
+      handleClose();
+    }
   };
 
   const handleReasonToggle = (option: string) => {
+    setValidationError("");
     setSelectedReasons((current) =>
       current.includes(option)
         ? current.filter((reason) => reason !== option)
@@ -138,6 +158,10 @@ const ReportProblem = ({
                 })}
               </View>
 
+              {validationError ? (
+                <Text style={styles.validationError}>{validationError}</Text>
+              ) : null}
+
               <View style={styles.detailsGroup}>
                 <Text style={styles.label}>Optional:</Text>
                 <View style={styles.inputWrapper}>
@@ -164,8 +188,19 @@ const ReportProblem = ({
               </View>
 
               <View style={styles.submitRow}>
-                <TouchableOpacity style={styles.submitButton} onPress={handleSubmit} activeOpacity={0.85}>
-                  <Ionicons name="paper-plane-outline" size={18} color="#FFFFFF" />
+                <TouchableOpacity
+                  style={[styles.submitButton, isLoading && styles.submitButtonDisabled]}
+                  onPress={() => {
+                    void handleSubmit();
+                  }}
+                  activeOpacity={0.85}
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  ) : (
+                    <Ionicons name="paper-plane-outline" size={18} color="#FFFFFF" />
+                  )}
                   <Text style={styles.submitText}>Submit</Text>
                 </TouchableOpacity>
               </View>
@@ -267,6 +302,12 @@ const styles = StyleSheet.create({
   detailsGroup: {
     gap: 12,
   },
+  validationError: {
+    color: "#FFB4B4",
+    fontSize: 13,
+    marginTop: -6,
+    marginBottom: 16,
+  },
   label: {
     fontSize: 17,
     fontWeight: "700",
@@ -305,6 +346,9 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     paddingHorizontal: 22,
     paddingVertical: 12,
+  },
+  submitButtonDisabled: {
+    opacity: 0.75,
   },
   submitText: {
     color: "#FFFFFF",

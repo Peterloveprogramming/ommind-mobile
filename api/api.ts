@@ -6,6 +6,7 @@ import { useChatAi } from "./lambda/useAiChatApi/requests";
 import { useGetChatHistory } from "./lambda/useChatHistoryApi/requests";
 import { useGetChatMessagesBySessionId } from "./lambda/useChatMessagesApi/requests";
 import { useAddMessageRating } from "./lambda/useMessageRatingApi/requests";
+import { useAddMessageReport } from "./lambda/useMessageReportApi/requests";
 //Supplier
 export const useSupplierApi = () => {
     const {
@@ -132,6 +133,18 @@ export const useMessageRatingApi = () => {
     return {
         addMessageRating: {
             addMessageRating
+        }
+    }
+}
+
+export const useMessageReportApi = () => {
+    const {
+        addMessageReport
+    } = useAddMessageReport()
+
+    return {
+        addMessageReport: {
+            addMessageReport
         }
     }
 }
