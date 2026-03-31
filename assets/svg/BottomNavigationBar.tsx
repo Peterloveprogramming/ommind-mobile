@@ -62,9 +62,10 @@ const Rinpoche = () => {
 };
 
 const BottomNavigationBar = (props) => (
-  <View>
+  <View pointerEvents="box-none">
     <Rinpoche />
   <Svg
+    pointerEvents="none"
     width={394}
     height={89}
     viewBox="0 0 394 89"

@@ -139,7 +139,7 @@ export default function TabLayout() {
       { isVisible && (
         <>
           {/* Custom Bottom Navigation Bar */}
-          <View style={[styles.bottomNavigationBar,{bottom:insets.bottom}]}>
+          <View pointerEvents="box-none" style={[styles.bottomNavigationBar,{bottom:insets.bottom}]}>
             <BottomNavigationBar width="100%" preserveAspectRatio="none" height="100%"  />
           </View>
         </>
