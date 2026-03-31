@@ -7,6 +7,7 @@ import { useGetChatHistory } from "./lambda/useChatHistoryApi/requests";
 import { useGetChatMessagesBySessionId } from "./lambda/useChatMessagesApi/requests";
 import { useAddMessageRating } from "./lambda/useMessageRatingApi/requests";
 import { useAddMessageReport } from "./lambda/useMessageReportApi/requests";
+import { useGetDreamLogs } from "./lambda/useDreamLogsApi/requests";
 //Supplier
 export const useSupplierApi = () => {
     const {
@@ -145,6 +146,18 @@ export const useMessageReportApi = () => {
     return {
         addMessageReport: {
             addMessageReport
+        }
+    }
+}
+
+export const useDreamLogsApi = () => {
+    const {
+        getDreamLogs
+    } = useGetDreamLogs()
+
+    return {
+        getDreamLogs: {
+            getDreamLogs
         }
     }
 }

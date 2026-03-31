@@ -40,7 +40,8 @@ export type LambdaRequest = {
             "add_message_report" |
             "get_audio_url" |
             "get_all_courses" |
-            "get_meditation_course_details",
+            "get_meditation_course_details" |
+            "get_dream_logs",
 }
 
 // Lambda Result 
@@ -69,6 +70,17 @@ export type LoginUserInput = {
 
 
 export namespace LambdaResult {
+  export type DreamLogItem = {
+    id?: number;
+    user_id?: number;
+    title?: string | null;
+    content?: string | null;
+    interpretation?: string | null;
+    created_at?: string | null;
+    updated_at?: string | null;
+    [key: string]: unknown;
+  };
+
   export type MessageRatingItem = {
     id?: number;
     user_id?: number;
@@ -141,5 +153,6 @@ export namespace LambdaResult {
 
   export type AddMessageRatingResult = LambdaResult<MessageRatingItem | null>;
   export type AddMessageReportResult = LambdaResult<MessageReportItem | null>;
+  export type GetDreamLogsResult = LambdaResult<DreamLogItem[]>;
 
 }
