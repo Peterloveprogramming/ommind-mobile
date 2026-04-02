@@ -1,12 +1,13 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  ActivityIndicator,
   Pressable,
   SafeAreaView,
   StyleSheet,
   Text,
   View,
 } from "react-native";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import useDreamLogs from "@/services/useDreamLogs";
 import { LambdaResult } from "@/api/types";
@@ -103,7 +104,9 @@ const TAB_CONFIG: Array<{
 ];
 
 const Journal = () => {
-  const [activeTab, setActiveTab] = useState<JournalTab>("awareness");
+  const [activeTab, setActiveTab] = useState<JournalTab>("dreams");
+  const [isStartingWriting, setIsStartingWriting] = useState(false);
+  const startWritingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { dreamLogs, isLoading, fetchDreamLogs } = useDreamLogs();
 
   const dreamEntries = useMemo(
@@ -127,6 +130,19 @@ const Journal = () => {
     [dreamEntries.length]
   );
 
+  useFocusEffect(
+    useCallback(() => {
+      setIsStartingWriting(false);
+
+      return () => {
+        if (startWritingTimeoutRef.current) {
+          clearTimeout(startWritingTimeoutRef.current);
+          startWritingTimeoutRef.current = null;
+        }
+      };
+    }, [])
+  );
+
   useEffect(() => {
     if (activeTab !== "dreams") {
       return;
@@ -148,6 +164,16 @@ const Journal = () => {
   };
 
   const handleStartWritingPress = () => {
+    if (isStartingWriting) {
+      return;
+    }
+
+    setIsStartingWriting(true);
+    startWritingTimeoutRef.current = setTimeout(() => {
+      setIsStartingWriting(false);
+      startWritingTimeoutRef.current = null;
+    }, 1500);
+
     router.push({
       pathname: "/journal/write",
       params: { type: activeTab },
@@ -241,13 +267,21 @@ const Journal = () => {
         <View style={styles.ctaWrap}>
           <Pressable
             onPress={handleStartWritingPress}
+            disabled={isStartingWriting}
             style={({ pressed }) => [
               styles.ctaButton,
+              isStartingWriting && styles.ctaButtonDisabled,
               pressed && styles.ctaButtonPressed,
             ]}
           >
-            <Ionicons name="add" size={24} color="#FFFFFF" />
-            <Text style={styles.ctaText}>Start Writing</Text>
+            {isStartingWriting ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <>
+                <Ionicons name="add" size={24} color="#FFFFFF" />
+                <Text style={styles.ctaText}>Start Writing</Text>
+              </>
+            )}
           </Pressable>
         </View>
       </View>
@@ -411,6 +445,9 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   ctaButtonPressed: {
+    opacity: 0.82,
+  },
+  ctaButtonDisabled: {
     opacity: 0.82,
   },
   ctaText: {
