@@ -7,7 +7,13 @@ import { useGetChatHistory } from "./lambda/useChatHistoryApi/requests";
 import { useGetChatMessagesBySessionId } from "./lambda/useChatMessagesApi/requests";
 import { useAddMessageRating } from "./lambda/useMessageRatingApi/requests";
 import { useAddMessageReport } from "./lambda/useMessageReportApi/requests";
-import { useGetDreamLogs } from "./lambda/useDreamLogsApi/requests";
+import {
+    useAddDreamLog,
+    useDeleteDreamLog,
+    useGetDreamLog,
+    useGetDreamLogs,
+    useUpdateDreamLog,
+} from "./lambda/useDreamLogsApi/requests";
 //Supplier
 export const useSupplierApi = () => {
     const {
@@ -154,10 +160,34 @@ export const useDreamLogsApi = () => {
     const {
         getDreamLogs
     } = useGetDreamLogs()
+    const {
+        getDreamLog
+    } = useGetDreamLog()
+    const {
+        addDreamLog
+    } = useAddDreamLog()
+    const {
+        updateDreamLog
+    } = useUpdateDreamLog()
+    const {
+        deleteDreamLog
+    } = useDeleteDreamLog()
 
     return {
         getDreamLogs: {
             getDreamLogs
+        },
+        getDreamLog: {
+            getDreamLog
+        },
+        addDreamLog: {
+            addDreamLog
+        },
+        updateDreamLog: {
+            updateDreamLog
+        },
+        deleteDreamLog: {
+            deleteDreamLog
         }
     }
 }

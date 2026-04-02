@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
 import {
+  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -11,6 +12,7 @@ import {
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import BackButton from "@/comp/headers/BackButton";
+import useDreamLogs from "@/services/useDreamLogs";
 import { useToast } from "@/context/useToast";
 import { FONTS } from "@/theme.js";
 
@@ -29,6 +31,7 @@ export default function JournalWriteScreen() {
     title?: string;
   }>();
   const { showToastMessage } = useToast();
+  const { createDreamLog, isCreating } = useDreamLogs();
   const [entryText, setEntryText] = useState("");
 
   const normalizedType: JournalType = type === "dreams" ? "dreams" : "awareness";
@@ -49,23 +52,60 @@ export default function JournalWriteScreen() {
       ? "Describe your dream as you remember it..."
       : "Write down whatever came up for you...";
 
-  const handleSave = () => {
-    showToastMessage("Journal entry saved", true);
+  const isSaveDisabled = entryText.trim().length === 0 || isCreating;
+
+  const handleSave = async () => {
+    const trimmedEntryText = entryText.trim();
+
+    if (!trimmedEntryText || isCreating) {
+      return;
+    }
+
+    if (normalizedType !== "dreams") {
+      showToastMessage("Journal entry saved", true);
+      router.back();
+      return;
+    }
+
+    const savedDreamLog = await createDreamLog({
+      log: trimmedEntryText,
+    });
+
+    if (!savedDreamLog) {
+      return;
+    }
+
+    showToastMessage("Dream log saved", true);
     router.back();
   };
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 24 : 0}
         style={styles.keyboardView}
       >
         <View style={styles.container}>
           <View style={styles.headerRow}>
             <BackButton onTouch={() => router.back()} />
-            <Pressable onPress={handleSave} hitSlop={12}>
+            <Pressable onPress={handleSave} hitSlop={12} disabled={isSaveDisabled}>
               {({ pressed }) => (
-                <Text style={[styles.saveText, pressed && styles.saveTextPressed]}>Save</Text>
+                <View style={styles.saveAction}>
+                  {isCreating ? (
+                    <ActivityIndicator size="small" color="#9E9EA4" />
+                  ) : (
+                    <Text
+                      style={[
+                        styles.saveText,
+                        isSaveDisabled && styles.saveTextDisabled,
+                        pressed && !isSaveDisabled && styles.saveTextPressed,
+                      ]}
+                    >
+                      Save
+                    </Text>
+                  )}
+                </View>
               )}
             </Pressable>
           </View>
@@ -116,8 +156,17 @@ const styles = StyleSheet.create({
     fontSize: 19,
     color: "#9E9EA4",
   },
+  saveAction: {
+    minWidth: 48,
+    minHeight: 24,
+    alignItems: "flex-end",
+    justifyContent: "center",
+  },
   saveTextPressed: {
     opacity: 0.65,
+  },
+  saveTextDisabled: {
+    opacity: 0.45,
   },
   title: {
     marginTop: 22,

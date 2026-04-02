@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Pressable,
   SafeAreaView,
@@ -8,6 +8,8 @@ import {
 } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import useDreamLogs from "@/services/useDreamLogs";
+import { LambdaResult } from "@/api/types";
 import { COLORS, FONTS } from "@/theme.js";
 
 type JournalTab = "dreams" | "awareness";
@@ -21,22 +23,7 @@ type JournalEntry = {
   preview: string;
 };
 
-const JOURNAL_COUNTS: Record<JournalTab, number> = {
-  dreams: 3,
-  awareness: 1,
-};
-
 const JOURNAL_ENTRIES: Record<JournalTab, JournalEntry[]> = {
-  dreams: [
-    {
-      id: "dream-1",
-      day: "03",
-      month: "July",
-      time: "23:14 PM",
-      title: "Walking Through Lantern Fog",
-      preview: "I remember a dim path, quiet footsteps, and a warm light following me...",
-    },
-  ],
   awareness: [
     {
       id: "awareness-1",
@@ -47,6 +34,63 @@ const JOURNAL_ENTRIES: Record<JournalTab, JournalEntry[]> = {
       preview: "During today’s meditation, I noticed how tightly I had been holding...",
     },
   ],
+};
+
+const getJournalEntryDateParts = (createdAt?: string | null) => {
+  if (!createdAt) {
+    return {
+      day: "--",
+      month: "Unknown",
+      time: "--:--",
+    };
+  }
+
+  const createdDate = new Date(createdAt);
+  if (Number.isNaN(createdDate.getTime())) {
+    return {
+      day: "--",
+      month: "Unknown",
+      time: "--:--",
+    };
+  }
+
+  return {
+    day: new Intl.DateTimeFormat("en-GB", { day: "2-digit" }).format(createdDate),
+    month: new Intl.DateTimeFormat("en-GB", { month: "long" }).format(createdDate),
+    time: new Intl.DateTimeFormat("en-GB", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    }).format(createdDate),
+  };
+};
+
+const createDreamTitle = (log?: string | null) => {
+  const trimmedLog = log?.trim() ?? "";
+
+  if (!trimmedLog) {
+    return "Untitled Dream";
+  }
+
+  const title = trimmedLog.split(/\s+/).slice(0, 4).join(" ");
+  return title.length > 28 ? `${title.slice(0, 28)}...` : title;
+};
+
+const mapDreamLogToJournalEntry = (
+  dreamLog: LambdaResult.DreamLogItem
+): JournalEntry => {
+  const { day, month, time } = getJournalEntryDateParts(dreamLog.created_at);
+  const logText = typeof dreamLog.log === "string" ? dreamLog.log : "";
+  const title = createDreamTitle(logText);
+
+  return {
+    id: String(dreamLog.id ?? `${dreamLog.created_at ?? title}`),
+    day,
+    month,
+    time,
+    title,
+    preview: logText || "No dream text saved yet.",
+  };
 };
 
 const TAB_CONFIG: Array<{
@@ -60,8 +104,41 @@ const TAB_CONFIG: Array<{
 
 const Journal = () => {
   const [activeTab, setActiveTab] = useState<JournalTab>("awareness");
+  const { dreamLogs, isLoading, fetchDreamLogs } = useDreamLogs();
 
-  const activeEntries = useMemo(() => JOURNAL_ENTRIES[activeTab], [activeTab]);
+  const dreamEntries = useMemo(
+    () => dreamLogs.map(mapDreamLogToJournalEntry),
+    [dreamLogs]
+  );
+
+  const activeEntries = useMemo(() => {
+    if (activeTab === "dreams") {
+      return dreamEntries;
+    }
+
+    return JOURNAL_ENTRIES.awareness;
+  }, [activeTab, dreamEntries]);
+
+  const journalCounts = useMemo(
+    () => ({
+      dreams: dreamEntries.length,
+      awareness: JOURNAL_ENTRIES.awareness.length,
+    }),
+    [dreamEntries.length]
+  );
+
+  useEffect(() => {
+    if (activeTab !== "dreams") {
+      return;
+    }
+
+    const loadDreamLogs = async () => {
+      const dreamLogs = await fetchDreamLogs();
+      console.log("dream logs:", dreamLogs);
+    };
+
+    void loadDreamLogs();
+  }, [activeTab]);
 
   const handleEntryPress = (entry: JournalEntry) => {
     router.push({
@@ -106,7 +183,7 @@ const Journal = () => {
                         isActive && styles.countTextActive,
                       ]}
                     >
-                      {JOURNAL_COUNTS[tab.key]}
+                      {journalCounts[tab.key]}
                     </Text>
                   </View>
                 </View>
@@ -117,31 +194,48 @@ const Journal = () => {
         </View>
 
         <View style={styles.listArea}>
-          {activeEntries.map((entry) => (
-            <Pressable
-              key={entry.id}
-              onPress={() => handleEntryPress(entry)}
-              style={({ pressed }) => [
-                styles.entryRow,
-                pressed && styles.entryRowPressed,
-              ]}
-            >
-              <View style={styles.dateColumn}>
-                <Text style={styles.dayText}>{entry.day}</Text>
-                <Text style={styles.monthText}>{entry.month}</Text>
-              </View>
+          {activeEntries.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyStateTitle}>
+                {activeTab === "dreams" && isLoading
+                  ? "Loading dream logs..."
+                  : activeTab === "dreams"
+                    ? "No dream logs yet"
+                    : "No journal entries yet"}
+              </Text>
+              <Text style={styles.emptyStateText}>
+                {activeTab === "dreams"
+                  ? "Your saved dreams will appear here once you start writing."
+                  : "Your journal entries will appear here once you start writing."}
+              </Text>
+            </View>
+          ) : (
+            activeEntries.map((entry) => (
+              <Pressable
+                key={entry.id}
+                onPress={() => handleEntryPress(entry)}
+                style={({ pressed }) => [
+                  styles.entryRow,
+                  pressed && styles.entryRowPressed,
+                ]}
+              >
+                <View style={styles.dateColumn}>
+                  <Text style={styles.dayText}>{entry.day}</Text>
+                  <Text style={styles.monthText}>{entry.month}</Text>
+                </View>
 
-              <View style={styles.entryDivider} />
+                <View style={styles.entryDivider} />
 
-              <View style={styles.entryContent}>
-                <Text style={styles.timeText}>{entry.time}</Text>
-                <Text style={styles.entryTitle}>{entry.title}</Text>
-                <Text numberOfLines={1} ellipsizeMode="tail" style={styles.previewText}>
-                  {entry.preview}
-                </Text>
-              </View>
-            </Pressable>
-          ))}
+                <View style={styles.entryContent}>
+                  <Text style={styles.timeText}>{entry.time}</Text>
+                  <Text style={styles.entryTitle}>{entry.title}</Text>
+                  <Text numberOfLines={1} ellipsizeMode="tail" style={styles.previewText}>
+                    {entry.preview}
+                  </Text>
+                </View>
+              </Pressable>
+            ))
+          )}
         </View>
 
         <View style={styles.ctaWrap}>
@@ -228,6 +322,26 @@ const styles = StyleSheet.create({
   listArea: {
     flex: 1,
     paddingTop: 18,
+  },
+  emptyState: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 24,
+  },
+  emptyStateTitle: {
+    fontFamily: FONTS.figtreeSemiBold,
+    fontSize: 18,
+    color: "#171717",
+    textAlign: "center",
+  },
+  emptyStateText: {
+    marginTop: 8,
+    fontFamily: FONTS.inter,
+    fontSize: 14,
+    lineHeight: 20,
+    color: "#85858B",
+    textAlign: "center",
   },
   entryRow: {
     flexDirection: "row",
