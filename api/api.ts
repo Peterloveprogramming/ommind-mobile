@@ -8,6 +8,13 @@ import { useGetChatMessagesBySessionId } from "./lambda/useChatMessagesApi/reque
 import { useAddMessageRating } from "./lambda/useMessageRatingApi/requests";
 import { useAddMessageReport } from "./lambda/useMessageReportApi/requests";
 import {
+    useAddAwarenessLog,
+    useDeleteAwarenessLog,
+    useGetAwarenessLog,
+    useGetAwarenessLogs,
+    useUpdateAwarenessLog,
+} from "./lambda/useAwarenessLogsApi/requests";
+import {
     useAddDreamLog,
     useDeleteDreamLog,
     useGetDreamLog,
@@ -188,6 +195,42 @@ export const useDreamLogsApi = () => {
         },
         deleteDreamLog: {
             deleteDreamLog
+        }
+    }
+}
+
+export const useAwarenessLogsApi = () => {
+    const {
+        getAwarenessLogs
+    } = useGetAwarenessLogs()
+    const {
+        getAwarenessLog
+    } = useGetAwarenessLog()
+    const {
+        addAwarenessLog
+    } = useAddAwarenessLog()
+    const {
+        updateAwarenessLog
+    } = useUpdateAwarenessLog()
+    const {
+        deleteAwarenessLog
+    } = useDeleteAwarenessLog()
+
+    return {
+        getAwarenessLogs: {
+            getAwarenessLogs
+        },
+        getAwarenessLog: {
+            getAwarenessLog
+        },
+        addAwarenessLog: {
+            addAwarenessLog
+        },
+        updateAwarenessLog: {
+            updateAwarenessLog
+        },
+        deleteAwarenessLog: {
+            deleteAwarenessLog
         }
     }
 }

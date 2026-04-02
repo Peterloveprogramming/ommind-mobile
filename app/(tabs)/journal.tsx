@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { router, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import useAwarenessLogs from "@/services/useAwarenessLogs";
 import useDreamLogs from "@/services/useDreamLogs";
 import { LambdaResult } from "@/api/types";
 import { COLORS, FONTS } from "@/theme.js";
@@ -108,6 +109,7 @@ const Journal = () => {
   const [isStartingWriting, setIsStartingWriting] = useState(false);
   const startWritingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { dreamLogs, isLoading, fetchDreamLogs } = useDreamLogs();
+  const { fetchAwarenessLogs } = useAwarenessLogs();
 
   const dreamEntries = useMemo(
     () => dreamLogs.map(mapDreamLogToJournalEntry),
@@ -144,16 +146,18 @@ const Journal = () => {
   );
 
   useEffect(() => {
-    if (activeTab !== "dreams") {
-      return;
-    }
+    const loadJournalLogs = async () => {
+      if (activeTab === "dreams") {
+        const dreamLogs = await fetchDreamLogs();
+        console.log("dream logs:", dreamLogs);
+        return;
+      }
 
-    const loadDreamLogs = async () => {
-      const dreamLogs = await fetchDreamLogs();
-      console.log("dream logs:", dreamLogs);
+      const awarenessLogs = await fetchAwarenessLogs();
+      console.log("awareness logs:", awarenessLogs);
     };
 
-    void loadDreamLogs();
+    void loadJournalLogs();
   }, [activeTab]);
 
   const handleEntryPress = (entry: JournalEntry) => {

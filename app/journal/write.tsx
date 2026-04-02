@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import BackButton from "@/comp/headers/BackButton";
+import useAwarenessLogs from "@/services/useAwarenessLogs";
 import useDreamLogs from "@/services/useDreamLogs";
 import { useToast } from "@/context/useToast";
 import { FONTS } from "@/theme.js";
@@ -32,6 +33,7 @@ export default function JournalWriteScreen() {
   }>();
   const { showToastMessage } = useToast();
   const { createDreamLog, isCreating } = useDreamLogs();
+  const { createAwarenessLog, isCreating: isCreatingAwarenessLog } = useAwarenessLogs();
   const [entryText, setEntryText] = useState("");
 
   const normalizedType: JournalType = type === "dreams" ? "dreams" : "awareness";
@@ -52,17 +54,26 @@ export default function JournalWriteScreen() {
       ? "Describe your dream as you remember it..."
       : "Write down whatever came up for you...";
 
-  const isSaveDisabled = entryText.trim().length === 0 || isCreating;
+  const isSaving = isCreating || isCreatingAwarenessLog;
+  const isSaveDisabled = entryText.trim().length === 0 || isSaving;
 
   const handleSave = async () => {
     const trimmedEntryText = entryText.trim();
 
-    if (!trimmedEntryText || isCreating) {
+    if (!trimmedEntryText || isSaving) {
       return;
     }
 
-    if (normalizedType !== "dreams") {
-      showToastMessage("Journal entry saved", true);
+    if (normalizedType === "awareness") {
+      const savedAwarenessLog = await createAwarenessLog({
+        log: trimmedEntryText,
+      });
+
+      if (!savedAwarenessLog) {
+        return;
+      }
+
+      showToastMessage("Awareness log saved", true);
       router.back();
       return;
     }
@@ -92,7 +103,7 @@ export default function JournalWriteScreen() {
             <Pressable onPress={handleSave} hitSlop={12} disabled={isSaveDisabled}>
               {({ pressed }) => (
                 <View style={styles.saveAction}>
-                  {isCreating ? (
+                  {isSaving ? (
                     <ActivityIndicator size="small" color="#9E9EA4" />
                   ) : (
                     <Text

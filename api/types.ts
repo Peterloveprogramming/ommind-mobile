@@ -41,6 +41,11 @@ export type LambdaRequest = {
             "get_audio_url" |
             "get_all_courses" |
             "get_meditation_course_details" |
+            "get_awareness_logs" |
+            "get_awareness_log" |
+            "add_awareness_log" |
+            "update_awareness_log" |
+            "delete_awareness_log" |
             "get_dream_logs" |
             "get_dream_log" |
             "add_dream_log" |
@@ -74,6 +79,18 @@ export type LoginUserInput = {
 
 
 export namespace LambdaResult {
+  export type AwarenessLogItem = {
+    id?: number;
+    log_id?: number;
+    user_id?: number;
+    log?: string | null;
+    title?: string | null;
+    content?: string | null;
+    created_at?: string | null;
+    updated_at?: string | null;
+    [key: string]: unknown;
+  };
+
   export type DreamLogItem = {
     id?: number;
     user_id?: number;
@@ -158,6 +175,11 @@ export namespace LambdaResult {
 
   export type AddMessageRatingResult = LambdaResult<MessageRatingItem | null>;
   export type AddMessageReportResult = LambdaResult<MessageReportItem | null>;
+  export type GetAwarenessLogsResult = LambdaResult<AwarenessLogItem[]>;
+  export type GetAwarenessLogResult = LambdaResult<AwarenessLogItem | null>;
+  export type AddAwarenessLogResult = LambdaResult<AwarenessLogItem | null>;
+  export type UpdateAwarenessLogResult = LambdaResult<AwarenessLogItem | null>;
+  export type DeleteAwarenessLogResult = LambdaResult<{ id?: number; log_id?: number } | null>;
   export type GetDreamLogsResult = LambdaResult<DreamLogItem[]>;
   export type GetDreamLogResult = LambdaResult<DreamLogItem | null>;
   export type AddDreamLogResult = LambdaResult<DreamLogItem | null>;
