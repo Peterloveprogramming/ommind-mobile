@@ -25,35 +25,20 @@ type JournalEntry = {
   preview: string;
 };
 
-const JOURNAL_ENTRIES: Record<JournalTab, JournalEntry[]> = {
-  awareness: [
-    {
-      id: "awareness-1",
-      day: "06",
-      month: "July",
-      time: "21:21 PM",
-      title: "Softening into the Breath",
-      preview: "During today’s meditation, I noticed how tightly I had been holding...",
-    },
-  ],
+const FALLBACK_EMPTY_DATE = {
+  day: "--",
+  month: "Unknown",
+  time: "--:--",
 };
 
 const getJournalEntryDateParts = (createdAt?: string | null) => {
   if (!createdAt) {
-    return {
-      day: "--",
-      month: "Unknown",
-      time: "--:--",
-    };
+    return FALLBACK_EMPTY_DATE;
   }
 
   const createdDate = new Date(createdAt);
   if (Number.isNaN(createdDate.getTime())) {
-    return {
-      day: "--",
-      month: "Unknown",
-      time: "--:--",
-    };
+    return FALLBACK_EMPTY_DATE;
   }
 
   return {
@@ -78,6 +63,17 @@ const createDreamTitle = (log?: string | null) => {
   return title.length > 28 ? `${title.slice(0, 28)}...` : title;
 };
 
+const createAwarenessTitle = (log?: string | null) => {
+  const trimmedLog = log?.trim() ?? "";
+
+  if (!trimmedLog) {
+    return "Untitled Awareness";
+  }
+
+  const title = trimmedLog.split(/\s+/).slice(0, 4).join(" ");
+  return title.length > 28 ? `${title.slice(0, 28)}...` : title;
+};
+
 const mapDreamLogToJournalEntry = (
   dreamLog: LambdaResult.DreamLogItem
 ): JournalEntry => {
@@ -95,6 +91,23 @@ const mapDreamLogToJournalEntry = (
   };
 };
 
+const mapAwarenessLogToJournalEntry = (
+  awarenessLog: LambdaResult.AwarenessLogItem
+): JournalEntry => {
+  const { day, month, time } = getJournalEntryDateParts(awarenessLog.created_at);
+  const logText = typeof awarenessLog.log === "string" ? awarenessLog.log : "";
+  const title = createAwarenessTitle(logText);
+
+  return {
+    id: String(awarenessLog.log_id ?? awarenessLog.id ?? `${awarenessLog.created_at ?? title}`),
+    day,
+    month,
+    time,
+    title,
+    preview: logText || "No awareness text saved yet.",
+  };
+};
+
 const TAB_CONFIG: Array<{
   key: JournalTab;
   label: string;
@@ -109,11 +122,19 @@ const Journal = () => {
   const [isStartingWriting, setIsStartingWriting] = useState(false);
   const startWritingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { dreamLogs, isLoading, fetchDreamLogs } = useDreamLogs();
-  const { fetchAwarenessLogs } = useAwarenessLogs();
+  const {
+    awarenessLogs,
+    isLoading: isLoadingAwarenessLogs,
+    fetchAwarenessLogs,
+  } = useAwarenessLogs();
 
   const dreamEntries = useMemo(
     () => dreamLogs.map(mapDreamLogToJournalEntry),
     [dreamLogs]
+  );
+  const awarenessEntries = useMemo(
+    () => awarenessLogs.map(mapAwarenessLogToJournalEntry),
+    [awarenessLogs]
   );
 
   const activeEntries = useMemo(() => {
@@ -121,15 +142,15 @@ const Journal = () => {
       return dreamEntries;
     }
 
-    return JOURNAL_ENTRIES.awareness;
-  }, [activeTab, dreamEntries]);
+    return awarenessEntries;
+  }, [activeTab, awarenessEntries, dreamEntries]);
 
   const journalCounts = useMemo(
     () => ({
       dreams: dreamEntries.length,
-      awareness: JOURNAL_ENTRIES.awareness.length,
+      awareness: awarenessEntries.length,
     }),
-    [dreamEntries.length]
+    [awarenessEntries.length, dreamEntries.length]
   );
 
   useFocusEffect(
@@ -227,16 +248,18 @@ const Journal = () => {
           {activeEntries.length === 0 ? (
             <View style={styles.emptyState}>
               <Text style={styles.emptyStateTitle}>
-                {activeTab === "dreams" && isLoading
-                  ? "Loading dream logs..."
-                  : activeTab === "dreams"
-                    ? "No dream logs yet"
-                    : "No journal entries yet"}
+                {activeTab === "dreams"
+                  ? isLoading
+                    ? "Loading dream logs..."
+                    : "No dream logs yet"
+                  : isLoadingAwarenessLogs
+                    ? "Loading awareness logs..."
+                    : "No awareness logs yet"}
               </Text>
               <Text style={styles.emptyStateText}>
                 {activeTab === "dreams"
                   ? "Your saved dreams will appear here once you start writing."
-                  : "Your journal entries will appear here once you start writing."}
+                  : "Your saved awareness logs will appear here once you start writing."}
               </Text>
             </View>
           ) : (
