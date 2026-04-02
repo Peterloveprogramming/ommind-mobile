@@ -157,13 +157,26 @@ const Journal = () => {
     useCallback(() => {
       setIsStartingWriting(false);
 
+      const loadJournalLogs = async () => {
+        if (activeTab === "dreams") {
+          const dreamLogs = await fetchDreamLogs();
+          console.log("dream logs:", dreamLogs);
+          return;
+        }
+
+        const awarenessLogs = await fetchAwarenessLogs();
+        console.log("awareness logs:", awarenessLogs);
+      };
+
+      void loadJournalLogs();
+
       return () => {
         if (startWritingTimeoutRef.current) {
           clearTimeout(startWritingTimeoutRef.current);
           startWritingTimeoutRef.current = null;
         }
       };
-    }, [])
+    }, [activeTab])
   );
 
   useEffect(() => {

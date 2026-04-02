@@ -19,7 +19,7 @@ const Explore = () => {
 
   useEffect(() => {
     void fetchMeditationCourses();
-  }, [fetchMeditationCourses]);
+  }, []);
 
   const renderCourseRow = (type: keyof MeditationCoursesByType) => {
     const courses = coursesByType?.[type] ?? [];
