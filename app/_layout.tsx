@@ -170,6 +170,13 @@ export default function RootLayout() {
             },
             }}
           />
+
+        <Stack.Screen
+          name="journal/write"
+          options={{
+            headerShown: false,
+          }}
+        />
         </Stack>
       </GlobalProviders>
   );

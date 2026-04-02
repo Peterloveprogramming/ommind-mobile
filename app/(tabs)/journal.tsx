@@ -6,9 +6,9 @@ import {
   Text,
   View,
 } from "react-native";
+import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { COLORS, FONTS } from "@/theme.js";
-import { useToast } from "@/context/useToast";
 
 type JournalTab = "dreams" | "awareness";
 
@@ -60,16 +60,21 @@ const TAB_CONFIG: Array<{
 
 const Journal = () => {
   const [activeTab, setActiveTab] = useState<JournalTab>("awareness");
-  const { showToastMessage } = useToast();
 
   const activeEntries = useMemo(() => JOURNAL_ENTRIES[activeTab], [activeTab]);
 
   const handleEntryPress = (entry: JournalEntry) => {
-    showToastMessage(`${entry.title} is not wired yet`, false);
+    router.push({
+      pathname: "/journal/write",
+      params: { type: activeTab, title: entry.title },
+    });
   };
 
   const handleStartWritingPress = () => {
-    showToastMessage("Journal writing is not wired yet", false);
+    router.push({
+      pathname: "/journal/write",
+      params: { type: activeTab },
+    });
   };
 
   return (
