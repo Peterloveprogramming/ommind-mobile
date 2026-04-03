@@ -27,16 +27,29 @@ const formatEntryDate = () =>
   }).format(new Date());
 
 export default function JournalWriteScreen() {
-  const { type, title } = useLocalSearchParams<{
+  const { type, title, logId, content } = useLocalSearchParams<{
     type?: JournalType;
     title?: string;
+    logId?: string;
+    content?: string;
   }>();
   const { showToastMessage } = useToast();
-  const { createDreamLog, isCreating } = useDreamLogs();
-  const { createAwarenessLog, isCreating: isCreatingAwarenessLog } = useAwarenessLogs();
-  const [entryText, setEntryText] = useState("");
+  const {
+    createDreamLog,
+    updateDreamLog,
+    isCreating,
+    isUpdating,
+  } = useDreamLogs();
+  const {
+    createAwarenessLog,
+    updateAwarenessLog,
+    isCreating: isCreatingAwarenessLog,
+    isUpdating: isUpdatingAwarenessLog,
+  } = useAwarenessLogs();
+  const [entryText, setEntryText] = useState(typeof content === "string" ? content : "");
 
   const normalizedType: JournalType = type === "dreams" ? "dreams" : "awareness";
+  const isEditMode = typeof logId === "string" && logId.trim().length > 0;
 
   const screenTitle = useMemo(() => {
     if (title) {
@@ -54,7 +67,8 @@ export default function JournalWriteScreen() {
       ? "Describe your dream as you remember it..."
       : "Write down whatever came up for you...";
 
-  const isSaving = isCreating || isCreatingAwarenessLog;
+  const isSaving =
+    isCreating || isCreatingAwarenessLog || isUpdating || isUpdatingAwarenessLog;
   const isSaveDisabled = entryText.trim().length === 0 || isSaving;
 
   const handleSave = async () => {
@@ -65,28 +79,38 @@ export default function JournalWriteScreen() {
     }
 
     if (normalizedType === "awareness") {
-      const savedAwarenessLog = await createAwarenessLog({
-        log: trimmedEntryText,
-      });
+      const savedAwarenessLog = isEditMode
+        ? await updateAwarenessLog({
+            log_id: logId,
+            log: trimmedEntryText,
+          })
+        : await createAwarenessLog({
+            log: trimmedEntryText,
+          });
 
       if (!savedAwarenessLog) {
         return;
       }
 
-      showToastMessage("Awareness log saved", true);
+      showToastMessage(isEditMode ? "Awareness log updated" : "Awareness log saved", true);
       router.back();
       return;
     }
 
-    const savedDreamLog = await createDreamLog({
-      log: trimmedEntryText,
-    });
+    const savedDreamLog = isEditMode
+      ? await updateDreamLog({
+          dream_log_id: logId,
+          log: trimmedEntryText,
+        })
+      : await createDreamLog({
+          log: trimmedEntryText,
+        });
 
     if (!savedDreamLog) {
       return;
     }
 
-    showToastMessage("Dream log saved", true);
+    showToastMessage(isEditMode ? "Dream log updated" : "Dream log saved", true);
     router.back();
   };
 
@@ -113,7 +137,7 @@ export default function JournalWriteScreen() {
                         pressed && !isSaveDisabled && styles.saveTextPressed,
                       ]}
                     >
-                      Save
+                      {isEditMode ? "Update" : "Save"}
                     </Text>
                   )}
                 </View>

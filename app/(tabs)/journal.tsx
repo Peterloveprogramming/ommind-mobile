@@ -23,6 +23,7 @@ type JournalEntry = {
   time: string;
   title: string;
   preview: string;
+  content: string;
 };
 
 const FALLBACK_EMPTY_DATE = {
@@ -88,6 +89,7 @@ const mapDreamLogToJournalEntry = (
     time,
     title,
     preview: logText || "No dream text saved yet.",
+    content: logText,
   };
 };
 
@@ -105,6 +107,7 @@ const mapAwarenessLogToJournalEntry = (
     time,
     title,
     preview: logText || "No awareness text saved yet.",
+    content: logText,
   };
 };
 
@@ -201,7 +204,12 @@ const Journal = () => {
 
     router.push({
       pathname: "/journal/write",
-      params: { type: activeTab, title: entry.title },
+      params: {
+        type: activeTab,
+        title: entry.title,
+        logId: entry.id,
+        content: entry.content,
+      },
     });
   };
 
