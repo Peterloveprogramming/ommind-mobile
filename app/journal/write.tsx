@@ -71,6 +71,13 @@ export default function JournalWriteScreen() {
     isCreating || isCreatingAwarenessLog || isUpdating || isUpdatingAwarenessLog;
   const isSaveDisabled = entryText.trim().length === 0 || isSaving;
 
+  const navigateBackToJournal = () => {
+    router.replace({
+      pathname: "/journal",
+      params: { activeTab: normalizedType },
+    });
+  };
+
   const handleSave = async () => {
     const trimmedEntryText = entryText.trim();
 
@@ -93,7 +100,7 @@ export default function JournalWriteScreen() {
       }
 
       showToastMessage(isEditMode ? "Awareness log updated" : "Awareness log saved", true);
-      router.back();
+      navigateBackToJournal();
       return;
     }
 
@@ -111,7 +118,7 @@ export default function JournalWriteScreen() {
     }
 
     showToastMessage(isEditMode ? "Dream log updated" : "Dream log saved", true);
-    router.back();
+    navigateBackToJournal();
   };
 
   return (
@@ -123,7 +130,7 @@ export default function JournalWriteScreen() {
       >
         <View style={styles.container}>
           <View style={styles.headerRow}>
-            <BackButton onTouch={() => router.back()} />
+            <BackButton onTouch={navigateBackToJournal} />
             <Pressable onPress={handleSave} hitSlop={12} disabled={isSaveDisabled}>
               {({ pressed }) => (
                 <View style={styles.saveAction}>

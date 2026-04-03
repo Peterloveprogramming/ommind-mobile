@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Image,
@@ -10,7 +10,7 @@ import {
   Text,
   View,
 } from "react-native";
-import { router, useFocusEffect } from "expo-router";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import useAwarenessLogs from "@/services/useAwarenessLogs";
 import useDreamLogs from "@/services/useDreamLogs";
@@ -128,6 +128,9 @@ const AWARENESS_JOURNAL_BACKGROUND = require("@/assets/images/journal/awareness_
 const CLOSE_BUTTON_IMAGE = require("@/assets/images/journal/close_button.png");
 
 const Journal = () => {
+  const { activeTab: activeTabParam } = useLocalSearchParams<{
+    activeTab?: JournalTab;
+  }>();
   const [activeTab, setActiveTab] = useState<JournalTab>("dreams");
   const [isJournalPickerVisible, setIsJournalPickerVisible] = useState(false);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
@@ -171,6 +174,12 @@ const Journal = () => {
     }),
     [awarenessEntries.length, dreamEntries.length]
   );
+
+  useEffect(() => {
+    if (activeTabParam === "dreams" || activeTabParam === "awareness") {
+      setActiveTab(activeTabParam);
+    }
+  }, [activeTabParam]);
 
   useFocusEffect(
     useCallback(() => {
