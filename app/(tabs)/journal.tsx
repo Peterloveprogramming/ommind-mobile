@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -178,21 +178,6 @@ const Journal = () => {
       };
     }, [activeTab])
   );
-
-  useEffect(() => {
-    const loadJournalLogs = async () => {
-      if (activeTab === "dreams") {
-        const dreamLogs = await fetchDreamLogs();
-        console.log("dream logs:", dreamLogs);
-        return;
-      }
-
-      const awarenessLogs = await fetchAwarenessLogs();
-      console.log("awareness logs:", awarenessLogs);
-    };
-
-    void loadJournalLogs();
-  }, [activeTab]);
 
   const handleEntryPress = (entry: JournalEntry) => {
     router.push({
