@@ -9,6 +9,7 @@ import { useAddMessageRating } from "./lambda/useMessageRatingApi/requests";
 import { useAddMessageReport } from "./lambda/useMessageReportApi/requests";
 import {
     useAddAwarenessLog,
+    useBulkDeleteAwarenessLogs,
     useDeleteAwarenessLog,
     useGetAwarenessLog,
     useGetAwarenessLogs,
@@ -16,6 +17,7 @@ import {
 } from "./lambda/useAwarenessLogsApi/requests";
 import {
     useAddDreamLog,
+    useBulkDeleteDreamLogs,
     useDeleteDreamLog,
     useGetDreamLog,
     useGetDreamLogs,
@@ -179,6 +181,9 @@ export const useDreamLogsApi = () => {
     const {
         deleteDreamLog
     } = useDeleteDreamLog()
+    const {
+        bulkDeleteDreamLogs
+    } = useBulkDeleteDreamLogs()
 
     return {
         getDreamLogs: {
@@ -195,6 +200,9 @@ export const useDreamLogsApi = () => {
         },
         deleteDreamLog: {
             deleteDreamLog
+        },
+        bulkDeleteDreamLogs: {
+            bulkDeleteDreamLogs
         }
     }
 }
@@ -215,6 +223,9 @@ export const useAwarenessLogsApi = () => {
     const {
         deleteAwarenessLog
     } = useDeleteAwarenessLog()
+    const {
+        bulkDeleteAwarenessLogs
+    } = useBulkDeleteAwarenessLogs()
 
     return {
         getAwarenessLogs: {
@@ -231,6 +242,9 @@ export const useAwarenessLogsApi = () => {
         },
         deleteAwarenessLog: {
             deleteAwarenessLog
+        },
+        bulkDeleteAwarenessLogs: {
+            bulkDeleteAwarenessLogs
         }
     }
 }

@@ -31,6 +31,10 @@ export type DeleteDreamLogInput = {
   id?: DreamLogIdentifier;
 };
 
+export type BulkDeleteDreamLogsInput = {
+  log_ids: DreamLogIdentifier[];
+};
+
 const useDreamLogsLambdaFetch = <T,>() =>
   useFetch<T>({
     url: LAMBDA_SERVICE_URL,
@@ -139,4 +143,22 @@ export const useDeleteDreamLog = () => {
     });
 
   return { deleteDreamLog };
+};
+
+export const useBulkDeleteDreamLogs = () => {
+  const { commonFetch } = useDreamLogsLambdaFetch<LambdaResult.BulkDeleteDreamLogsResult>();
+
+  const lambdaConfig: LambdaRequest = {
+    route: "bulk_delete_dream_logs",
+  };
+
+  const bulkDeleteDreamLogs = ({ log_ids }: BulkDeleteDreamLogsInput) =>
+    commonFetch({
+      input: {
+        ...lambdaConfig,
+        log_ids,
+      },
+    });
+
+  return { bulkDeleteDreamLogs };
 };

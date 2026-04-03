@@ -1,6 +1,7 @@
 import { useAwarenessLogsApi } from "@/api/api";
 import {
   AddAwarenessLogInput,
+  BulkDeleteAwarenessLogsInput,
   DeleteAwarenessLogInput,
   GetAwarenessLogInput,
   UpdateAwarenessLogInput,
@@ -41,6 +42,7 @@ export default function useAwarenessLogs() {
     addAwarenessLog: { addAwarenessLog },
     updateAwarenessLog: { updateAwarenessLog },
     deleteAwarenessLog: { deleteAwarenessLog },
+    bulkDeleteAwarenessLogs: { bulkDeleteAwarenessLogs },
   } = useAwarenessLogsApi();
   const { showToastMessage } = useToast();
 
@@ -232,6 +234,53 @@ export default function useAwarenessLogs() {
     [awarenessLog, deleteAwarenessLog, showToastMessage]
   );
 
+  const removeAwarenessLogs = useCallback(
+    async ({ log_ids, user_id }: BulkDeleteAwarenessLogsInput) => {
+      setIsDeleting(true);
+      setError(null);
+
+      try {
+        const response = await bulkDeleteAwarenessLogs({ log_ids, user_id });
+        const isSuccess = checkIfLambdaResultIsSuccess(response);
+
+        if (!isSuccess) {
+          const message = getLambdaErrorMessage(response);
+          setError(message);
+          showToastMessage(message, false);
+          return false;
+        }
+
+        const deletedIds = Array.isArray(response.data?.deleted_ids)
+          ? response.data.deleted_ids
+          : [];
+        setAwarenessLogs((currentAwarenessLogs) =>
+          currentAwarenessLogs.filter((currentAwarenessLog) => {
+            const currentAwarenessLogId = getAwarenessLogId(currentAwarenessLog);
+            return (
+              currentAwarenessLogId === null ||
+              !deletedIds.includes(Number(currentAwarenessLogId))
+            );
+          })
+        );
+
+        if (awarenessLog && deletedIds.includes(Number(getAwarenessLogId(awarenessLog)))) {
+          setAwarenessLog(null);
+        }
+
+        return true;
+      } catch (deleteError) {
+        console.error("Failed to bulk delete awareness logs:", deleteError);
+        const message = "Unable to delete awareness logs";
+        setError(message);
+        showToastMessage(message, false);
+        return false;
+      } finally {
+        setIsDeleting(false);
+      }
+    },
+    [awarenessLog, bulkDeleteAwarenessLogs, showToastMessage]
+  );
+
   return {
     awarenessLogs,
     awarenessLog,
@@ -246,5 +295,6 @@ export default function useAwarenessLogs() {
     createAwarenessLog,
     updateAwarenessLog: updateAwarenessLogEntry,
     deleteAwarenessLog: removeAwarenessLog,
+    bulkDeleteAwarenessLogs: removeAwarenessLogs,
   };
 }

@@ -33,6 +33,11 @@ export type DeleteAwarenessLogInput = {
   user_id?: string | number;
 };
 
+export type BulkDeleteAwarenessLogsInput = {
+  log_ids: AwarenessLogIdentifier[];
+  user_id?: string | number;
+};
+
 const useAwarenessLogsLambdaFetch = <T,>() =>
   useFetch<T>({
     url: LAMBDA_SERVICE_URL,
@@ -143,4 +148,24 @@ export const useDeleteAwarenessLog = () => {
     });
 
   return { deleteAwarenessLog };
+};
+
+export const useBulkDeleteAwarenessLogs = () => {
+  const { commonFetch } =
+    useAwarenessLogsLambdaFetch<LambdaResult.BulkDeleteAwarenessLogsResult>();
+
+  const lambdaConfig: LambdaRequest = {
+    route: "bulk_delete_awareness_logs",
+  };
+
+  const bulkDeleteAwarenessLogs = ({ log_ids, user_id }: BulkDeleteAwarenessLogsInput) =>
+    commonFetch({
+      input: {
+        ...lambdaConfig,
+        log_ids,
+        ...(user_id !== undefined ? { user_id } : {}),
+      },
+    });
+
+  return { bulkDeleteAwarenessLogs };
 };

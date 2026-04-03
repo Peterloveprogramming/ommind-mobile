@@ -123,11 +123,19 @@ const Journal = () => {
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedEntryIds, setSelectedEntryIds] = useState<string[]>([]);
   const startWritingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const { dreamLogs, isLoading, fetchDreamLogs } = useDreamLogs();
+  const {
+    dreamLogs,
+    isLoading,
+    isDeleting: isDeletingDreamLogs,
+    fetchDreamLogs,
+    bulkDeleteDreamLogs,
+  } = useDreamLogs();
   const {
     awarenessLogs,
     isLoading: isLoadingAwarenessLogs,
+    isDeleting: isDeletingAwarenessLogs,
     fetchAwarenessLogs,
+    bulkDeleteAwarenessLogs,
   } = useAwarenessLogs();
 
   const dreamEntries = useMemo(
@@ -215,6 +223,30 @@ const Journal = () => {
     setSelectedEntryIds([]);
   };
 
+  const handleDeleteSelectedPress = async () => {
+    if (selectedEntryIds.length === 0) {
+      return;
+    }
+
+    if (activeTab === "dreams") {
+      const isDeleted = await bulkDeleteDreamLogs({ log_ids: selectedEntryIds });
+      if (!isDeleted) {
+        return;
+      }
+
+      await fetchDreamLogs();
+    } else {
+      const isDeleted = await bulkDeleteAwarenessLogs({ log_ids: selectedEntryIds });
+      if (!isDeleted) {
+        return;
+      }
+
+      await fetchAwarenessLogs();
+    }
+
+    handleExitSelectionMode();
+  };
+
   const handleStartWritingPress = () => {
     if (isStartingWriting) {
       return;
@@ -231,6 +263,9 @@ const Journal = () => {
       params: { type: activeTab },
     });
   };
+
+  const isDeleteDisabled =
+    selectedEntryIds.length === 0 || isDeletingDreamLogs || isDeletingAwarenessLogs;
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -343,8 +378,20 @@ const Journal = () => {
                 <Text style={styles.selectionActionText}>Reflect</Text>
               </Pressable>
 
-              <Pressable style={({ pressed }) => [styles.selectionActionButton, pressed && styles.selectionActionButtonPressed]}>
-                <Ionicons name="trash-outline" size={18} color="#FFFFFF" />
+              <Pressable
+                onPress={handleDeleteSelectedPress}
+                disabled={isDeleteDisabled}
+                style={({ pressed }) => [
+                  styles.selectionActionButton,
+                  isDeleteDisabled && styles.selectionActionButtonDisabled,
+                  pressed && styles.selectionActionButtonPressed,
+                ]}
+              >
+                {isDeletingDreamLogs || isDeletingAwarenessLogs ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Ionicons name="trash-outline" size={18} color="#FFFFFF" />
+                )}
                 <Text style={styles.selectionActionText}>Delete</Text>
               </Pressable>
 
@@ -395,7 +442,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#FBFBF8",
-    paddingHorizontal: 18,
+    paddingHorizontal: 10,
     paddingTop: 20,
   },
   tabRow: {
@@ -576,8 +623,10 @@ const styles = StyleSheet.create({
   },
   selectionModeExit: {
     alignSelf: "flex-end",
-    paddingVertical: 6,
-    paddingHorizontal: 4,
+    marginRight:10,
+    // paddingVertical: 6,
+    // paddingHorizontal: 4,
+    marginTop:10,
     marginBottom: 10,
   },
   selectionModeExitText: {
@@ -590,6 +639,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     gap: 12,
+    // borderWidth:1,
+    width:"100%",
   },
   selectionActionButton: {
     flex: 1,
@@ -604,6 +655,9 @@ const styles = StyleSheet.create({
   },
   selectionActionButtonPressed: {
     opacity: 0.82,
+  },
+  selectionActionButtonDisabled: {
+    opacity: 0.6,
   },
   selectionActionText: {
     fontFamily: FONTS.figtreeSemiBold,

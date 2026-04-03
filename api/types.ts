@@ -46,11 +46,13 @@ export type LambdaRequest = {
             "add_awareness_log" |
             "update_awareness_log" |
             "delete_awareness_log" |
+            "bulk_delete_awareness_logs" |
             "get_dream_logs" |
             "get_dream_log" |
             "add_dream_log" |
             "update_dream_log" |
-            "delete_dream_log",
+            "delete_dream_log" |
+            "bulk_delete_dream_logs",
 }
 
 // Lambda Result 
@@ -180,10 +182,18 @@ export namespace LambdaResult {
   export type AddAwarenessLogResult = LambdaResult<AwarenessLogItem | null>;
   export type UpdateAwarenessLogResult = LambdaResult<AwarenessLogItem | null>;
   export type DeleteAwarenessLogResult = LambdaResult<{ id?: number; log_id?: number } | null>;
+  export type BulkDeleteAwarenessLogsResult = LambdaResult<{
+    deleted_ids?: number[];
+    deleted_count?: number;
+  } | null>;
   export type GetDreamLogsResult = LambdaResult<DreamLogItem[]>;
   export type GetDreamLogResult = LambdaResult<DreamLogItem | null>;
   export type AddDreamLogResult = LambdaResult<DreamLogItem | null>;
   export type UpdateDreamLogResult = LambdaResult<DreamLogItem | null>;
   export type DeleteDreamLogResult = LambdaResult<DreamLogItem | null>;
+  export type BulkDeleteDreamLogsResult = LambdaResult<{
+    deleted_ids?: number[];
+    deleted_count?: number;
+  } | null>;
 
 }

@@ -1,6 +1,7 @@
 import { useDreamLogsApi } from "@/api/api";
 import {
   AddDreamLogInput,
+  BulkDeleteDreamLogsInput,
   DeleteDreamLogInput,
   GetDreamLogInput,
   UpdateDreamLogInput,
@@ -36,6 +37,7 @@ export default function useDreamLogs() {
     addDreamLog: { addDreamLog },
     updateDreamLog: { updateDreamLog },
     deleteDreamLog: { deleteDreamLog },
+    bulkDeleteDreamLogs: { bulkDeleteDreamLogs },
   } = useDreamLogsApi();
   const { showToastMessage } = useToast();
 
@@ -226,6 +228,50 @@ export default function useDreamLogs() {
     [deleteDreamLog, dreamLog, showToastMessage]
   );
 
+  const removeDreamLogs = useCallback(
+    async ({ log_ids }: BulkDeleteDreamLogsInput) => {
+      setIsDeleting(true);
+      setError(null);
+
+      try {
+        const response = await bulkDeleteDreamLogs({ log_ids });
+        const isSuccess = checkIfLambdaResultIsSuccess(response);
+
+        if (!isSuccess) {
+          const message = getLambdaErrorMessage(response);
+          setError(message);
+          showToastMessage(message, false);
+          return false;
+        }
+
+        const deletedIds = Array.isArray(response.data?.deleted_ids)
+          ? response.data.deleted_ids
+          : [];
+        setDreamLogs((currentDreamLogs) =>
+          currentDreamLogs.filter((currentDreamLog) => {
+            const currentDreamLogId = getDreamLogId(currentDreamLog);
+            return currentDreamLogId === null || !deletedIds.includes(Number(currentDreamLogId));
+          })
+        );
+
+        if (dreamLog && deletedIds.includes(Number(getDreamLogId(dreamLog)))) {
+          setDreamLog(null);
+        }
+
+        return true;
+      } catch (deleteError) {
+        console.error("Failed to bulk delete dream logs:", deleteError);
+        const message = "Unable to delete dream logs";
+        setError(message);
+        showToastMessage(message, false);
+        return false;
+      } finally {
+        setIsDeleting(false);
+      }
+    },
+    [bulkDeleteDreamLogs, dreamLog, showToastMessage]
+  );
+
   return {
     dreamLogs,
     dreamLog,
@@ -240,5 +286,6 @@ export default function useDreamLogs() {
     createDreamLog,
     updateDreamLog: updateDreamLogEntry,
     deleteDreamLog: removeDreamLog,
+    bulkDeleteDreamLogs: removeDreamLogs,
   };
 }
