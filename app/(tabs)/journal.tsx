@@ -1,6 +1,9 @@
-import React, { useCallback, useMemo, useRef, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  Image,
+  ImageBackground,
+  Modal,
   Pressable,
   SafeAreaView,
   StyleSheet,
@@ -120,12 +123,15 @@ const TAB_CONFIG: Array<{
   { key: "awareness", label: "Awareness", icon: "sunny-outline" },
 ];
 
+const DREAM_JOURNAL_BACKGROUND = require("@/assets/images/journal/dream_background.png");
+const AWARENESS_JOURNAL_BACKGROUND = require("@/assets/images/journal/awareness_background.png");
+const CLOSE_BUTTON_IMAGE = require("@/assets/images/journal/close_button.png");
+
 const Journal = () => {
   const [activeTab, setActiveTab] = useState<JournalTab>("dreams");
-  const [isStartingWriting, setIsStartingWriting] = useState(false);
+  const [isJournalPickerVisible, setIsJournalPickerVisible] = useState(false);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedEntryIds, setSelectedEntryIds] = useState<string[]>([]);
-  const startWritingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const {
     dreamLogs,
     isLoading,
@@ -168,7 +174,7 @@ const Journal = () => {
 
   useFocusEffect(
     useCallback(() => {
-      setIsStartingWriting(false);
+      setIsJournalPickerVisible(false);
 
       const loadJournalLogs = async () => {
         if (activeTab === "dreams") {
@@ -182,13 +188,6 @@ const Journal = () => {
       };
 
       void loadJournalLogs();
-
-      return () => {
-        if (startWritingTimeoutRef.current) {
-          clearTimeout(startWritingTimeoutRef.current);
-          startWritingTimeoutRef.current = null;
-        }
-      };
     }, [activeTab])
   );
 
@@ -256,19 +255,14 @@ const Journal = () => {
   };
 
   const handleStartWritingPress = () => {
-    if (isStartingWriting) {
-      return;
-    }
+    setIsJournalPickerVisible(true);
+  };
 
-    setIsStartingWriting(true);
-    startWritingTimeoutRef.current = setTimeout(() => {
-      setIsStartingWriting(false);
-      startWritingTimeoutRef.current = null;
-    }, 1500);
-
+  const handleCreateJournalPress = (type: JournalTab) => {
+    setIsJournalPickerVisible(false);
     router.push({
       pathname: "/journal/write",
-      params: { type: activeTab },
+      params: { type },
     });
   };
 
@@ -416,25 +410,74 @@ const Journal = () => {
           <View style={styles.ctaWrap}>
             <Pressable
               onPress={handleStartWritingPress}
-              disabled={isStartingWriting}
               style={({ pressed }) => [
                 styles.ctaButton,
-                isStartingWriting && styles.ctaButtonDisabled,
                 pressed && styles.ctaButtonPressed,
               ]}
             >
-              {isStartingWriting ? (
-                <ActivityIndicator size="small" color="#FFFFFF" />
-              ) : (
-                <>
-                  <Ionicons name="add" size={24} color="#FFFFFF" />
-                  <Text style={styles.ctaText}>Start Writing</Text>
-                </>
-              )}
+              <>
+                <Ionicons name="add" size={24} color="#FFFFFF" />
+                <Text style={styles.ctaText}>Start Writing</Text>
+              </>
             </Pressable>
           </View>
         )}
       </View>
+
+      <Modal
+        transparent
+        animationType="fade"
+        visible={isJournalPickerVisible}
+        onRequestClose={() => setIsJournalPickerVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <Pressable
+            style={styles.modalBackdrop}
+            onPress={() => setIsJournalPickerVisible(false)}
+          />
+
+          <View style={styles.modalSheet}>
+            <View style={styles.modalHandle} />
+
+            <View style={styles.journalPickerRow}>
+              <Pressable
+                onPress={() => handleCreateJournalPress("dreams")}
+                style={({ pressed }) => [styles.journalPickerCardWrap, pressed && styles.cardPressed]}
+              >
+                <ImageBackground
+                  source={DREAM_JOURNAL_BACKGROUND}
+                  style={styles.journalPickerCard}
+                  imageStyle={styles.journalPickerCardImage}
+                >
+                  <Ionicons name="moon" size={24} color="#FFFFFF" />
+                  {/* <Text style={styles.journalPickerText}>Dream{"\n"}Journal</Text> */}
+                </ImageBackground>
+              </Pressable>
+
+              <Pressable
+                onPress={() => handleCreateJournalPress("awareness")}
+                style={({ pressed }) => [styles.journalPickerCardWrap, pressed && styles.cardPressed]}
+              >
+                <ImageBackground
+                  source={AWARENESS_JOURNAL_BACKGROUND}
+                  style={styles.journalPickerCard}
+                  imageStyle={styles.journalPickerCardImage}
+                >
+                  <Ionicons name="sunny-outline" size={24} color="#FFFFFF" />
+                  {/* <Text style={styles.journalPickerText}>Awareness{"\n"}Journal</Text> */}
+                </ImageBackground>
+              </Pressable>
+            </View>
+
+            <Pressable
+              onPress={() => setIsJournalPickerVisible(false)}
+              style={({ pressed }) => [styles.closeButtonWrap, pressed && styles.cardPressed]}
+            >
+              <Image source={CLOSE_BUTTON_IMAGE} style={styles.closeButtonImage} />
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -444,14 +487,14 @@ export default Journal;
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    padding:30,
     backgroundColor: "#FBFBF8",
   },
   container: {
     flex: 1,
     backgroundColor: "#FBFBF8",
-    paddingHorizontal: 10,
-    paddingTop: 20,
+    paddingHorizontal: 25,
+    paddingTop: 50,
+    paddingBottom:25
   },
   tabRow: {
     flexDirection: "row",
@@ -617,9 +660,6 @@ const styles = StyleSheet.create({
   ctaButtonPressed: {
     opacity: 0.82,
   },
-  ctaButtonDisabled: {
-    opacity: 0.82,
-  },
   ctaText: {
     fontFamily: FONTS.figtreeSemiBold,
     fontSize: 16,
@@ -671,5 +711,66 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.figtreeSemiBold,
     fontSize: 16,
     color: "#FFFFFF",
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: "flex-end",
+    backgroundColor: "rgba(16, 16, 16, 0.34)",
+  },
+  modalBackdrop: {
+    flex: 1,
+  },
+  modalSheet: {
+    backgroundColor: "#F7F7F4",
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
+    paddingTop: 12,
+    paddingHorizontal: 18,
+    paddingBottom: 28,
+    alignItems: "center",
+  },
+  modalHandle: {
+    width: 76,
+    height: 5,
+    borderRadius: 999,
+    backgroundColor: "#B6B6BA",
+    marginBottom: 22,
+  },
+  journalPickerRow: {
+    width: "100%",
+    flexDirection: "row",
+    gap: 10,
+  },
+  journalPickerCardWrap: {
+    flex: 1,
+  },
+  journalPickerCard: {
+    minHeight: 138,
+    borderRadius: 28,
+    overflow: "hidden",
+    paddingHorizontal: 18,
+    paddingTop: 16,
+    paddingBottom: 20,
+    justifyContent: "space-between",
+  },
+  journalPickerCardImage: {
+    borderRadius: 28,
+  },
+  journalPickerText: {
+    fontFamily: FONTS.figtreeSemiBold,
+    fontSize: 18,
+    lineHeight: 23,
+    color: "#FFFFFF",
+  },
+  closeButtonWrap: {
+    marginTop: 18,
+  },
+  closeButtonImage: {
+    width: 72,
+    height: 72,
+    resizeMode: "contain",
+  },
+  cardPressed: {
+    opacity: 0.86,
   },
 });
