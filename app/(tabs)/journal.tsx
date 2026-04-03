@@ -120,6 +120,8 @@ const TAB_CONFIG: Array<{
 const Journal = () => {
   const [activeTab, setActiveTab] = useState<JournalTab>("dreams");
   const [isStartingWriting, setIsStartingWriting] = useState(false);
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [selectedEntryIds, setSelectedEntryIds] = useState<string[]>([]);
   const startWritingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { dreamLogs, isLoading, fetchDreamLogs } = useDreamLogs();
   const {
@@ -180,10 +182,37 @@ const Journal = () => {
   );
 
   const handleEntryPress = (entry: JournalEntry) => {
+    if (isSelectionMode) {
+      setSelectedEntryIds((currentIds) =>
+        currentIds.includes(entry.id)
+          ? currentIds.filter((currentId) => currentId !== entry.id)
+          : [...currentIds, entry.id]
+      );
+      return;
+    }
+
     router.push({
       pathname: "/journal/write",
       params: { type: activeTab, title: entry.title },
     });
+  };
+
+  const handleEntryLongPress = (entry: JournalEntry) => {
+    setIsSelectionMode(true);
+    setSelectedEntryIds((currentIds) =>
+      currentIds.includes(entry.id) ? currentIds : [...currentIds, entry.id]
+    );
+  };
+
+  const handleTabPress = (tab: JournalTab) => {
+    setActiveTab(tab);
+    setIsSelectionMode(false);
+    setSelectedEntryIds([]);
+  };
+
+  const handleExitSelectionMode = () => {
+    setIsSelectionMode(false);
+    setSelectedEntryIds([]);
   };
 
   const handleStartWritingPress = () => {
@@ -213,7 +242,7 @@ const Journal = () => {
             return (
               <Pressable
                 key={tab.key}
-                onPress={() => setActiveTab(tab.key)}
+                onPress={() => handleTabPress(tab.key)}
                 style={styles.tabButton}
               >
                 <View style={styles.tabLabelRow}>
@@ -264,9 +293,11 @@ const Journal = () => {
             activeEntries.map((entry) => (
               <Pressable
                 key={entry.id}
+                onLongPress={() => handleEntryLongPress(entry)}
                 onPress={() => handleEntryPress(entry)}
                 style={({ pressed }) => [
                   styles.entryRow,
+                  isSelectionMode && styles.entryRowSelectionMode,
                   pressed && styles.entryRowPressed,
                 ]}
               >
@@ -284,31 +315,70 @@ const Journal = () => {
                     {entry.preview}
                   </Text>
                 </View>
+
+                {isSelectionMode ? (
+                  <View
+                    style={[
+                      styles.selectionIndicator,
+                      selectedEntryIds.includes(entry.id) && styles.selectionIndicatorActive,
+                    ]}
+                  >
+                    {selectedEntryIds.includes(entry.id) ? (
+                      <Ionicons name="checkmark" size={16} color="#FFFFFF" />
+                    ) : null}
+                  </View>
+                ) : null}
               </Pressable>
             ))
           )}
         </View>
 
-        <View style={styles.ctaWrap}>
-          <Pressable
-            onPress={handleStartWritingPress}
-            disabled={isStartingWriting}
-            style={({ pressed }) => [
-              styles.ctaButton,
-              isStartingWriting && styles.ctaButtonDisabled,
-              pressed && styles.ctaButtonPressed,
-            ]}
-          >
-            {isStartingWriting ? (
-              <ActivityIndicator size="small" color="#FFFFFF" />
-            ) : (
-              <>
-                <Ionicons name="add" size={24} color="#FFFFFF" />
-                <Text style={styles.ctaText}>Start Writing</Text>
-              </>
-            )}
-          </Pressable>
-        </View>
+        {isSelectionMode ? (
+          <View style={styles.selectionActionsWrap}>
+
+
+            <View style={styles.selectionActionsRow}>
+              <Pressable style={({ pressed }) => [styles.selectionActionButton, pressed && styles.selectionActionButtonPressed]}>
+                <Ionicons name="sparkles-outline" size={18} color="#FFFFFF" />
+                <Text style={styles.selectionActionText}>Reflect</Text>
+              </Pressable>
+
+              <Pressable style={({ pressed }) => [styles.selectionActionButton, pressed && styles.selectionActionButtonPressed]}>
+                <Ionicons name="trash-outline" size={18} color="#FFFFFF" />
+                <Text style={styles.selectionActionText}>Delete</Text>
+              </Pressable>
+
+              <Pressable style={({ pressed }) => [styles.selectionActionButton, pressed && styles.selectionActionButtonPressed]}>
+                <Ionicons name="document-outline" size={18} color="#FFFFFF" />
+                <Text style={styles.selectionActionText}>Export</Text>
+              </Pressable>
+            </View>
+            <Pressable onPress={handleExitSelectionMode} style={styles.selectionModeExit}>
+              <Text style={styles.selectionModeExitText}>Cancel</Text>
+            </Pressable>
+          </View>
+        ) : (
+          <View style={styles.ctaWrap}>
+            <Pressable
+              onPress={handleStartWritingPress}
+              disabled={isStartingWriting}
+              style={({ pressed }) => [
+                styles.ctaButton,
+                isStartingWriting && styles.ctaButtonDisabled,
+                pressed && styles.ctaButtonPressed,
+              ]}
+            >
+              {isStartingWriting ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <>
+                  <Ionicons name="add" size={24} color="#FFFFFF" />
+                  <Text style={styles.ctaText}>Start Writing</Text>
+                </>
+              )}
+            </Pressable>
+          </View>
+        )}
       </View>
     </SafeAreaView>
   );
@@ -408,6 +478,10 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     paddingVertical: 4,
   },
+  entryRowSelectionMode: {
+    alignItems: "center",
+    paddingRight: 8,
+  },
   entryRowPressed: {
     opacity: 0.72,
   },
@@ -456,6 +530,22 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     color: "#85858B",
   },
+  selectionIndicator: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: "#CBCBD1",
+    alignItems: "center",
+    justifyContent: "center",
+    marginLeft: 12,
+    marginTop: 10,
+    backgroundColor: "#FFFFFF",
+  },
+  selectionIndicatorActive: {
+    backgroundColor: COLORS.brandYellow,
+    borderColor: COLORS.brandYellow,
+  },
   ctaWrap: {
     paddingBottom: 118,
     paddingTop: 12,
@@ -476,6 +566,46 @@ const styles = StyleSheet.create({
     opacity: 0.82,
   },
   ctaText: {
+    fontFamily: FONTS.figtreeSemiBold,
+    fontSize: 16,
+    color: "#FFFFFF",
+  },
+  selectionActionsWrap: {
+    paddingTop: 12,
+    paddingBottom: 118,
+  },
+  selectionModeExit: {
+    alignSelf: "flex-end",
+    paddingVertical: 6,
+    paddingHorizontal: 4,
+    marginBottom: 10,
+  },
+  selectionModeExitText: {
+    fontFamily: FONTS.figtreeSemiBold,
+    fontSize: 14,
+    color: "#717178",
+  },
+  selectionActionsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  selectionActionButton: {
+    flex: 1,
+    minHeight: 48,
+    borderRadius: 24,
+    backgroundColor: COLORS.brandYellow,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingHorizontal: 12,
+  },
+  selectionActionButtonPressed: {
+    opacity: 0.82,
+  },
+  selectionActionText: {
     fontFamily: FONTS.figtreeSemiBold,
     fontSize: 16,
     color: "#FFFFFF",
