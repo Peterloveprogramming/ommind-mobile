@@ -126,6 +126,7 @@ const TAB_CONFIG: Array<{
 const DREAM_JOURNAL_BACKGROUND = require("@/assets/images/journal/dream_background.png");
 const AWARENESS_JOURNAL_BACKGROUND = require("@/assets/images/journal/awareness_background.png");
 const CLOSE_BUTTON_IMAGE = require("@/assets/images/journal/close_button.png");
+const MAX_SELECTED_ENTRIES = 3;
 
 const Journal = () => {
   const { activeTab: activeTabParam } = useLocalSearchParams<{
@@ -204,11 +205,19 @@ const Journal = () => {
 
   const handleEntryPress = (entry: JournalEntry) => {
     if (isSelectionMode) {
-      setSelectedEntryIds((currentIds) =>
-        currentIds.includes(entry.id)
+      setSelectedEntryIds((currentIds) => {
+        const nextIds = currentIds.includes(entry.id)
           ? currentIds.filter((currentId) => currentId !== entry.id)
-          : [...currentIds, entry.id]
-      );
+          : currentIds.length >= MAX_SELECTED_ENTRIES
+            ? currentIds
+            : [...currentIds, entry.id];
+
+        if (nextIds.length === 0) {
+          setIsSelectionMode(false);
+        }
+
+        return nextIds;
+      });
       return;
     }
 
@@ -226,7 +235,11 @@ const Journal = () => {
   const handleEntryLongPress = (entry: JournalEntry) => {
     setIsSelectionMode(true);
     setSelectedEntryIds((currentIds) =>
-      currentIds.includes(entry.id) ? currentIds : [...currentIds, entry.id]
+      currentIds.includes(entry.id)
+        ? currentIds
+        : currentIds.length >= MAX_SELECTED_ENTRIES
+          ? currentIds
+          : [...currentIds, entry.id]
     );
   };
 
@@ -410,8 +423,9 @@ const Journal = () => {
 
         {isSelectionMode ? (
           <View style={styles.selectionActionsWrap}>
-
-
+            <Text style={styles.selectionCountText}>
+              {selectedEntryIds.length}/{MAX_SELECTED_ENTRIES} selected
+            </Text>
             <View style={styles.selectionActionsRow}>
               <Pressable
                 onPress={() => {
@@ -451,14 +465,16 @@ const Journal = () => {
                 <Text style={styles.selectionActionText}>Delete</Text>
               </Pressable>
 
-              <Pressable style={({ pressed }) => [styles.selectionActionButton, pressed && styles.selectionActionButtonPressed]}>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.selectionActionButton,
+                  pressed && styles.selectionActionButtonPressed,
+                ]}
+              >
                 <Ionicons name="document-outline" size={18} color="#FFFFFF" />
                 <Text style={styles.selectionActionText}>Export</Text>
               </Pressable>
             </View>
-            <Pressable onPress={handleExitSelectionMode} style={styles.selectionModeExit}>
-              <Text style={styles.selectionModeExitText}>Cancel</Text>
-            </Pressable>
           </View>
         ) : (
           <View style={styles.ctaWrap}>
@@ -723,18 +739,12 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     paddingBottom: 118,
   },
-  selectionModeExit: {
-    alignSelf: "flex-end",
-    marginRight:10,
-    // paddingVertical: 6,
-    // paddingHorizontal: 4,
-    marginTop:10,
-    marginBottom: 10,
-  },
-  selectionModeExitText: {
-    fontFamily: FONTS.figtreeSemiBold,
+  selectionCountText: {
+    marginBottom: 12,
+    fontFamily: FONTS.interSemiBold,
     fontSize: 14,
     color: "#717178",
+    textAlign: "center",
   },
   selectionActionsRow: {
     flexDirection: "row",
