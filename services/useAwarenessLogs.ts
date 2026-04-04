@@ -1,6 +1,7 @@
 import { useAwarenessLogsApi } from "@/api/api";
 import {
   AddAwarenessLogInput,
+  AnalyzeAwarenessInput,
   BulkDeleteAwarenessLogsInput,
   DeleteAwarenessLogInput,
   GetAwarenessLogInput,
@@ -35,6 +36,7 @@ export default function useAwarenessLogs() {
   const [isCreating, setIsCreating] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const {
     getAwarenessLogs: { getAwarenessLogs },
@@ -43,6 +45,7 @@ export default function useAwarenessLogs() {
     updateAwarenessLog: { updateAwarenessLog },
     deleteAwarenessLog: { deleteAwarenessLog },
     bulkDeleteAwarenessLogs: { bulkDeleteAwarenessLogs },
+    analyzeAwareness: { analyzeAwareness },
   } = useAwarenessLogsApi();
   const { showToastMessage } = useToast();
 
@@ -281,6 +284,36 @@ export default function useAwarenessLogs() {
     [awarenessLog, bulkDeleteAwarenessLogs, showToastMessage]
   );
 
+  const analyzeAwarenessLogs = useCallback(
+    async ({ logs_id, user_id }: AnalyzeAwarenessInput) => {
+      setIsAnalyzing(true);
+      setError(null);
+
+      try {
+        const response = await analyzeAwareness({ logs_id, user_id });
+        const isSuccess = checkIfLambdaResultIsSuccess(response);
+
+        if (!isSuccess) {
+          const message = getLambdaErrorMessage(response);
+          setError(message);
+          showToastMessage(message, false);
+          return null;
+        }
+
+        return response;
+      } catch (analyzeError) {
+        console.error("Failed to analyze awareness logs:", analyzeError);
+        const message = "Unable to analyze awareness logs";
+        setError(message);
+        showToastMessage(message, false);
+        return null;
+      } finally {
+        setIsAnalyzing(false);
+      }
+    },
+    [analyzeAwareness, showToastMessage]
+  );
+
   return {
     awarenessLogs,
     awarenessLog,
@@ -289,6 +322,7 @@ export default function useAwarenessLogs() {
     isCreating,
     isUpdating,
     isDeleting,
+    isAnalyzing,
     error,
     fetchAwarenessLogs,
     fetchAwarenessLog,
@@ -296,5 +330,6 @@ export default function useAwarenessLogs() {
     updateAwarenessLog: updateAwarenessLogEntry,
     deleteAwarenessLog: removeAwarenessLog,
     bulkDeleteAwarenessLogs: removeAwarenessLogs,
+    analyzeAwarenessLogs,
   };
 }

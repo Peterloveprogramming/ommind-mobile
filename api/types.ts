@@ -47,6 +47,7 @@ export type LambdaRequest = {
             "update_awareness_log" |
             "delete_awareness_log" |
             "bulk_delete_awareness_logs" |
+            "analyze_awareness" |
             "get_dream_logs" |
             "get_dream_log" |
             "add_dream_log" |
@@ -185,6 +186,13 @@ export namespace LambdaResult {
   export type BulkDeleteAwarenessLogsResult = LambdaResult<{
     deleted_ids?: number[];
     deleted_count?: number;
+  } | null>;
+  export type AnalyzeAwarenessResult = LambdaResult<{
+    feedback?: string;
+    session_id?: string;
+    saved_chat_message?: unknown;
+    missing_log_ids?: number[];
+    [key: string]: unknown;
   } | null>;
   export type GetDreamLogsResult = LambdaResult<DreamLogItem[]>;
   export type GetDreamLogResult = LambdaResult<DreamLogItem | null>;

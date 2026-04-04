@@ -9,6 +9,7 @@ import { useAddMessageRating } from "./lambda/useMessageRatingApi/requests";
 import { useAddMessageReport } from "./lambda/useMessageReportApi/requests";
 import {
     useAddAwarenessLog,
+    useAnalyzeAwareness,
     useBulkDeleteAwarenessLogs,
     useDeleteAwarenessLog,
     useGetAwarenessLog,
@@ -226,6 +227,9 @@ export const useAwarenessLogsApi = () => {
     const {
         bulkDeleteAwarenessLogs
     } = useBulkDeleteAwarenessLogs()
+    const {
+        analyzeAwareness
+    } = useAnalyzeAwareness()
 
     return {
         getAwarenessLogs: {
@@ -245,6 +249,9 @@ export const useAwarenessLogsApi = () => {
         },
         bulkDeleteAwarenessLogs: {
             bulkDeleteAwarenessLogs
+        },
+        analyzeAwareness: {
+            analyzeAwareness
         }
     }
 }

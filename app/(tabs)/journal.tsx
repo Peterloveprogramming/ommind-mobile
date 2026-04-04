@@ -146,8 +146,10 @@ const Journal = () => {
     awarenessLogs,
     isLoading: isLoadingAwarenessLogs,
     isDeleting: isDeletingAwarenessLogs,
+    isAnalyzing: isAnalyzingAwarenessLogs,
     fetchAwarenessLogs,
     bulkDeleteAwarenessLogs,
+    analyzeAwarenessLogs,
   } = useAwarenessLogs();
 
   const dreamEntries = useMemo(
@@ -263,6 +265,31 @@ const Journal = () => {
     handleExitSelectionMode();
   };
 
+  const handleReflectPress = async () => {
+    if (isAnalyzingAwarenessLogs || activeTab !== "awareness" || selectedEntryIds.length === 0) {
+      return;
+    }
+
+    const response = await analyzeAwarenessLogs({ logs_id: selectedEntryIds });
+    console.log("analyze awareness response:", response);
+
+    const sessionId =
+      typeof response?.data?.session_id === "string" ? response.data.session_id : null;
+
+    if (!sessionId) {
+      return;
+    }
+
+    handleExitSelectionMode();
+    router.push({
+      pathname: "/chat",
+      params: {
+        session_id: sessionId,
+        existing_chat: "true",
+      },
+    });
+  };
+
   const handleStartWritingPress = () => {
     setIsJournalPickerVisible(true);
   };
@@ -277,6 +304,8 @@ const Journal = () => {
 
   const isDeleteDisabled =
     selectedEntryIds.length === 0 || isDeletingDreamLogs || isDeletingAwarenessLogs;
+  const isReflectDisabled =
+    activeTab !== "awareness" || selectedEntryIds.length === 0;
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -384,9 +413,25 @@ const Journal = () => {
 
 
             <View style={styles.selectionActionsRow}>
-              <Pressable style={({ pressed }) => [styles.selectionActionButton, pressed && styles.selectionActionButtonPressed]}>
-                <Ionicons name="sparkles-outline" size={18} color="#FFFFFF" />
-                <Text style={styles.selectionActionText}>Reflect</Text>
+              <Pressable
+                onPress={() => {
+                  void handleReflectPress();
+                }}
+                disabled={isReflectDisabled}
+                style={({ pressed }) => [
+                  styles.selectionActionButton,
+                  isReflectDisabled && styles.selectionActionButtonDisabled,
+                  pressed && !isReflectDisabled && !isAnalyzingAwarenessLogs && styles.selectionActionButtonPressed,
+                ]}
+              >
+                {isAnalyzingAwarenessLogs ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <>
+                    <Ionicons name="sparkles-outline" size={18} color="#FFFFFF" />
+                    <Text style={styles.selectionActionText}>Reflect</Text>
+                  </>
+                )}
               </Pressable>
 
               <Pressable
