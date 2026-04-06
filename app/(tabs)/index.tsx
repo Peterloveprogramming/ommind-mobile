@@ -18,7 +18,27 @@ const HOME_BACKGROUND = require("@/assets/images/home/background_img.png");
 const MOON_ICON = require("@/assets/images/home/moon.png");
 const CREATE_MEDITATION_ICON = require("@/assets/images/home/create_meditation.png");
 const CHAT_ICON = require("@/assets/images/home/chat.png");
+const CALM_ICON = require("@/assets/images/home/feelings/calm.png");
+const PEACEFUL_ICON = require("@/assets/images/home/feelings/peaceful.png");
+const FOCUSED_ICON = require("@/assets/images/home/feelings/focused.png");
+const NEUTRAL_ICON = require("@/assets/images/home/feelings/neutral.png");
+const UNSURE_ICON = require("@/assets/images/home/feelings/unsure.png");
+const INSPIRED_ICON = require("@/assets/images/home/feelings/inspired.png");
+const TIRED_ICON = require("@/assets/images/home/feelings/tired.png");
+const DRAINED_ICON = require("@/assets/images/home/feelings/drained.png");
+const ANXIOUS_ICON = require("@/assets/images/home/feelings/anxious.png");
 const HOME_BACKGROUND_ASPECT_RATIO = 1473 / 856;
+const FEELING_OPTIONS = [
+  { label: "Calm", icon: CALM_ICON },
+  { label: "Peaceful", icon: PEACEFUL_ICON },
+  { label: "Focused", icon: FOCUSED_ICON },
+  { label: "Neutral", icon: NEUTRAL_ICON },
+  { label: "Unsure", icon: UNSURE_ICON },
+  { label: "Inspired", icon: INSPIRED_ICON },
+  { label: "Tired", icon: TIRED_ICON },
+  { label: "Drained", icon: DRAINED_ICON },
+  { label: "Anxious", icon: ANXIOUS_ICON },
+];
 
 const getFirstName = (userName: string | undefined) => {
   const trimmedName = (userName ?? "").trim();
@@ -124,6 +144,26 @@ const Home = () => {
           </View>
         </View>
       </ImageBackground>
+
+      <View style={styles.bottomDivider} />
+
+      <View style={styles.feelingsSection}>
+        <Text style={styles.feelingsTitle}>🍃 How are you feeling right now?</Text>
+        <Text style={styles.feelingsSubtitle}>Choose what feels closest</Text>
+
+        <View style={styles.feelingsGrid}>
+          {FEELING_OPTIONS.map((feeling) => (
+            <TouchableOpacity
+              key={feeling.label}
+              activeOpacity={0.85}
+              style={styles.feelingPill}
+            >
+              <Image source={feeling.icon} style={styles.feelingIcon} />
+              <Text style={styles.feelingLabel}>{feeling.label}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
 
       <View style={styles.bottomDivider} />
     </ScrollView>
@@ -259,5 +299,55 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: "#E5E1DC",
     marginHorizontal: 6,
+  },
+  feelingsSection: {
+    paddingTop: 38,
+    paddingHorizontal: 16,
+  },
+  feelingsTitle: {
+    textAlign: "center",
+    fontFamily: FONTS.figtreeSemiBold,
+    fontSize: 18,
+    lineHeight: 24,
+    color: "#4B4748",
+  },
+  feelingsSubtitle: {
+    marginTop: 12,
+    textAlign: "center",
+    fontFamily: FONTS.inter,
+    fontSize: 13,
+    lineHeight: 18,
+    color: "#9A9593",
+  },
+  feelingsGrid: {
+    marginTop: 24,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    rowGap: 16,
+  },
+  feelingPill: {
+    width: "31%",
+    minHeight: 54,
+    borderWidth: 1,
+    borderColor: "#E9D9C9",
+    borderRadius: 999,
+    backgroundColor: "#FFFEFC",
+    paddingHorizontal: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  feelingIcon: {
+    width: 24,
+    height: 24,
+    resizeMode: "contain",
+    marginRight: 8,
+  },
+  feelingLabel: {
+    fontFamily: FONTS.figtreeMedium,
+    fontSize: 11,
+    lineHeight: 15,
+    color: "#4B4748",
   },
 });
