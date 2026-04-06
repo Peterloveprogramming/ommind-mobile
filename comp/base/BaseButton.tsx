@@ -11,6 +11,7 @@ interface BaseButtonProps {
   fontColor?: string;
   text: string;
   height: number;
+  fontSize?: number;
   onPress: () => void;
   useIcon: boolean;
   icon?: React.ReactNode;
@@ -23,6 +24,7 @@ const BaseButton = ({
   fontColor = "white",
   text,
   height = 48,
+  fontSize = 17,
   onPress,
   useIcon = false,
   icon,
@@ -43,7 +45,7 @@ const BaseButton = ({
         ) : (
           <>
             {useIcon && icon && <View style={{ marginRight: 8 }}>{icon}</View>}
-            <Text style={[styles.buttonText, { color: fontColor }]}>{text}</Text>
+            <Text style={[styles.buttonText, { color: fontColor, fontSize }]}>{text}</Text>
           </>
         )}
       </View>

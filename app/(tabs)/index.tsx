@@ -101,7 +101,8 @@ const Home = () => {
           <View style={styles.buttonStack}>
             <BaseButton
               text="Create Meditation"
-              height={36}
+              height={30}
+              fontSize={11}
               onPress={handleCreateMeditationPress}
               useIcon={true}
               icon={<Image source={CREATE_MEDITATION_ICON} style={styles.buttonIcon} />}
@@ -110,7 +111,8 @@ const Home = () => {
             />
             <BaseButton
               text="Chat with Lhamo"
-              height={36}
+              height={30}
+              fontSize={11}
               onPress={handleChatWithLhamoPress}
               useIcon={true}
               icon={<Image source={CHAT_ICON} style={styles.buttonIcon} />}
@@ -167,7 +169,7 @@ const styles = StyleSheet.create({
     color: "#111111",
   },
   nameText: {
-    marginTop: 4,
+    marginTop: 2,
     fontFamily: FONTS.figtreeSemiBold,
     fontSize: 32,
     lineHeight: 38,
@@ -193,13 +195,13 @@ const styles = StyleSheet.create({
     position: "absolute",
     left: "5%",
     top: "9%",
-    width: "40%",
+    width: "44%",
     bottom: "10%",
   },
   guidingRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 12,
+    marginBottom: 5,
   },
   moonIcon: {
     width: 24,
@@ -233,19 +235,24 @@ const styles = StyleSheet.create({
     color: "#4E4A4C",
   },
   buttonStack: {
-    marginTop: 12,
-    gap: 8,
+    marginTop: 5,
+    gap: 4,
+    width: "100%",
   },
   buttonIcon: {
-    width: 18,
-    height: 18,
+    width: 14,
+    height: 14,
     resizeMode: "contain",
   },
   primaryButton: {
     borderRadius: 999,
+    width: "100%",
+    alignSelf: "flex-start",
   },
   secondaryButton: {
     borderRadius: 999,
+    width: "100%",
+    alignSelf: "flex-start",
   },
   bottomDivider: {
     marginTop: 26,
