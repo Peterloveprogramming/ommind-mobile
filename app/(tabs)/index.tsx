@@ -54,6 +54,7 @@ const capitalizeName = (name: string) => {
 
 const Home = () => {
   const [firstName, setFirstName] = useState("");
+  const [selectedFeeling, setSelectedFeeling] = useState("");
 
   useEffect(() => {
     const loadUserName = async () => {
@@ -156,10 +157,21 @@ const Home = () => {
             <TouchableOpacity
               key={feeling.label}
               activeOpacity={0.85}
-              style={styles.feelingPill}
+              style={[
+                styles.feelingPill,
+                selectedFeeling === feeling.label && styles.feelingPillSelected,
+              ]}
+              onPress={() => setSelectedFeeling(feeling.label)}
             >
               <Image source={feeling.icon} style={styles.feelingIcon} />
-              <Text style={styles.feelingLabel}>{feeling.label}</Text>
+              <Text
+                style={[
+                  styles.feelingLabel,
+                  selectedFeeling === feeling.label && styles.feelingLabelSelected,
+                ]}
+              >
+                {feeling.label}
+              </Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -338,16 +350,23 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  feelingPillSelected: {
+    backgroundColor: "#F7C648",
+    borderColor: "#F7C648",
+  },
   feelingIcon: {
-    width: 24,
-    height: 24,
+    width: 28,
+    height: 28,
     resizeMode: "contain",
-    marginRight: 8,
+    marginRight: 2,
   },
   feelingLabel: {
-    fontFamily: FONTS.figtreeMedium,
-    fontSize: 11,
-    lineHeight: 15,
+    fontFamily: FONTS.figtreeSemiBold,
+    fontSize: 14,
+    lineHeight: 17,
+    color: "#4B4748",
+  },
+  feelingLabelSelected: {
     color: "#4B4748",
   },
 });
