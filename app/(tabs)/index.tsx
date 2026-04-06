@@ -18,6 +18,8 @@ const HOME_BACKGROUND = require("@/assets/images/home/background_img.png");
 const MOON_ICON = require("@/assets/images/home/moon.png");
 const CREATE_MEDITATION_ICON = require("@/assets/images/home/create_meditation.png");
 const CHAT_ICON = require("@/assets/images/home/chat.png");
+const SKY_BACKGROUND = require("@/assets/images/home/sky.png");
+const LOTUS_ICON = require("@/assets/images/home/lotus.png");
 const CALM_ICON = require("@/assets/images/home/feelings/calm.png");
 const PEACEFUL_ICON = require("@/assets/images/home/feelings/peaceful.png");
 const FOCUSED_ICON = require("@/assets/images/home/feelings/focused.png");
@@ -77,6 +79,10 @@ const Home = () => {
     console.log("chat with lhamo pressed");
   };
 
+  const handleRefreshGuidancePress = () => {
+    console.log("refresh guidance pressed");
+  };
+
   return (
     <ScrollView
       style={styles.screen}
@@ -123,7 +129,7 @@ const Home = () => {
             <BaseButton
               text="Create Meditation"
               height={30}
-              fontSize={11}
+              fontSize={13}
               onPress={handleCreateMeditationPress}
               useIcon={true}
               icon={<Image source={CREATE_MEDITATION_ICON} style={styles.buttonIcon} />}
@@ -133,7 +139,7 @@ const Home = () => {
             <BaseButton
               text="Chat with Lhamo"
               height={30}
-              fontSize={11}
+              fontSize={13}
               onPress={handleChatWithLhamoPress}
               useIcon={true}
               icon={<Image source={CHAT_ICON} style={styles.buttonIcon} />}
@@ -178,6 +184,41 @@ const Home = () => {
       </View>
 
       <View style={styles.bottomDivider} />
+
+      <View style={styles.intentionSection}>
+        <Text style={styles.intentionTitle}>✨ Today&apos;s Intention</Text>
+
+        <ImageBackground
+          source={SKY_BACKGROUND}
+          style={styles.intentionCard}
+          imageStyle={styles.intentionCardImage}
+        >
+          <Text style={styles.intentionLead}>
+            Lhamo senses how you&apos;re feeling...{"\n"}and gently suggests:
+          </Text>
+
+          <Text style={styles.intentionWord}>Compassion</Text>
+
+          <View style={styles.intentionDivider} />
+
+          <Text style={styles.affirmationLead}>Lhamo&apos;s Affirmation for you</Text>
+
+          <Text style={styles.affirmationText}>
+            “I am grounded and soft with myself today.”
+          </Text>
+
+          <TouchableOpacity
+            activeOpacity={0.85}
+            style={styles.refreshButton}
+            onPress={handleRefreshGuidancePress}
+          >
+            <Image source={LOTUS_ICON} style={styles.refreshIcon} />
+            <Text style={styles.refreshButtonText}>Refresh Guidance</Text>
+          </TouchableOpacity>
+        </ImageBackground>
+      </View>
+
+      <View style={styles.bottomDivider} />
     </ScrollView>
   );
 };
@@ -190,9 +231,9 @@ const styles = StyleSheet.create({
     backgroundColor: "#FCFCFB",
   },
   contentContainer: {
-    paddingHorizontal: 24,
+    paddingHorizontal: 12,
     paddingTop: 50,
-    paddingBottom: 32,
+    paddingBottom: 50,
   },
   headerRow: {
     flexDirection: "row",
@@ -264,7 +305,7 @@ const styles = StyleSheet.create({
   guidingText: {
     flex: 1,
     fontFamily: FONTS.inter,
-    fontSize: 12,
+    fontSize: 13,
     lineHeight: 19,
     color: "#4B4748",
   },
@@ -282,7 +323,7 @@ const styles = StyleSheet.create({
   },
   messageText: {
     fontFamily: FONTS.inter,
-    fontSize: 12,
+    fontSize: 13,
     lineHeight: 14,
     color: "#4E4A4C",
   },
@@ -300,11 +341,14 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     width: "100%",
     alignSelf: "flex-start",
+    marginVertical:3,
   },
   secondaryButton: {
     borderRadius: 999,
     width: "100%",
     alignSelf: "flex-start",
+        marginVertical:3,
+
   },
   bottomDivider: {
     marginTop: 26,
@@ -314,7 +358,7 @@ const styles = StyleSheet.create({
   },
   feelingsSection: {
     paddingTop: 38,
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
   },
   feelingsTitle: {
     textAlign: "center",
@@ -368,5 +412,86 @@ const styles = StyleSheet.create({
   },
   feelingLabelSelected: {
     color: "#4B4748",
+  },
+  intentionSection: {
+    paddingTop: 38,
+  },
+  intentionTitle: {
+    textAlign: "center",
+    fontFamily: FONTS.figtreeSemiBold,
+    fontSize: 18,
+    lineHeight: 24,
+    color: "#4B4748",
+  },
+  intentionCard: {
+    marginTop: 22,
+    minHeight: 440,
+    paddingHorizontal: 24,
+    paddingVertical: 28,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  intentionCardImage: {
+    borderRadius: 28,
+    resizeMode: "cover",
+  },
+  intentionLead: {
+    textAlign: "center",
+    fontFamily: FONTS.figtreeMedium,
+    fontSize: 17,
+    lineHeight: 38,
+    color: "#98938F",
+  },
+  intentionWord: {
+    marginTop: 8,
+    textAlign: "center",
+    fontFamily: FONTS.figtreeSemiBold,
+    fontSize: 30,
+    lineHeight: 36,
+    color: "#111111",
+  },
+  intentionDivider: {
+    marginTop: 28,
+    width: "115%",
+    height: 1,
+    backgroundColor: "rgba(222, 216, 208, 0.9)",
+  },
+  affirmationLead: {
+    marginTop: 24,
+    textAlign: "center",
+    fontFamily: FONTS.figtreeMedium,
+    fontSize: 18,
+    lineHeight: 24,
+    color: "#98938F",
+  },
+  affirmationText: {
+    marginTop: 18,
+    textAlign: "center",
+    fontFamily: FONTS.figtreeSemiBold,
+    fontSize: 28,
+    lineHeight: 38,
+    color: "#111111",
+  },
+  refreshButton: {
+    marginTop: 34,
+    minHeight: 62,
+    borderRadius: 999,
+    backgroundColor: "rgba(175, 171, 169, 0.95)",
+    paddingHorizontal: 32,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  refreshIcon: {
+    width: 30,
+    height: 30,
+    resizeMode: "contain",
+    marginRight: 10,
+  },
+  refreshButtonText: {
+    fontFamily: FONTS.figtreeSemiBold,
+    fontSize: 16,
+    lineHeight: 20,
+    color: "#FFFFFF",
   },
 });
