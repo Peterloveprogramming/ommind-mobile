@@ -4,6 +4,7 @@ import {
   GetMeditationCourseDetailsInput,
   GetMeditationCourseDetailsResult,
   GetMeditationCoursesResult,
+  GetRecommendedMeditationCoursesResult,
 } from "@/api/lambda/meditation/types";
 import {
   MeditationCourseDetailsService,
@@ -22,10 +23,14 @@ export function useMeditationCourses(options: UseMeditationCoursesOptions = {}) 
   const [detailsStatus, setDetailsStatus] = useState<MeditationCourseDetailsStatus>("idle");
   const [detailsResult, setDetailsResult] = useState<GetMeditationCourseDetailsResult | null>(null);
   const [detailsError, setDetailsError] = useState<unknown>(null);
-  const { getMeditationCourses, getMeditationCourseDetails } = useMeditationApi();
+  const { getMeditationCourses, getRecommendedMeditationCourses, getMeditationCourseDetails } =
+    useMeditationApi();
 
   const serviceRef = useRef<MeditationCoursesService | null>(null);
   const detailsServiceRef = useRef<MeditationCourseDetailsService | null>(null);
+  const recommendedRequestRef = useRef(getRecommendedMeditationCourses);
+
+  recommendedRequestRef.current = getRecommendedMeditationCourses;
 
   if (!serviceRef.current) {
     serviceRef.current = new MeditationCoursesService(getMeditationCourses, {
@@ -64,6 +69,10 @@ export function useMeditationCourses(options: UseMeditationCoursesOptions = {}) 
     return await serviceRef.current!.getAllCourses();
   }, []);
 
+  const fetchRecommendedMeditationCourses = useCallback(async () => {
+    return (await recommendedRequestRef.current()) as GetRecommendedMeditationCoursesResult;
+  }, []);
+
   const fetchMeditationCourseDetails = useCallback(
     async (input: GetMeditationCourseDetailsInput) => {
       setDetailsError(null);
@@ -91,6 +100,7 @@ export function useMeditationCourses(options: UseMeditationCoursesOptions = {}) 
     detailsResult,
     detailsError,
     fetchMeditationCourses,
+    fetchRecommendedMeditationCourses,
     fetchMeditationCourseDetails,
     reset,
     service: serviceRef.current,

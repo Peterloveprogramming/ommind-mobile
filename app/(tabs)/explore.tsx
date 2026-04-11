@@ -77,19 +77,19 @@ export default Explore
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingTop:50,
-    paddingLeft:25
+    paddingTop: 50,
+    paddingLeft: 25
   },
-    verticalContent: {
+  verticalContent: {
     paddingBottom: 24,
   },
-  rowContainer:{
-    gap:10,
-    marginBottom:15,
+  rowContainer: {
+    gap: 10,
+    marginBottom: 15,
   },
-  title:{
-    fontFamily:FONTS.figtreeSemiBold,
-    fontSize:20
+  title: {
+    fontFamily: FONTS.figtreeSemiBold,
+    fontSize: 20
   },
   cardsRow: {
     gap: 12,

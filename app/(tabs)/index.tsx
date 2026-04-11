@@ -8,9 +8,11 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useFocusEffect, useRouter } from "expo-router";
 import { getAuthInfo } from "@/utils/helper";
 import BaseButton from "@/comp/base/BaseButton";
 import { FONTS } from "@/theme";
+import { useMeditationCourses } from "@/services/meditation/useMeditationCourses";
 
 const MEDITATION_ICON = require("@/assets/images/home/meditation_icon.png");
 const NOTIFICATION_ICON = require("@/assets/images/home/notification.png");
@@ -55,8 +57,10 @@ const capitalizeName = (name: string) => {
 };
 
 const Home = () => {
+  const router = useRouter();
   const [firstName, setFirstName] = useState("");
   const [selectedFeeling, setSelectedFeeling] = useState("");
+  const { fetchRecommendedMeditationCourses } = useMeditationCourses();
 
   useEffect(() => {
     const loadUserName = async () => {
@@ -65,6 +69,19 @@ const Home = () => {
     };
 
     void loadUserName();
+  }, []);
+
+  useFocusEffect(() => {
+    const loadRecommendedMeditationCourses = async () => {
+      try {
+        const response = await fetchRecommendedMeditationCourses();
+        console.log("recommended meditation courses", response.data?.courses);
+      } catch (error) {
+        console.error("Failed to load recommended meditation courses", error);
+      }
+    };
+
+    void loadRecommendedMeditationCourses();
   }, []);
 
   const handleNotificationPress = () => {
@@ -76,7 +93,7 @@ const Home = () => {
   };
 
   const handleChatWithLhamoPress = () => {
-    console.log("chat with lhamo pressed");
+    router.push("/chat");
   };
 
   const handleRefreshGuidancePress = () => {

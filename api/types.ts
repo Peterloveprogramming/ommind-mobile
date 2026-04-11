@@ -40,6 +40,7 @@ export type LambdaRequest = {
             "add_message_report" |
             "get_audio_url" |
             "get_all_courses" |
+            "get_recommended_courses" |
             "get_meditation_course_details" |
             "get_awareness_logs" |
             "get_awareness_log" |

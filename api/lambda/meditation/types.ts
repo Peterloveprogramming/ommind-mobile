@@ -44,6 +44,10 @@ export type GetMeditationCoursesResult = LambdaResult<{
   courses: MeditationCoursesByType;
 } | null>;
 
+export type GetRecommendedMeditationCoursesResult = LambdaResult<{
+  courses: unknown;
+} | null>;
+
 export type GetMeditationCourseDetailsInput = {
   type: MeditationCourse["type"];
   uuid: string;
