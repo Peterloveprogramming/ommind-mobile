@@ -66,7 +66,10 @@ export function useMeditationCourses(options: UseMeditationCoursesOptions = {}) 
 
   const fetchMeditationCourses = useCallback(async () => {
     setError(null);
-    return await serviceRef.current!.getAllCourses();
+    const courses =  await serviceRef.current!.getAllCourses();
+    console.log("all meditation courses are",courses)
+    console.log("calm are",courses["data"]["courses"]["calm"])
+    return courses;
   }, []);
 
   const fetchRecommendedMeditationCourses = useCallback(async () => {

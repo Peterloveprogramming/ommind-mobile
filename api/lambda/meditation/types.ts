@@ -45,7 +45,7 @@ export type GetMeditationCoursesResult = LambdaResult<{
 } | null>;
 
 export type GetRecommendedMeditationCoursesResult = LambdaResult<{
-  courses: unknown;
+  courses: MeditationCourse[];
 } | null>;
 
 export type GetMeditationCourseDetailsInput = {

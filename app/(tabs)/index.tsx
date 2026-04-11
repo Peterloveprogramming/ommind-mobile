@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import {
+  FlatList,
   Image,
   ImageBackground,
   ScrollView,
@@ -9,6 +10,8 @@ import {
   View,
 } from "react-native";
 import { useFocusEffect, useRouter } from "expo-router";
+import MeditationCard from "@/comp/explore/MeditationCard";
+import { MeditationCourse } from "@/api/lambda/meditation/types";
 import { getAuthInfo } from "@/utils/helper";
 import BaseButton from "@/comp/base/BaseButton";
 import { FONTS } from "@/theme";
@@ -60,6 +63,7 @@ const Home = () => {
   const router = useRouter();
   const [firstName, setFirstName] = useState("");
   const [selectedFeeling, setSelectedFeeling] = useState("");
+  const [recommendedCourses, setRecommendedCourses] = useState<MeditationCourse[]>([]);
   const { fetchRecommendedMeditationCourses } = useMeditationCourses();
 
   useEffect(() => {
@@ -71,18 +75,22 @@ const Home = () => {
     void loadUserName();
   }, []);
 
-  useFocusEffect(() => {
-    const loadRecommendedMeditationCourses = async () => {
-      try {
-        const response = await fetchRecommendedMeditationCourses();
-        console.log("recommended meditation courses", response.data?.courses);
-      } catch (error) {
-        console.error("Failed to load recommended meditation courses", error);
-      }
-    };
+  useFocusEffect(
+    React.useCallback(() => {
+      const loadRecommendedMeditationCourses = async () => {
+        try {
+          const response = await fetchRecommendedMeditationCourses();
+          const courses = response.data?.courses ?? [];
+          setRecommendedCourses(courses);
+          console.log("recommended meditation courses", courses);
+        } catch (error) {
+          console.error("Failed to load recommended meditation courses", error);
+        }
+      };
 
-    void loadRecommendedMeditationCourses();
-  }, []);
+      void loadRecommendedMeditationCourses();
+    }, [fetchRecommendedMeditationCourses])
+  );
 
   const handleNotificationPress = () => {
     console.log("notification icon pressed");
@@ -234,6 +242,38 @@ const Home = () => {
           </TouchableOpacity>
         </ImageBackground>
       </View>
+
+      {recommendedCourses.length ? (
+        <View style={styles.practiceSection}>
+          <Text style={styles.practiceTitle}>Your Practice Today</Text>
+          <View style={styles.practiceCardWrap}>
+            <FlatList
+              horizontal
+              data={recommendedCourses}
+              keyExtractor={(item) => item.uuid}
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.practiceCardsRow}
+              renderItem={({ item }) => (
+                <MeditationCard
+                  numberOfSessions={item.number_of_sessions}
+                  description={`${item.proper_type_name} ${item.course_number}: ${item.title}`}
+                  image_source={item.image_url}
+                  onPress={() =>
+                    router.push({
+                      pathname: "/meditation_session/session",
+                      params: {
+                        uuid: item.uuid,
+                        type: item.type,
+                        course_number: String(item.course_number),
+                      },
+                    })
+                  }
+                />
+              )}
+            />
+          </View>
+        </View>
+      ) : null}
 
       <View style={styles.bottomDivider} />
     </ScrollView>
@@ -509,5 +549,22 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 16,
     color: "#FFFFFF",
+  },
+  practiceSection: {
+    paddingTop: 28,
+    paddingHorizontal: 20,
+  },
+  practiceTitle: {
+    fontFamily: FONTS.figtreeSemiBold,
+    fontSize: 18,
+    lineHeight: 24,
+    color: "#111111",
+  },
+  practiceCardWrap: {
+    marginTop: 18,
+  },
+  practiceCardsRow: {
+    paddingRight: 15,
+    gap: 12,
   },
 });
