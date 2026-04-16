@@ -11,7 +11,7 @@ import Svg, {
 } from "react-native-svg";
 import {images} from "@/constants/images";
 import { usePathname, useRouter } from 'expo-router';
-import { generateUniqueId } from '@/utils/helper';
+import { navigateToNewChat } from '@/utils/helper';
 /* SVGR has dropped some elements not supported by react-native-svg: div */
 
 
@@ -34,10 +34,7 @@ const Rinpoche = () => {
       setIsNavigating(false);
     }, 1500);
 
-    router.push({
-      pathname: '/chat',
-      params: { session_id: generateUniqueId() }
-    });
+    navigateToNewChat(router);
   };
 
   return (

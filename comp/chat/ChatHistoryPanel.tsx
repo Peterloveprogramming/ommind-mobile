@@ -1,7 +1,7 @@
 import { LambdaResult } from "@/api/types";
 import BaseButton from "@/comp/base/BaseButton";
 import useChatHistory from "@/services/useChatHistory";
-import { generateUniqueId } from "@/utils/helper";
+import { navigateToNewChat } from "@/utils/helper";
 import { useRouter } from "expo-router";
 import React, { useEffect, useMemo } from "react";
 import {
@@ -79,13 +79,7 @@ const ChatHistoryPanel = ({ onClose }: ChatHistoryPanelProps) => {
 
   const handleNewChatPress = () => {
     onClose();
-    router.replace({
-      pathname: "/chat",
-      params: {
-        session_id: generateUniqueId(),
-        existing_chat: "false",
-      },
-    });
+    navigateToNewChat(router, "replace");
   };
 
   const renderHistorySection = (

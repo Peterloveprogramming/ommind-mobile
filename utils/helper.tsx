@@ -1,4 +1,5 @@
 import { LambdaResult } from "@/api/types";
+import { Router } from "expo-router";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export const generateRandomNumber = () => {
@@ -75,4 +76,14 @@ export const deleteFromCache = async (key: string): Promise<void> => {
 export const generateUniqueId = () => {
   // Combines the current time in milliseconds with a random string
   return Date.now().toString(36) + Math.random().toString(36).substring(2);
+};
+
+export const navigateToNewChat = (
+  router: Router,
+  navigationMethod: "push" | "replace" = "push"
+) => {
+  router[navigationMethod]({
+    pathname: "/chat",
+    params: { session_id: generateUniqueId() },
+  });
 };

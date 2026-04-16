@@ -9,13 +9,14 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useFocusEffect, useRouter } from "expo-router";
+import { useFocusEffect, usePathname, useRouter } from "expo-router";
 import MeditationCard from "@/comp/explore/MeditationCard";
 import { MeditationCourse } from "@/api/lambda/meditation/types";
-import { getAuthInfo } from "@/utils/helper";
+import { getAuthInfo, navigateToNewChat } from "@/utils/helper";
 import BaseButton from "@/comp/base/BaseButton";
 import { FONTS } from "@/theme";
 import { useMeditationCourses } from "@/services/meditation/useMeditationCourses";
+import ProfilePhotoUploadModal from "@/comp/modals/ProfilePhotoUploadModal";
 
 const MEDITATION_ICON = require("@/assets/images/home/meditation_icon.png");
 const NOTIFICATION_ICON = require("@/assets/images/home/notification.png");
@@ -61,10 +62,17 @@ const capitalizeName = (name: string) => {
 
 const Home = () => {
   const router = useRouter();
+  const pathname = usePathname();
   const [firstName, setFirstName] = useState("");
   const [selectedFeeling, setSelectedFeeling] = useState("");
   const [recommendedCourses, setRecommendedCourses] = useState<MeditationCourse[]>([]);
+  const [isNavigating, setIsNavigating] = useState(false);
+  const [isProfileModalVisible, setIsProfileModalVisible] = useState(false);
   const { fetchRecommendedMeditationCourses } = useMeditationCourses();
+
+  useEffect(() => {
+    setIsNavigating(false);
+  }, [pathname]);
 
   useEffect(() => {
     const loadUserName = async () => {
@@ -96,12 +104,36 @@ const Home = () => {
     console.log("notification icon pressed");
   };
 
+  const handleProfilePress = () => {
+    setIsProfileModalVisible(true);
+  };
+
+  const handleCloseProfileModal = () => {
+    setIsProfileModalVisible(false);
+  };
+
   const handleCreateMeditationPress = () => {
-    console.log("create meditation pressed");
+    if (isNavigating) {
+      return;
+    }
+
+    setIsNavigating(true);
+    setTimeout(() => {
+      setIsNavigating(false);
+    }, 1500);
+    navigateToNewChat(router);
   };
 
   const handleChatWithLhamoPress = () => {
-    router.push("/chat");
+    if (isNavigating) {
+      return;
+    }
+
+    setIsNavigating(true);
+    setTimeout(() => {
+      setIsNavigating(false);
+    }, 1500);
+    navigateToNewChat(router);
   };
 
   const handleRefreshGuidancePress = () => {
@@ -109,174 +141,184 @@ const Home = () => {
   };
 
   return (
-    <ScrollView
-      style={styles.screen}
-      contentContainerStyle={styles.contentContainer}
-      showsVerticalScrollIndicator={false}
-    >
-      {/* header start */}
-      <View style={styles.headerRow}>
-        <View style={styles.leftContent}>
-          <Image source={MEDITATION_ICON} style={styles.avatarIcon} />
-
-          <View style={styles.copyWrap}>
-            <Text style={styles.welcomeText}>Welcome!</Text>
-            <Text style={styles.nameText}>{firstName || "My Friend"}</Text>
-          </View>
-        </View>
-
-        <TouchableOpacity activeOpacity={0.8} onPress={handleNotificationPress}>
-          <Image source={NOTIFICATION_ICON} style={styles.notificationIcon} />
-        </TouchableOpacity>
-      </View>
-      {/* header finish */}
-
-      <ImageBackground
-        source={HOME_BACKGROUND}
-        style={styles.heroCard}
-        imageStyle={styles.heroCardImage}
+    <>
+      <ScrollView
+        style={styles.screen}
+        contentContainerStyle={styles.contentContainer}
+        showsVerticalScrollIndicator={false}
       >
-        <View style={styles.heroContentColumn}>
-          <View style={styles.guidingRow}>
-            <Image source={MOON_ICON} style={styles.moonIcon} />
-            <Text style={styles.guidingText}>
-              <Text style={styles.guidingName}>Lhamo</Text> is guiding you today
-            </Text>
-          </View>
-
-          <View style={styles.messageBubble}>
-            <Text style={styles.messageText}>
-              Last time, you practiced grounding.{"\n"}Continue today?
-            </Text>
-          </View>
-
-          <View style={styles.buttonStack}>
-            <BaseButton
-              text="Create Meditation"
-              height={30}
-              fontSize={13}
-              onPress={handleCreateMeditationPress}
-              useIcon={true}
-              icon={<Image source={CREATE_MEDITATION_ICON} style={styles.buttonIcon} />}
-              isLoading={false}
-              style={styles.primaryButton}
-            />
-            <BaseButton
-              text="Chat with Lhamo"
-              height={30}
-              fontSize={13}
-              onPress={handleChatWithLhamoPress}
-              useIcon={true}
-              icon={<Image source={CHAT_ICON} style={styles.buttonIcon} />}
-              isLoading={false}
-              backgroundColor="#FFFFFF"
-              fontColor="#4B4748"
-              style={styles.secondaryButton}
-            />
-          </View>
-        </View>
-      </ImageBackground>
-
-      <View style={styles.bottomDivider} />
-
-      <View style={styles.feelingsSection}>
-        <Text style={styles.feelingsTitle}>🍃 How are you feeling right now?</Text>
-        <Text style={styles.feelingsSubtitle}>Choose what feels closest</Text>
-
-        <View style={styles.feelingsGrid}>
-          {FEELING_OPTIONS.map((feeling) => (
-            <TouchableOpacity
-              key={feeling.label}
-              activeOpacity={0.85}
-              style={[
-                styles.feelingPill,
-                selectedFeeling === feeling.label && styles.feelingPillSelected,
-              ]}
-              onPress={() => setSelectedFeeling(feeling.label)}
-            >
-              <Image source={feeling.icon} style={styles.feelingIcon} />
-              <Text
-                style={[
-                  styles.feelingLabel,
-                  selectedFeeling === feeling.label && styles.feelingLabelSelected,
-                ]}
-              >
-                {feeling.label}
-              </Text>
+        {/* header start */}
+        <View style={styles.headerRow}>
+          <View style={styles.leftContent}>
+            <TouchableOpacity activeOpacity={0.85} onPress={handleProfilePress}>
+              <Image source={MEDITATION_ICON} style={styles.avatarIcon} />
             </TouchableOpacity>
-          ))}
+
+            <View style={styles.copyWrap}>
+              <Text style={styles.welcomeText}>Welcome!</Text>
+              <Text style={styles.nameText}>{firstName || "My Friend"}</Text>
+            </View>
+          </View>
+
+          <TouchableOpacity activeOpacity={0.8} onPress={handleNotificationPress}>
+            <Image source={NOTIFICATION_ICON} style={styles.notificationIcon} />
+          </TouchableOpacity>
         </View>
-      </View>
-
-      <View style={styles.bottomDivider} />
-
-      <View style={styles.intentionSection}>
-        <Text style={styles.intentionTitle}>✨ Today&apos;s Intention</Text>
+        {/* header finish */}
 
         <ImageBackground
-          source={SKY_BACKGROUND}
-          style={styles.intentionCard}
-          imageStyle={styles.intentionCardImage}
+          source={HOME_BACKGROUND}
+          style={styles.heroCard}
+          imageStyle={styles.heroCardImage}
         >
-          <Text style={styles.intentionLead}>
-            Lhamo senses how you&apos;re feeling...{"\n"}and gently suggests:
-          </Text>
+          <View style={styles.heroContentColumn}>
+            <View style={styles.guidingRow}>
+              <Image source={MOON_ICON} style={styles.moonIcon} />
+              <Text style={styles.guidingText}>
+                <Text style={styles.guidingName}>Lhamo</Text> is guiding you today
+              </Text>
+            </View>
 
-          <Text style={styles.intentionWord}>Compassion</Text>
+            <View style={styles.messageBubble}>
+              <Text style={styles.messageText}>
+                Last time, you practiced grounding.{"\n"}Continue today?
+              </Text>
+            </View>
 
-          <View style={styles.intentionDivider} />
-
-          <Text style={styles.affirmationLead}>Lhamo&apos;s Affirmation for you</Text>
-
-          <Text style={styles.affirmationText}>
-            “I am grounded and soft with myself today.”
-          </Text>
-
-          <TouchableOpacity
-            activeOpacity={0.85}
-            style={styles.refreshButton}
-            onPress={handleRefreshGuidancePress}
-          >
-            <Image source={LOTUS_ICON} style={styles.refreshIcon} />
-            <Text style={styles.refreshButtonText}>Refresh Guidance</Text>
-          </TouchableOpacity>
+            <View style={styles.buttonStack}>
+              <BaseButton
+                text="Create Meditation"
+                height={30}
+                fontSize={13}
+                onPress={handleCreateMeditationPress}
+                useIcon={true}
+                icon={<Image source={CREATE_MEDITATION_ICON} style={styles.buttonIcon} />}
+                isLoading={isNavigating}
+                style={styles.primaryButton}
+              />
+              <BaseButton
+                text="Chat with Lhamo"
+                height={30}
+                fontSize={13}
+                onPress={handleChatWithLhamoPress}
+                useIcon={true}
+                icon={<Image source={CHAT_ICON} style={styles.buttonIcon} />}
+                isLoading={isNavigating}
+                backgroundColor="#FFFFFF"
+                fontColor="#4B4748"
+                style={styles.secondaryButton}
+              />
+            </View>
+          </View>
         </ImageBackground>
-      </View>
 
-      {recommendedCourses.length ? (
-        <View style={styles.practiceSection}>
-          <Text style={styles.practiceTitle}>Your Practice Today</Text>
-          <View style={styles.practiceCardWrap}>
-            <FlatList
-              horizontal
-              data={recommendedCourses}
-              keyExtractor={(item) => item.uuid}
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.practiceCardsRow}
-              renderItem={({ item }) => (
-                <MeditationCard
-                  numberOfSessions={item.number_of_sessions}
-                  description={`${item.proper_type_name} ${item.course_number}: ${item.title}`}
-                  image_source={item.image_url}
-                  onPress={() =>
-                    router.push({
-                      pathname: "/meditation_session/session",
-                      params: {
-                        uuid: item.uuid,
-                        type: item.type,
-                        course_number: String(item.course_number),
-                      },
-                    })
-                  }
-                />
-              )}
-            />
+        <View style={styles.bottomDivider} />
+
+        <View style={styles.feelingsSection}>
+          <Text style={styles.feelingsTitle}>🍃 How are you feeling right now?</Text>
+          <Text style={styles.feelingsSubtitle}>Choose what feels closest</Text>
+
+          <View style={styles.feelingsGrid}>
+            {FEELING_OPTIONS.map((feeling) => (
+              <TouchableOpacity
+                key={feeling.label}
+                activeOpacity={0.85}
+                style={[
+                  styles.feelingPill,
+                  selectedFeeling === feeling.label && styles.feelingPillSelected,
+                ]}
+                onPress={() => setSelectedFeeling(feeling.label)}
+              >
+                <Image source={feeling.icon} style={styles.feelingIcon} />
+                <Text
+                  style={[
+                    styles.feelingLabel,
+                    selectedFeeling === feeling.label && styles.feelingLabelSelected,
+                  ]}
+                >
+                  {feeling.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
           </View>
         </View>
-      ) : null}
 
-      <View style={styles.bottomDivider} />
-    </ScrollView>
+        <View style={styles.bottomDivider} />
+
+        <View style={styles.intentionSection}>
+          <Text style={styles.intentionTitle}>✨ Today&apos;s Intention</Text>
+
+          <ImageBackground
+            source={SKY_BACKGROUND}
+            style={styles.intentionCard}
+            imageStyle={styles.intentionCardImage}
+          >
+            <Text style={styles.intentionLead}>
+              Lhamo senses how you&apos;re feeling...{"\n"}and gently suggests:
+            </Text>
+
+            <Text style={styles.intentionWord}>Compassion</Text>
+
+            <View style={styles.intentionDivider} />
+
+            <Text style={styles.affirmationLead}>Lhamo&apos;s Affirmation for you</Text>
+
+            <Text style={styles.affirmationText}>
+              “I am grounded and soft with myself today.”
+            </Text>
+
+            <TouchableOpacity
+              activeOpacity={0.85}
+              style={styles.refreshButton}
+              onPress={handleRefreshGuidancePress}
+            >
+              <Image source={LOTUS_ICON} style={styles.refreshIcon} />
+              <Text style={styles.refreshButtonText}>Refresh Guidance</Text>
+            </TouchableOpacity>
+          </ImageBackground>
+        </View>
+
+        {recommendedCourses.length ? (
+          <View style={styles.practiceSection}>
+            <Text style={styles.practiceTitle}>Your Practice Today</Text>
+            <View style={styles.practiceCardWrap}>
+              <FlatList
+                horizontal
+                data={recommendedCourses}
+                keyExtractor={(item) => item.uuid}
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.practiceCardsRow}
+                renderItem={({ item }) => (
+                  <MeditationCard
+                    numberOfSessions={item.number_of_sessions}
+                    description={`${item.proper_type_name} ${item.course_number}: ${item.title}`}
+                    image_source={item.image_url}
+                    onPress={() =>
+                      router.push({
+                        pathname: "/meditation_session/session",
+                        params: {
+                          uuid: item.uuid,
+                          type: item.type,
+                          course_number: String(item.course_number),
+                        },
+                      })
+                    }
+                  />
+                )}
+              />
+            </View>
+          </View>
+        ) : null}
+
+        <View style={styles.bottomDivider} />
+      </ScrollView>
+
+      <ProfilePhotoUploadModal
+        visible={isProfileModalVisible}
+        onClose={handleCloseProfileModal}
+        previewSource={MEDITATION_ICON}
+      />
+    </>
   );
 };
 
