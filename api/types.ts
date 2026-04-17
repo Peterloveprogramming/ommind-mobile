@@ -31,6 +31,7 @@ export type Todo = {
 export type LambdaRequest = {
     route:  "register"|
             "login" |
+            "upload_profile_pic" |
             "jwt_valid"|
             "save_registration_question_answers" |
             "chat" |
@@ -143,6 +144,12 @@ export namespace LambdaResult {
 
   export type LoginUserResult = LambdaResult<{
     jwt_token: string;
+  }>;
+
+  export type UploadProfilePicResult = LambdaResult<{
+    bucket: string;
+    path: string;
+    files: string[];
   }>;
 
   export type ChatHistoryItem = {

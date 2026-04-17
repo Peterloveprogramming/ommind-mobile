@@ -13,9 +13,12 @@ import {
 } from "react-native";
 import { useFocusEffect, usePathname, useRouter } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
+import { useUserApi } from "@/api/api";
 import MeditationCard from "@/comp/explore/MeditationCard";
 import { MeditationCourse } from "@/api/lambda/meditation/types";
 import {
+  checkIfLambdaResultIsSuccess,
+  getLambdaErrorMessage,
   getAuthInfo,
   getProfilePhotoUri,
   navigateToNewChat,
@@ -81,9 +84,14 @@ const Home = () => {
   const [isNavigating, setIsNavigating] = useState(false);
   const [isProfileModalVisible, setIsProfileModalVisible] = useState(false);
   const [profileImageSource, setProfileImageSource] = useState<ImageSourcePropType>(MEDITATION_ICON);
+  const [pendingProfilePhotoUri, setPendingProfilePhotoUri] = useState<string | null>(null);
+  const [pendingProfilePhotoBase64, setPendingProfilePhotoBase64] = useState<string | null>(null);
   const [profilePhotoError, setProfilePhotoError] = useState("");
   const [isUploadingProfilePhoto, setIsUploadingProfilePhoto] = useState(false);
   const { fetchRecommendedMeditationCourses } = useMeditationCourses();
+  const {
+    uploadProfilePic: { uploadProfilePic },
+  } = useUserApi();
 
   useEffect(() => {
     setIsNavigating(false);
@@ -132,11 +140,15 @@ const Home = () => {
 
   const handleProfilePress = () => {
     setProfilePhotoError("");
+    setPendingProfilePhotoUri(null);
+    setPendingProfilePhotoBase64(null);
     setIsProfileModalVisible(true);
   };
 
   const handleCloseProfileModal = () => {
     setProfilePhotoError("");
+    setPendingProfilePhotoUri(null);
+    setPendingProfilePhotoBase64(null);
     setIsProfileModalVisible(false);
   };
 
@@ -154,7 +166,7 @@ const Home = () => {
     return hasAcceptedMimeType || hasAcceptedExtension;
   };
 
-  const handleUploadProfilePhotoPress = async () => {
+  const handleChooseProfilePhotoPress = async () => {
     setProfilePhotoError("");
     setIsUploadingProfilePhoto(true);
 
@@ -170,8 +182,7 @@ const Home = () => {
 
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ["images"],
-        allowsEditing: true,
-        aspect: [1, 1],
+        base64: true,
         quality: 0.9,
       });
 
@@ -191,12 +202,45 @@ const Home = () => {
         return;
       }
 
-      setProfileImageSource({ uri: selectedAsset.uri });
-      await storeProfilePhotoUri(selectedAsset.uri);
-      setIsProfileModalVisible(false);
+      if (!selectedAsset.base64) {
+        setProfilePhotoError("Unable to prepare this photo for upload.");
+        return;
+      }
+
+      setPendingProfilePhotoUri(selectedAsset.uri);
+      setPendingProfilePhotoBase64(selectedAsset.base64);
     } catch (error) {
       console.error("Failed to pick profile photo", error);
       setProfilePhotoError("Unable to upload profile photo right now. Please try again.");
+    } finally {
+      setIsUploadingProfilePhoto(false);
+    }
+  };
+
+  const handleConfirmProfilePhotoPress = async () => {
+    if (!pendingProfilePhotoUri || !pendingProfilePhotoBase64) {
+      return;
+    }
+
+    setProfilePhotoError("");
+    setIsUploadingProfilePhoto(true);
+
+    try {
+      const uploadResult = await uploadProfilePic({ image: pendingProfilePhotoBase64 });
+
+      if (!checkIfLambdaResultIsSuccess(uploadResult)) {
+        setProfilePhotoError(getLambdaErrorMessage(uploadResult));
+        return;
+      }
+
+      setProfileImageSource({ uri: pendingProfilePhotoUri });
+      await storeProfilePhotoUri(pendingProfilePhotoUri);
+      setPendingProfilePhotoUri(null);
+      setPendingProfilePhotoBase64(null);
+      setIsProfileModalVisible(false);
+    } catch (error) {
+      console.error("Failed to save profile photo", error);
+      setProfilePhotoError("Unable to save profile photo right now. Please try again.");
     } finally {
       setIsUploadingProfilePhoto(false);
     }
@@ -404,11 +448,26 @@ const Home = () => {
       <ProfilePhotoUploadModal
         visible={isProfileModalVisible}
         onClose={handleCloseProfileModal}
-        previewSource={profileImageSource}
-        helperText="Accepted formats: JPG, PNG, WEBP. Maximum file size: 5MB."
+        previewSource={pendingProfilePhotoUri ? { uri: pendingProfilePhotoUri } : profileImageSource}
+        title={pendingProfilePhotoUri ? "Confirm profile photo" : "Upload profile photo"}
+        subtitle={
+          pendingProfilePhotoUri
+            ? "Review the selected image, then confirm to save it as your profile picture."
+            : "Choose a photo from your device for your profile picture."
+        }
+        primaryActionLabel={pendingProfilePhotoUri ? "Confirm photo" : "Upload photo"}
+        secondaryActionLabel={pendingProfilePhotoUri ? "Choose another photo" : undefined}
+        helperText={
+          pendingProfilePhotoUri
+            ? "Tap Confirm photo to save this image, or choose another photo."
+            : "Accepted formats: JPG, PNG, WEBP. Maximum file size: 5MB."
+        }
         errorText={profilePhotoError}
         isLoading={isUploadingProfilePhoto}
-        onPrimaryPress={handleUploadProfilePhotoPress}
+        onPrimaryPress={
+          pendingProfilePhotoUri ? handleConfirmProfilePhotoPress : handleChooseProfilePhotoPress
+        }
+        onSecondaryPress={pendingProfilePhotoUri ? handleChooseProfilePhotoPress : undefined}
       />
     </>
   );

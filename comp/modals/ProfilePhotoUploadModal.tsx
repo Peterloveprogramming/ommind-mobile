@@ -19,10 +19,12 @@ type ProfilePhotoUploadModalProps = {
   title?: string;
   subtitle?: string;
   primaryActionLabel?: string;
+  secondaryActionLabel?: string;
   helperText?: string;
   errorText?: string;
   isLoading?: boolean;
   onPrimaryPress?: () => void;
+  onSecondaryPress?: () => void;
 };
 
 const DEFAULT_PREVIEW_SOURCE = require("@/assets/images/home/meditation_icon.png");
@@ -32,12 +34,14 @@ const ProfilePhotoUploadModal = ({
   onClose,
   previewSource = DEFAULT_PREVIEW_SOURCE,
   title = "Upload profile photo",
-  subtitle = "Choose a square photo from your device for your profile picture.",
+  subtitle = "Choose a photo from your device for your profile picture.",
   primaryActionLabel = "Upload photo",
+  secondaryActionLabel,
   helperText = "Accepted formats: JPG, PNG, WEBP. Maximum file size: 5MB.",
   errorText,
   isLoading = false,
   onPrimaryPress,
+  onSecondaryPress,
 }: ProfilePhotoUploadModalProps) => {
   return (
     <Modal transparent animationType="fade" visible={visible} onRequestClose={onClose}>
@@ -71,6 +75,17 @@ const ProfilePhotoUploadModal = ({
               <Text style={styles.primaryButtonText}>{primaryActionLabel}</Text>
             )}
           </TouchableOpacity>
+
+          {secondaryActionLabel ? (
+            <TouchableOpacity
+              activeOpacity={0.8}
+              style={[styles.secondaryButton, isLoading && styles.primaryButtonDisabled]}
+              onPress={onSecondaryPress}
+              disabled={isLoading}
+            >
+              <Text style={styles.secondaryButtonText}>{secondaryActionLabel}</Text>
+            </TouchableOpacity>
+          ) : null}
 
           <Text style={styles.helperText}>{helperText}</Text>
           {errorText ? <Text style={styles.errorText}>{errorText}</Text> : null}
@@ -183,6 +198,21 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 20,
     color: "#FFFFFF",
+  },
+  secondaryButton: {
+    marginTop: 12,
+    minHeight: 46,
+    borderRadius: 999,
+    backgroundColor: "#F3EEE7",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 20,
+  },
+  secondaryButtonText: {
+    fontFamily: FONTS.figtreeSemiBold,
+    fontSize: 14,
+    lineHeight: 19,
+    color: "#4B4748",
   },
   helperText: {
     marginTop: 16,

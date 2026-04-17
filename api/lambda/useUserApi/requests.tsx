@@ -2,6 +2,10 @@ import { useFetch } from "@/api/useFetch";
 import {LAMBDA_SERVICE_URL} from "@/constant"
 import { LambdaResult,CreateUserInput, LoginUserInput, LambdaRequest} from "../../types";
 
+export type UploadProfilePicInput = {
+    image: string;
+}
+
 export const useCreateUser = () => {
     const {commonFetch} = useFetch<LambdaResult.CreateUserResult>({
         url: LAMBDA_SERVICE_URL,
@@ -43,4 +47,26 @@ export const useLoginUser = () => {
     });
 
     return { loginUser };
+}
+
+export const useUploadProfilePic = () => {
+    const {commonFetch} = useFetch<LambdaResult.UploadProfilePicResult>({
+        url: LAMBDA_SERVICE_URL,
+        method:"POST",
+        clearUserInfoFromCacheIfUnauthorized:true,
+        useAuthFromCache:true
+    });
+
+    const lambdaConfig:LambdaRequest = {
+        route:"upload_profile_pic",
+    }
+
+    const uploadProfilePic = (uploadProfilePicInput:UploadProfilePicInput) => commonFetch({
+        input:{
+            ...lambdaConfig,
+            ...uploadProfilePicInput
+        }
+    });
+
+    return { uploadProfilePic };
 }
