@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from "react";
 import {
+  Alert,
   FlatList,
   Image,
   ImageBackground,
+  ImageSourcePropType,
   ScrollView,
   StyleSheet,
   Text,
@@ -10,9 +12,15 @@ import {
   View,
 } from "react-native";
 import { useFocusEffect, usePathname, useRouter } from "expo-router";
+import * as ImagePicker from "expo-image-picker";
 import MeditationCard from "@/comp/explore/MeditationCard";
 import { MeditationCourse } from "@/api/lambda/meditation/types";
-import { getAuthInfo, navigateToNewChat } from "@/utils/helper";
+import {
+  getAuthInfo,
+  getProfilePhotoUri,
+  navigateToNewChat,
+  storeProfilePhotoUri,
+} from "@/utils/helper";
 import BaseButton from "@/comp/base/BaseButton";
 import { FONTS } from "@/theme";
 import { useMeditationCourses } from "@/services/meditation/useMeditationCourses";
@@ -36,6 +44,10 @@ const TIRED_ICON = require("@/assets/images/home/feelings/tired.png");
 const DRAINED_ICON = require("@/assets/images/home/feelings/drained.png");
 const ANXIOUS_ICON = require("@/assets/images/home/feelings/anxious.png");
 const HOME_BACKGROUND_ASPECT_RATIO = 1473 / 856;
+const MAX_PROFILE_PHOTO_SIZE_BYTES = 5 * 1024 * 1024;
+const ACCEPTED_PROFILE_PHOTO_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"];
+const ACCEPTED_PROFILE_PHOTO_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp"];
+
 const FEELING_OPTIONS = [
   { label: "Calm", icon: CALM_ICON },
   { label: "Peaceful", icon: PEACEFUL_ICON },
@@ -68,6 +80,9 @@ const Home = () => {
   const [recommendedCourses, setRecommendedCourses] = useState<MeditationCourse[]>([]);
   const [isNavigating, setIsNavigating] = useState(false);
   const [isProfileModalVisible, setIsProfileModalVisible] = useState(false);
+  const [profileImageSource, setProfileImageSource] = useState<ImageSourcePropType>(MEDITATION_ICON);
+  const [profilePhotoError, setProfilePhotoError] = useState("");
+  const [isUploadingProfilePhoto, setIsUploadingProfilePhoto] = useState(false);
   const { fetchRecommendedMeditationCourses } = useMeditationCourses();
 
   useEffect(() => {
@@ -81,6 +96,17 @@ const Home = () => {
     };
 
     void loadUserName();
+  }, []);
+
+  useEffect(() => {
+    const loadStoredProfilePhoto = async () => {
+      const storedUri = await getProfilePhotoUri();
+      if (storedUri) {
+        setProfileImageSource({ uri: storedUri });
+      }
+    };
+
+    void loadStoredProfilePhoto();
   }, []);
 
   useFocusEffect(
@@ -105,11 +131,75 @@ const Home = () => {
   };
 
   const handleProfilePress = () => {
+    setProfilePhotoError("");
     setIsProfileModalVisible(true);
   };
 
   const handleCloseProfileModal = () => {
+    setProfilePhotoError("");
     setIsProfileModalVisible(false);
+  };
+
+  const isAcceptedProfilePhotoAsset = (asset: ImagePicker.ImagePickerAsset) => {
+    const mimeType = asset.mimeType?.toLowerCase();
+    const fileName = asset.fileName?.toLowerCase() ?? "";
+
+    const hasAcceptedMimeType = mimeType
+      ? ACCEPTED_PROFILE_PHOTO_MIME_TYPES.includes(mimeType)
+      : false;
+    const hasAcceptedExtension = ACCEPTED_PROFILE_PHOTO_EXTENSIONS.some((extension) =>
+      fileName.endsWith(extension)
+    );
+
+    return hasAcceptedMimeType || hasAcceptedExtension;
+  };
+
+  const handleUploadProfilePhotoPress = async () => {
+    setProfilePhotoError("");
+    setIsUploadingProfilePhoto(true);
+
+    try {
+      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+      if (!permissionResult.granted) {
+        const message = "Photo library permission is required to upload a profile photo.";
+        setProfilePhotoError(message);
+        Alert.alert("Permission needed", message);
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.9,
+      });
+
+      if (result.canceled || !result.assets.length) {
+        return;
+      }
+
+      const selectedAsset = result.assets[0];
+
+      if (!isAcceptedProfilePhotoAsset(selectedAsset)) {
+        setProfilePhotoError("Only JPG, PNG, and WEBP files are accepted.");
+        return;
+      }
+
+      if ((selectedAsset.fileSize ?? 0) > MAX_PROFILE_PHOTO_SIZE_BYTES) {
+        setProfilePhotoError("Profile photo must not exceed 5MB.");
+        return;
+      }
+
+      setProfileImageSource({ uri: selectedAsset.uri });
+      await storeProfilePhotoUri(selectedAsset.uri);
+      setIsProfileModalVisible(false);
+    } catch (error) {
+      console.error("Failed to pick profile photo", error);
+      setProfilePhotoError("Unable to upload profile photo right now. Please try again.");
+    } finally {
+      setIsUploadingProfilePhoto(false);
+    }
   };
 
   const handleCreateMeditationPress = () => {
@@ -147,11 +237,10 @@ const Home = () => {
         contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
       >
-        {/* header start */}
         <View style={styles.headerRow}>
           <View style={styles.leftContent}>
             <TouchableOpacity activeOpacity={0.85} onPress={handleProfilePress}>
-              <Image source={MEDITATION_ICON} style={styles.avatarIcon} />
+              <Image source={profileImageSource} style={styles.avatarIcon} />
             </TouchableOpacity>
 
             <View style={styles.copyWrap}>
@@ -164,7 +253,6 @@ const Home = () => {
             <Image source={NOTIFICATION_ICON} style={styles.notificationIcon} />
           </TouchableOpacity>
         </View>
-        {/* header finish */}
 
         <ImageBackground
           source={HOME_BACKGROUND}
@@ -316,7 +404,11 @@ const Home = () => {
       <ProfilePhotoUploadModal
         visible={isProfileModalVisible}
         onClose={handleCloseProfileModal}
-        previewSource={MEDITATION_ICON}
+        previewSource={profileImageSource}
+        helperText="Accepted formats: JPG, PNG, WEBP. Maximum file size: 5MB."
+        errorText={profilePhotoError}
+        isLoading={isUploadingProfilePhoto}
+        onPrimaryPress={handleUploadProfilePhotoPress}
       />
     </>
   );
@@ -331,7 +423,7 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     paddingHorizontal: 12,
-    paddingVertical:100,
+    paddingVertical: 100,
   },
   headerRow: {
     flexDirection: "row",
@@ -347,7 +439,8 @@ const styles = StyleSheet.create({
   avatarIcon: {
     width: 78,
     height: 78,
-    resizeMode: "contain",
+    resizeMode: "cover",
+    borderRadius: 39,
   },
   copyWrap: {
     marginLeft: 16,
@@ -439,14 +532,13 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     width: "100%",
     alignSelf: "flex-start",
-    marginVertical:3,
+    marginVertical: 3,
   },
   secondaryButton: {
     borderRadius: 999,
     width: "100%",
     alignSelf: "flex-start",
-        marginVertical:3,
-
+    marginVertical: 3,
   },
   bottomDivider: {
     marginTop: 26,

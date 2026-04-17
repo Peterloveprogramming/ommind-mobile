@@ -1,5 +1,6 @@
 import React from "react";
 import {
+  ActivityIndicator,
   Image,
   ImageSourcePropType,
   Modal,
@@ -19,8 +20,9 @@ type ProfilePhotoUploadModalProps = {
   subtitle?: string;
   primaryActionLabel?: string;
   helperText?: string;
+  errorText?: string;
+  isLoading?: boolean;
   onPrimaryPress?: () => void;
-  onSecondaryPress?: () => void;
 };
 
 const DEFAULT_PREVIEW_SOURCE = require("@/assets/images/home/meditation_icon.png");
@@ -30,11 +32,12 @@ const ProfilePhotoUploadModal = ({
   onClose,
   previewSource = DEFAULT_PREVIEW_SOURCE,
   title = "Upload profile photo",
-  subtitle = "Choose how you want to add your new profile picture.",
-  primaryActionLabel = "Upload from device",
-  helperText = "Upload functionality will be connected next. This modal is UI only for now.",
+  subtitle = "Choose a square photo from your device for your profile picture.",
+  primaryActionLabel = "Upload photo",
+  helperText = "Accepted formats: JPG, PNG, WEBP. Maximum file size: 5MB.",
+  errorText,
+  isLoading = false,
   onPrimaryPress,
-  onSecondaryPress,
 }: ProfilePhotoUploadModalProps) => {
   return (
     <Modal transparent animationType="fade" visible={visible} onRequestClose={onClose}>
@@ -52,21 +55,25 @@ const ProfilePhotoUploadModal = ({
           <View style={styles.previewWrap}>
             <Image source={previewSource} style={styles.previewImage} />
             <View style={styles.previewBadge}>
-              <Text style={styles.previewBadgeText}>New</Text>
+              <Text style={styles.previewBadgeText}>Preview</Text>
             </View>
           </View>
 
           <TouchableOpacity
             activeOpacity={0.85}
-            style={styles.primaryButton}
+            style={[styles.primaryButton, isLoading && styles.primaryButtonDisabled]}
             onPress={onPrimaryPress}
+            disabled={isLoading}
           >
-            <Text style={styles.primaryButtonText}>{primaryActionLabel}</Text>
+            {isLoading ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <Text style={styles.primaryButtonText}>{primaryActionLabel}</Text>
+            )}
           </TouchableOpacity>
 
-
-
           <Text style={styles.helperText}>{helperText}</Text>
+          {errorText ? <Text style={styles.errorText}>{errorText}</Text> : null}
         </Pressable>
       </Pressable>
     </Modal>
@@ -168,28 +175,14 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: 20,
   },
+  primaryButtonDisabled: {
+    opacity: 0.7,
+  },
   primaryButtonText: {
     fontFamily: FONTS.figtreeSemiBold,
     fontSize: 15,
     lineHeight: 20,
     color: "#FFFFFF",
-  },
-  secondaryButton: {
-    marginTop: 12,
-    minHeight: 50,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: "#E5DED3",
-    backgroundColor: "#FFFFFF",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 20,
-  },
-  secondaryButtonText: {
-    fontFamily: FONTS.figtreeSemiBold,
-    fontSize: 15,
-    lineHeight: 20,
-    color: "#4B4748",
   },
   helperText: {
     marginTop: 16,
@@ -198,5 +191,13 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 18,
     color: "#9A9593",
+  },
+  errorText: {
+    marginTop: 10,
+    textAlign: "center",
+    fontFamily: FONTS.inter,
+    fontSize: 12,
+    lineHeight: 18,
+    color: "#C2452D",
   },
 });
