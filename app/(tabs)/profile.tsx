@@ -1,16 +1,24 @@
 import { useUserApi } from "@/api/api";
-import { GetAccountDetailsResult } from "@/api/types";
+import ProfilePhotoUploadModal from "@/comp/modals/ProfilePhotoUploadModal";
 import { FONTS } from "@/theme";
-import { checkIfLambdaResultIsSuccess, getLambdaErrorMessage } from "@/utils/helper";
+import {
+  checkIfLambdaResultIsSuccess,
+  getLambdaErrorMessage,
+  getProfilePhotoUri,
+  storeProfilePhotoUri,
+} from "@/utils/helper";
+import * as ImagePicker from "expo-image-picker";
 import { useFocusEffect } from "expo-router";
 import React from "react";
 import {
   ActivityIndicator,
+  Alert,
   Image,
   ImageSourcePropType,
   ScrollView,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from "react-native";
 
@@ -19,8 +27,19 @@ const PENCIL_ICON = require("@/assets/images/profile/pencil.png");
 const RED_ICON = require("@/assets/images/profile/red.png");
 const YELLOW_ICON = require("@/assets/images/profile/yellow.png");
 const BLUE_ICON = require("@/assets/images/profile/blue.png");
+const MAX_PROFILE_PHOTO_SIZE_BYTES = 5 * 1024 * 1024;
+const ACCEPTED_PROFILE_PHOTO_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"];
+const ACCEPTED_PROFILE_PHOTO_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp"];
 
-type AccountDetails = NonNullable<GetAccountDetailsResult["data"]>;
+type AccountDetails = {
+  average_meditation_time_in_mins: number | null;
+  current_focus: string | null;
+  email: string;
+  name: string;
+  number_of_sessions_completed: number | null;
+  profile_pic: string | null;
+  total_meditation_time_in_mins: number | null;
+};
 
 const DEFAULT_ACCOUNT_DETAILS: AccountDetails = {
   average_meditation_time_in_mins: 0,
@@ -43,10 +62,28 @@ const formatHoursFromMinutes = (value: number | null | undefined) => {
 const Profile = () => {
   const {
     getAccountDetails: { getAccountDetails },
+    uploadProfilePic: { uploadProfilePic },
   } = useUserApi();
   const [accountDetails, setAccountDetails] = React.useState<AccountDetails>(DEFAULT_ACCOUNT_DETAILS);
   const [isLoading, setIsLoading] = React.useState(true);
   const [errorMessage, setErrorMessage] = React.useState("");
+  const [isProfileModalVisible, setIsProfileModalVisible] = React.useState(false);
+  const [localProfilePhotoUri, setLocalProfilePhotoUri] = React.useState<string | null>(null);
+  const [pendingProfilePhotoUri, setPendingProfilePhotoUri] = React.useState<string | null>(null);
+  const [pendingProfilePhotoBase64, setPendingProfilePhotoBase64] = React.useState<string | null>(null);
+  const [profilePhotoError, setProfilePhotoError] = React.useState("");
+  const [isUploadingProfilePhoto, setIsUploadingProfilePhoto] = React.useState(false);
+
+  React.useEffect(() => {
+    const loadStoredProfilePhoto = async () => {
+      const storedUri = await getProfilePhotoUri();
+      if (storedUri) {
+        setLocalProfilePhotoUri(storedUri);
+      }
+    };
+
+    void loadStoredProfilePhoto();
+  }, []);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -79,9 +116,125 @@ const Profile = () => {
     }, [])
   );
 
-  const profileImageSource: ImageSourcePropType = accountDetails.profile_pic
-    ? { uri: accountDetails.profile_pic }
-    : DEFAULT_PROFILE_IMAGE;
+  const handleProfilePress = () => {
+    setProfilePhotoError("");
+    setPendingProfilePhotoUri(null);
+    setPendingProfilePhotoBase64(null);
+    setIsProfileModalVisible(true);
+  };
+
+  const handleCloseProfileModal = () => {
+    setProfilePhotoError("");
+    setPendingProfilePhotoUri(null);
+    setPendingProfilePhotoBase64(null);
+    setIsProfileModalVisible(false);
+  };
+
+  const isAcceptedProfilePhotoAsset = (asset: ImagePicker.ImagePickerAsset) => {
+    const mimeType = asset.mimeType?.toLowerCase();
+    const fileName = asset.fileName?.toLowerCase() ?? "";
+
+    const hasAcceptedMimeType = mimeType
+      ? ACCEPTED_PROFILE_PHOTO_MIME_TYPES.includes(mimeType)
+      : false;
+    const hasAcceptedExtension = ACCEPTED_PROFILE_PHOTO_EXTENSIONS.some((extension) =>
+      fileName.endsWith(extension)
+    );
+
+    return hasAcceptedMimeType || hasAcceptedExtension;
+  };
+
+  const handleChooseProfilePhotoPress = async () => {
+    setProfilePhotoError("");
+    setIsUploadingProfilePhoto(true);
+
+    try {
+      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+      if (!permissionResult.granted) {
+        const message = "Photo library permission is required to upload a profile photo.";
+        setProfilePhotoError(message);
+        Alert.alert("Permission needed", message);
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"],
+        base64: true,
+        quality: 0.9,
+      });
+
+      if (result.canceled || !result.assets.length) {
+        return;
+      }
+
+      const selectedAsset = result.assets[0];
+
+      if (!isAcceptedProfilePhotoAsset(selectedAsset)) {
+        setProfilePhotoError("Only JPG, PNG, and WEBP files are accepted.");
+        return;
+      }
+
+      if ((selectedAsset.fileSize ?? 0) > MAX_PROFILE_PHOTO_SIZE_BYTES) {
+        setProfilePhotoError("Profile photo must not exceed 5MB.");
+        return;
+      }
+
+      if (!selectedAsset.base64) {
+        setProfilePhotoError("Unable to prepare this photo for upload.");
+        return;
+      }
+
+      setPendingProfilePhotoUri(selectedAsset.uri);
+      setPendingProfilePhotoBase64(selectedAsset.base64);
+    } catch (error) {
+      console.error("Failed to pick profile photo", error);
+      setProfilePhotoError("Unable to upload profile photo right now. Please try again.");
+    } finally {
+      setIsUploadingProfilePhoto(false);
+    }
+  };
+
+  const handleConfirmProfilePhotoPress = async () => {
+    if (!pendingProfilePhotoUri || !pendingProfilePhotoBase64) {
+      return;
+    }
+
+    setProfilePhotoError("");
+    setIsUploadingProfilePhoto(true);
+
+    try {
+      const uploadResult = await uploadProfilePic({ image: pendingProfilePhotoBase64 });
+
+      if (!checkIfLambdaResultIsSuccess(uploadResult)) {
+        setProfilePhotoError(getLambdaErrorMessage(uploadResult));
+        return;
+      }
+
+      setLocalProfilePhotoUri(pendingProfilePhotoUri);
+      setAccountDetails((currentDetails: AccountDetails) => ({
+        ...currentDetails,
+        profile_pic: pendingProfilePhotoUri,
+      }));
+      await storeProfilePhotoUri(pendingProfilePhotoUri);
+      setPendingProfilePhotoUri(null);
+      setPendingProfilePhotoBase64(null);
+      setIsProfileModalVisible(false);
+    } catch (error) {
+      console.error("Failed to save profile photo", error);
+      setProfilePhotoError("Unable to save profile photo right now. Please try again.");
+    } finally {
+      setIsUploadingProfilePhoto(false);
+    }
+  };
+
+  const profileImageSource: ImageSourcePropType = pendingProfilePhotoUri
+    ? { uri: pendingProfilePhotoUri }
+    : localProfilePhotoUri
+      ? { uri: localProfilePhotoUri }
+      : accountDetails.profile_pic
+        ? { uri: accountDetails.profile_pic }
+        : DEFAULT_PROFILE_IMAGE;
 
   const statCards = [
     {
@@ -105,44 +258,73 @@ const Profile = () => {
   ];
 
   return (
-    <ScrollView contentContainerStyle={styles.contentContainer} style={styles.container}>
-      {isLoading ? (
-        <View style={styles.loadingWrap}>
-          <ActivityIndicator color="#B88A1A" size="large" />
+    <>
+      <ScrollView contentContainerStyle={styles.contentContainer} style={styles.container}>
+        {isLoading ? (
+          <View style={styles.loadingWrap}>
+            <ActivityIndicator color="#B88A1A" size="large" />
+          </View>
+        ) : null}
+
+        <View style={styles.headerSection}>
+          <TouchableOpacity activeOpacity={0.85} onPress={handleProfilePress}>
+            <View style={styles.avatarBorder}>
+              <Image source={profileImageSource} style={styles.avatarImage} />
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity activeOpacity={0.85} onPress={handleProfilePress} style={styles.nameRow}>
+            <Text style={styles.nameText}>{accountDetails.name || "Profile"}</Text>
+            <Image source={PENCIL_ICON} style={styles.pencilIcon} />
+          </TouchableOpacity>
+
+          {accountDetails.email ? <Text style={styles.emailText}>{accountDetails.email}</Text> : null}
+          {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
         </View>
-      ) : null}
 
-      <View style={styles.headerSection}>
-        <View style={styles.avatarBorder}>
-          <Image source={profileImageSource} style={styles.avatarImage} />
-        </View>
-
-        <View style={styles.nameRow}>
-          <Text style={styles.nameText}>{accountDetails.name || "Profile"}</Text>
-          <Image source={PENCIL_ICON} style={styles.pencilIcon} />
-        </View>
-
-        {accountDetails.email ? <Text style={styles.emailText}>{accountDetails.email}</Text> : null}
-        {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
-      </View>
-
-      <View style={styles.statsRow}>
-        {statCards.map((card) => (
-          <View key={card.title} style={styles.statCard}>
-            <Text style={styles.statTitle}>{card.title}</Text>
-            <View style={styles.statFooter}>
-              <View style={styles.statIconWrap}>
-                <Image source={card.icon} style={styles.statBadgeImage} />
-              </View>
-              <View style={styles.statValueWrap}>
-                <Text style={styles.statValue}>{card.value}</Text>
-                <Text style={styles.statUnit}>{card.unit}</Text>
+        <View style={styles.statsRow}>
+          {statCards.map((card) => (
+            <View key={card.title} style={styles.statCard}>
+              <Text style={styles.statTitle}>{card.title}</Text>
+              <View style={styles.statFooter}>
+                <View style={styles.statIconWrap}>
+                  <Image source={card.icon} style={styles.statBadgeImage} />
+                </View>
+                <View style={styles.statValueWrap}>
+                  <Text style={styles.statValue}>{card.value}</Text>
+                  <Text style={styles.statUnit}>{card.unit}</Text>
+                </View>
               </View>
             </View>
-          </View>
-        ))}
-      </View>
-    </ScrollView>
+          ))}
+        </View>
+      </ScrollView>
+
+      <ProfilePhotoUploadModal
+        visible={isProfileModalVisible}
+        onClose={handleCloseProfileModal}
+        previewSource={pendingProfilePhotoUri ? { uri: pendingProfilePhotoUri } : profileImageSource}
+        title={pendingProfilePhotoUri ? "Confirm profile photo" : "Upload profile photo"}
+        subtitle={
+          pendingProfilePhotoUri
+            ? "Review the selected image, then confirm to save it as your profile picture."
+            : "Choose a photo from your device for your profile picture."
+        }
+        primaryActionLabel={pendingProfilePhotoUri ? "Confirm photo" : "Upload photo"}
+        secondaryActionLabel={pendingProfilePhotoUri ? "Choose another photo" : undefined}
+        helperText={
+          pendingProfilePhotoUri
+            ? "Tap Confirm photo to save this image, or choose another photo."
+            : "Accepted formats: JPG, PNG, WEBP. Maximum file size: 5MB."
+        }
+        errorText={profilePhotoError}
+        isLoading={isUploadingProfilePhoto}
+        onPrimaryPress={
+          pendingProfilePhotoUri ? handleConfirmProfilePhotoPress : handleChooseProfilePhotoPress
+        }
+        onSecondaryPress={pendingProfilePhotoUri ? handleChooseProfilePhotoPress : undefined}
+      />
+    </>
   );
 };
 
