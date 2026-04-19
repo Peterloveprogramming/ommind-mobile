@@ -27,6 +27,7 @@ const PENCIL_ICON = require("@/assets/images/profile/pencil.png");
 const RED_ICON = require("@/assets/images/profile/red.png");
 const YELLOW_ICON = require("@/assets/images/profile/yellow.png");
 const BLUE_ICON = require("@/assets/images/profile/blue.png");
+const CHANGE_FOCUS_ICON = require("@/assets/images/profile/change_focus_icon.png");
 const MAX_PROFILE_PHOTO_SIZE_BYTES = 5 * 1024 * 1024;
 const ACCEPTED_PROFILE_PHOTO_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const ACCEPTED_PROFILE_PHOTO_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp"];
@@ -58,6 +59,7 @@ const formatHoursFromMinutes = (value: number | null | undefined) => {
   const totalHours = value / 60;
   return Number.isInteger(totalHours) ? `${totalHours}` : totalHours.toFixed(1);
 };
+const formatCurrentFocus = (value: string | null | undefined) => value?.trim() || "Healing • Compassion";
 
 const Profile = () => {
   const {
@@ -235,6 +237,7 @@ const Profile = () => {
       : accountDetails.profile_pic
         ? { uri: accountDetails.profile_pic }
         : DEFAULT_PROFILE_IMAGE;
+  const currentFocusText = formatCurrentFocus(accountDetails.current_focus);
 
   const statCards = [
     {
@@ -297,6 +300,19 @@ const Profile = () => {
               </View>
             </View>
           ))}
+        </View>
+
+        <View style={styles.focusSection}>
+          <View style={styles.focusIconWrap}>
+            <Image source={CHANGE_FOCUS_ICON} style={styles.focusIcon} />
+          </View>
+
+          <Text style={styles.focusTitle}>Your current focus</Text>
+          <Text style={styles.focusValue}>{currentFocusText}</Text>
+
+          <TouchableOpacity activeOpacity={0.85} style={styles.changeFocusButton}>
+            <Text style={styles.changeFocusButtonText}>Change focus</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
 
@@ -452,5 +468,59 @@ const styles = StyleSheet.create({
     lineHeight: 12,
     color: "#FFFFFF",
     textAlign: "right",
+  },
+  focusSection: {
+    marginTop: 18,
+    paddingTop: 28,
+    paddingBottom: 8,
+    borderTopWidth: 1,
+    borderTopColor: "#E7E0D7",
+    alignItems: "center",
+  },
+  focusIconWrap: {
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    backgroundColor: "#F1ECE4",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  focusIcon: {
+    width: 34,
+    height: 34,
+    resizeMode: "contain",
+  },
+  focusTitle: {
+    marginTop: 16,
+    fontFamily: FONTS.figtreeSemiBold,
+    fontSize: 18,
+    lineHeight: 24,
+    color: "#111111",
+    textAlign: "center",
+  },
+  focusValue: {
+    marginTop: 6,
+    fontFamily: FONTS.inter,
+    fontSize: 15,
+    lineHeight: 22,
+    color: "#999999",
+    textAlign: "center",
+    fontStyle: "italic",
+  },
+  changeFocusButton: {
+    marginTop: 18,
+    minWidth: 186,
+    minHeight: 44,
+    paddingHorizontal: 24,
+    borderRadius: 999,
+    backgroundColor: "#595959",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  changeFocusButtonText: {
+    fontFamily: FONTS.figtreeSemiBold,
+    fontSize: 16,
+    lineHeight: 20,
+    color: "#FFFFFF",
   },
 });
