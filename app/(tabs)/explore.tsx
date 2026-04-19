@@ -1,8 +1,8 @@
 import MeditationCard from "@/comp/explore/MeditationCard";
 import { FONTS } from "@/theme";
-import React, { useEffect } from "react";
+import React from "react";
 import { FlatList, ScrollView, StyleSheet, Text, View } from "react-native";
-import { useRouter } from "expo-router"; // Import useRouter for navigation
+import { useFocusEffect, useRouter } from "expo-router";
 import { MeditationCoursesByType } from "@/api/lambda/meditation/types";
 import { useMeditationCourses } from "@/services/meditation/useMeditationCourses";
 
@@ -17,9 +17,11 @@ const Explore = () => {
   const { result, error, fetchMeditationCourses } = useMeditationCourses();
   const coursesByType = result?.data?.courses;
 
-  useEffect(() => {
-    void fetchMeditationCourses();
-  }, []);
+  useFocusEffect(
+    React.useCallback(() => {
+      void fetchMeditationCourses();
+    }, [])
+  );
 
   const renderCourseRow = (type: keyof MeditationCoursesByType) => {
     const courses = coursesByType?.[type] ?? [];

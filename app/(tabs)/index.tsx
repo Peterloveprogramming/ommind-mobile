@@ -18,6 +18,8 @@ import MeditationCard from "@/comp/explore/MeditationCard";
 import { MeditationCourse } from "@/api/lambda/meditation/types";
 import {
   checkIfLambdaResultIsSuccess,
+  deleteFromCache,
+  deleteProfilePhotoUri,
   getLambdaErrorMessage,
   getAuthInfo,
   getProfilePhotoUri,
@@ -88,6 +90,7 @@ const Home = () => {
   const [pendingProfilePhotoBase64, setPendingProfilePhotoBase64] = useState<string | null>(null);
   const [profilePhotoError, setProfilePhotoError] = useState("");
   const [isUploadingProfilePhoto, setIsUploadingProfilePhoto] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const { fetchRecommendedMeditationCourses } = useMeditationCourses();
   const {
     uploadProfilePic: { uploadProfilePic },
@@ -274,6 +277,42 @@ const Home = () => {
     console.log("refresh guidance pressed");
   };
 
+  const handleLogoutPress = () => {
+    if (isLoggingOut) {
+      return;
+    }
+
+    Alert.alert("Log out", "Are you sure you want to log out?", [
+      {
+        text: "Cancel",
+        style: "cancel",
+      },
+      {
+        text: "Log out",
+        style: "destructive",
+        onPress: async () => {
+          setIsLoggingOut(true);
+
+          try {
+            await deleteFromCache("authInfo");
+            await deleteProfilePhotoUri();
+            setProfileImageSource(MEDITATION_ICON);
+            setPendingProfilePhotoUri(null);
+            setPendingProfilePhotoBase64(null);
+            setProfilePhotoError("");
+            setIsProfileModalVisible(false);
+            router.replace("/welcome");
+          } catch (error) {
+            console.error("Failed to log out", error);
+            Alert.alert("Unable to log out", "Please try again.");
+          } finally {
+            setIsLoggingOut(false);
+          }
+        },
+      },
+    ]);
+  };
+
   return (
     <>
       <ScrollView
@@ -291,11 +330,30 @@ const Home = () => {
               <Text style={styles.welcomeText}>Welcome!</Text>
               <Text style={styles.nameText}>{firstName || "My Friend"}</Text>
             </View>
+            
           </View>
+          
 
-          <TouchableOpacity activeOpacity={0.8} onPress={handleNotificationPress}>
-            <Image source={NOTIFICATION_ICON} style={styles.notificationIcon} />
-          </TouchableOpacity>
+          <View style={styles.headerActions}>
+  
+            <TouchableOpacity activeOpacity={0.8} onPress={handleNotificationPress}>
+              <Image source={NOTIFICATION_ICON} style={styles.notificationIcon} />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <View style={{
+          width:"25%",
+          marginTop:10,
+        }}>
+          <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={handleLogoutPress}
+              style={[styles.logoutButton, isLoggingOut && styles.logoutButtonDisabled]}
+              disabled={isLoggingOut}
+            >
+              <Text style={styles.logoutButtonText}>Log out</Text>
+            </TouchableOpacity>
         </View>
 
         <ImageBackground
@@ -522,6 +580,30 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     resizeMode: "contain",
+  },
+  headerActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  logoutButton: {
+    minHeight: 34,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: "#DED6CC",
+    backgroundColor: "#FFFDF9",
+    paddingHorizontal: 14,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  logoutButtonDisabled: {
+    opacity: 0.6,
+  },
+  logoutButtonText: {
+    fontFamily: FONTS.figtreeSemiBold,
+    fontSize: 12,
+    lineHeight: 16,
+    color: "#4B4748",
   },
   heroCard: {
     marginTop: 28,

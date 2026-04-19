@@ -70,3 +70,24 @@ export const useUploadProfilePic = () => {
 
     return { uploadProfilePic };
 }
+
+export const useGetAccountDetails = () => {
+    const {commonFetch} = useFetch<LambdaResult.GetAccountDetailsResult>({
+        url: LAMBDA_SERVICE_URL,
+        method:"POST",
+        clearUserInfoFromCacheIfUnauthorized:true,
+        useAuthFromCache:true
+    });
+
+    const lambdaConfig:LambdaRequest = {
+        route:"get_account_details",
+    }
+
+    const getAccountDetails = () => commonFetch({
+        input:{
+            ...lambdaConfig
+        }
+    });
+
+    return { getAccountDetails };
+}

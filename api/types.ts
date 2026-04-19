@@ -32,6 +32,7 @@ export type LambdaRequest = {
     route:  "register"|
             "login" |
             "upload_profile_pic" |
+            "get_account_details" |
             "jwt_valid"|
             "save_registration_question_answers" |
             "chat" |
@@ -151,6 +152,16 @@ export namespace LambdaResult {
     path: string;
     files: string[];
   }>;
+
+  export type GetAccountDetailsResult = LambdaResult<{
+    name: string;
+    email: string;
+    profile_pic: string | null;
+    average_meditation_time_in_mins: number | null;
+    total_meditation_time_in_mins: number | null;
+    number_of_sessions_completed: number | null;
+    current_focus: string | null;
+  } | null>;
 
   export type ChatHistoryItem = {
     title: string;
