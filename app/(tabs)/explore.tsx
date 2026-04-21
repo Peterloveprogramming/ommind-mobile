@@ -1,9 +1,10 @@
 import MeditationCard from "@/comp/explore/MeditationCard";
+import { checkIfLambdaResultIsSuccess } from "@/utils/helper";
 import { FONTS } from "@/theme";
 import React from "react";
 import { FlatList, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useFocusEffect, useRouter } from "expo-router";
-import { MeditationCoursesByType } from "@/api/lambda/meditation/types";
+import { MeditationCourse, MeditationCoursesByType } from "@/api/lambda/meditation/types";
 import { useMeditationCourses } from "@/services/meditation/useMeditationCourses";
 
 const COURSE_TYPES: Array<keyof MeditationCoursesByType> = ["calm", "awareness", "insight"];
@@ -14,14 +15,36 @@ const formatSectionTitle = (value: keyof MeditationCoursesByType) => {
 
 const Explore = () => {
   const router = useRouter();
-  const { result, error, fetchMeditationCourses } = useMeditationCourses();
+  const { result, error, fetchMeditationCourses, trackRecentlyAccessedCourse } =
+    useMeditationCourses();
   const coursesByType = result?.data?.courses;
 
   useFocusEffect(
     React.useCallback(() => {
       void fetchMeditationCourses();
-    }, [])
+    }, [fetchMeditationCourses])
   );
+
+  const handleCoursePress = async (item: MeditationCourse) => {
+    try {
+      const trackResult = await trackRecentlyAccessedCourse(item.course_id);
+
+      if (!checkIfLambdaResultIsSuccess(trackResult)) {
+        console.warn("Failed to add recently accessed course", trackResult);
+      }
+    } catch (error) {
+      console.error("Failed to add recently accessed course", error);
+    } finally {
+      router.push({
+        pathname: "/meditation_session/session",
+        params: {
+          uuid: item.uuid,
+          type: item.type,
+          course_number: String(item.course_number),
+        },
+      });
+    }
+  };
 
   const renderCourseRow = (type: keyof MeditationCoursesByType) => {
     const courses = coursesByType?.[type] ?? [];
@@ -42,16 +65,7 @@ const Explore = () => {
               description={`${item.proper_type_name} ${item.course_number}: ${item.title}`}
               image_source={item.image_url}
               type={item.type}
-              onPress={() =>
-                router.push({
-                  pathname: "/meditation_session/session",
-                  params: {
-                    uuid: item.uuid,
-                    type: item.type,
-                    course_number: String(item.course_number),
-                  },
-                })
-              }
+              onPress={() => void handleCoursePress(item)}
             />
           )}
           ListEmptyComponent={<Text style={styles.emptyText}>Coming Soon</Text>}

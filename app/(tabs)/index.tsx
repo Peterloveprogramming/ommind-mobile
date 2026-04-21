@@ -91,7 +91,7 @@ const Home = () => {
   const [profilePhotoError, setProfilePhotoError] = useState("");
   const [isUploadingProfilePhoto, setIsUploadingProfilePhoto] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const { fetchRecommendedMeditationCourses } = useMeditationCourses();
+  const { fetchRecommendedMeditationCourses, trackRecentlyAccessedCourse } = useMeditationCourses();
   const {
     uploadProfilePic: { uploadProfilePic },
   } = useUserApi();
@@ -129,7 +129,7 @@ const Home = () => {
 
       void loadStoredProfilePhoto();
       void loadRecommendedMeditationCourses();
-    }, [])
+    }, [fetchRecommendedMeditationCourses])
   );
 
   const handleNotificationPress = () => {
@@ -280,6 +280,27 @@ const Home = () => {
 
   const handleRefreshGuidancePress = () => {
     console.log("refresh guidance pressed");
+  };
+
+  const handleCoursePress = async (item: MeditationCourse) => {
+    try {
+      const trackResult = await trackRecentlyAccessedCourse(item.course_id);
+
+      if (!checkIfLambdaResultIsSuccess(trackResult)) {
+        console.warn("Failed to add recently accessed course", trackResult);
+      }
+    } catch (error) {
+      console.error("Failed to add recently accessed course", error);
+    } finally {
+      router.push({
+        pathname: "/meditation_session/session",
+        params: {
+          uuid: item.uuid,
+          type: item.type,
+          course_number: String(item.course_number),
+        },
+      });
+    }
   };
 
   const handleLogoutPress = () => {
@@ -488,16 +509,7 @@ const Home = () => {
                     numberOfSessions={item.number_of_sessions}
                     description={`${item.proper_type_name} ${item.course_number}: ${item.title}`}
                     image_source={item.image_url}
-                    onPress={() =>
-                      router.push({
-                        pathname: "/meditation_session/session",
-                        params: {
-                          uuid: item.uuid,
-                          type: item.type,
-                          course_number: String(item.course_number),
-                        },
-                      })
-                    }
+                    onPress={() => void handleCoursePress(item)}
                   />
                 )}
               />

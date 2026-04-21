@@ -14,6 +14,7 @@ export type MeditationCourseDescriptionSection = {
 
 export type MeditationCourse = {
   id: number;
+  course_id:number;
   uuid: string;
   number_of_sessions: number;
   type: "calm" | "awareness" | "insight";
@@ -69,3 +70,12 @@ export type MeditationAudioUrls = {
 };
 
 export type GetMeditationAudioUrlResult = LambdaResult<MeditationAudioUrls | null>;
+
+export type AddRecentlyAccessedCourseInput = {
+  course_id: number;
+};
+
+export type AddRecentlyAccessedCourseResult = LambdaResult<{
+  user_id: number;
+  course_id: number;
+} | null>;

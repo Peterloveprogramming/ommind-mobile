@@ -118,6 +118,7 @@ const Profile = () => {
         try {
           const result = await getAccountDetails();
           console.log("getAccountDetails result", result);
+          console.log(result["data"]["recently_accessed_courses"])
 
           if (!checkIfLambdaResultIsSuccess(result)) {
             setErrorMessage(getLambdaErrorMessage(result));

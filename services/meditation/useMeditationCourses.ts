@@ -23,7 +23,12 @@ export function useMeditationCourses(options: UseMeditationCoursesOptions = {}) 
   const [detailsStatus, setDetailsStatus] = useState<MeditationCourseDetailsStatus>("idle");
   const [detailsResult, setDetailsResult] = useState<GetMeditationCourseDetailsResult | null>(null);
   const [detailsError, setDetailsError] = useState<unknown>(null);
-  const { getMeditationCourses, getRecommendedMeditationCourses, getMeditationCourseDetails } =
+  const {
+    getMeditationCourses,
+    getRecommendedMeditationCourses,
+    getMeditationCourseDetails,
+    addRecentlyAccessedCourse,
+  } =
     useMeditationApi();
 
   const serviceRef = useRef<MeditationCoursesService | null>(null);
@@ -84,6 +89,10 @@ export function useMeditationCourses(options: UseMeditationCoursesOptions = {}) 
     []
   );
 
+  const trackRecentlyAccessedCourse = useCallback(async (courseId: number) => {
+    return await addRecentlyAccessedCourse({ course_id: courseId });
+  }, [addRecentlyAccessedCourse]);
+
   const reset = useCallback(() => {
     setResult(null);
     setError(null);
@@ -105,6 +114,7 @@ export function useMeditationCourses(options: UseMeditationCoursesOptions = {}) 
     fetchMeditationCourses,
     fetchRecommendedMeditationCourses,
     fetchMeditationCourseDetails,
+    trackRecentlyAccessedCourse,
     reset,
     service: serviceRef.current,
     detailsService: detailsServiceRef.current,
