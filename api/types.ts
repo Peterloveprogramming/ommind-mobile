@@ -33,6 +33,7 @@ export type LambdaRequest = {
             "login" |
             "upload_profile_pic" |
             "get_account_details" |
+            "update_user_focus" |
             "jwt_valid"|
             "save_registration_question_answers" |
             "chat" |
@@ -160,7 +161,11 @@ export namespace LambdaResult {
     average_meditation_time_in_mins: number | null;
     total_meditation_time_in_mins: number | null;
     number_of_sessions_completed: number | null;
-    current_focus: string | null;
+    current_focus: string[] | string | null;
+  } | null>;
+
+  export type UpdateUserCurrentFocusResult = LambdaResult<{
+    current_focus: string[] | string | null;
   } | null>;
 
   export type ChatHistoryItem = {

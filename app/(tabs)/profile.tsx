@@ -1,3 +1,4 @@
+import FocusSelectionModal from "@/comp/modals/FocusSelectionModal";
 import { useUserApi } from "@/api/api";
 import ProfilePhotoUploadModal from "@/comp/modals/ProfilePhotoUploadModal";
 import { FONTS } from "@/theme";
@@ -34,7 +35,7 @@ const ACCEPTED_PROFILE_PHOTO_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp"];
 
 type AccountDetails = {
   average_meditation_time_in_mins: number | null;
-  current_focus: string | null;
+  current_focus: string[] | string | null;
   email: string;
   name: string;
   number_of_sessions_completed: number | null;
@@ -59,11 +60,30 @@ const formatHoursFromMinutes = (value: number | null | undefined) => {
   const totalHours = value / 60;
   return Number.isInteger(totalHours) ? `${totalHours}` : totalHours.toFixed(1);
 };
-const formatCurrentFocus = (value: string | null | undefined) => value?.trim() || "Healing • Compassion";
+const normalizeCurrentFocus = (value: string[] | string | null | undefined): string[] => {
+  if (Array.isArray(value)) {
+    return value.filter((item): item is string => typeof item === "string" && item.trim().length > 0);
+  }
+
+  if (typeof value === "string" && value.trim().length > 0) {
+    return value
+      .split(/[•,]/)
+      .map((item) => item.trim())
+      .filter(Boolean);
+  }
+
+  return [];
+};
+
+const formatCurrentFocus = (value: string[] | string | null | undefined) => {
+  const focusItems = normalizeCurrentFocus(value);
+  return focusItems.length ? focusItems.join(" • ") : "No focus selected";
+};
 
 const Profile = () => {
   const {
     getAccountDetails: { getAccountDetails },
+    updateUserCurrentFocus: { updateUserCurrentFocus },
     uploadProfilePic: { uploadProfilePic },
   } = useUserApi();
   const [accountDetails, setAccountDetails] = React.useState<AccountDetails>(DEFAULT_ACCOUNT_DETAILS);
@@ -75,6 +95,8 @@ const Profile = () => {
   const [pendingProfilePhotoBase64, setPendingProfilePhotoBase64] = React.useState<string | null>(null);
   const [profilePhotoError, setProfilePhotoError] = React.useState("");
   const [isUploadingProfilePhoto, setIsUploadingProfilePhoto] = React.useState(false);
+  const [isFocusModalVisible, setIsFocusModalVisible] = React.useState(false);
+  const [isUpdatingFocus, setIsUpdatingFocus] = React.useState(false);
 
   React.useEffect(() => {
     const loadStoredProfilePhoto = async () => {
@@ -230,6 +252,40 @@ const Profile = () => {
     }
   };
 
+  const handleChangeFocusPress = () => {
+    setIsFocusModalVisible(true);
+  };
+
+  const handleCloseFocusModal = () => {
+    setIsFocusModalVisible(false);
+  };
+
+  const handleConfirmFocusPress = async (selectedFocusItems: string[]) => {
+    setIsUpdatingFocus(true);
+
+    try {
+      const updateResult = await updateUserCurrentFocus({
+        current_focus: selectedFocusItems,
+      });
+
+      if (!checkIfLambdaResultIsSuccess(updateResult)) {
+        Alert.alert("Unable to update focus", getLambdaErrorMessage(updateResult));
+        return;
+      }
+
+      setAccountDetails((currentDetails: AccountDetails) => ({
+        ...currentDetails,
+        current_focus: updateResult.data?.current_focus ?? selectedFocusItems,
+      }));
+      setIsFocusModalVisible(false);
+    } catch (error) {
+      console.error("Failed to update current focus", error);
+      Alert.alert("Unable to update focus", "Please try again.");
+    } finally {
+      setIsUpdatingFocus(false);
+    }
+  };
+
   const profileImageSource: ImageSourcePropType = pendingProfilePhotoUri
     ? { uri: pendingProfilePhotoUri }
     : localProfilePhotoUri
@@ -238,6 +294,7 @@ const Profile = () => {
         ? { uri: accountDetails.profile_pic }
         : DEFAULT_PROFILE_IMAGE;
   const currentFocusText = formatCurrentFocus(accountDetails.current_focus);
+  const selectedFocusItems = normalizeCurrentFocus(accountDetails.current_focus);
 
   const statCards = [
     {
@@ -310,7 +367,11 @@ const Profile = () => {
           <Text style={styles.focusTitle}>Your current focus</Text>
           <Text style={styles.focusValue}>{currentFocusText}</Text>
 
-          <TouchableOpacity activeOpacity={0.85} style={styles.changeFocusButton}>
+          <TouchableOpacity
+            activeOpacity={0.85}
+            style={styles.changeFocusButton}
+            onPress={handleChangeFocusPress}
+          >
             <Text style={styles.changeFocusButtonText}>Change focus</Text>
           </TouchableOpacity>
         </View>
@@ -339,6 +400,14 @@ const Profile = () => {
           pendingProfilePhotoUri ? handleConfirmProfilePhotoPress : handleChooseProfilePhotoPress
         }
         onSecondaryPress={pendingProfilePhotoUri ? handleChooseProfilePhotoPress : undefined}
+      />
+
+      <FocusSelectionModal
+        visible={isFocusModalVisible}
+        onClose={handleCloseFocusModal}
+        initialSelectedFocusItems={selectedFocusItems}
+        onConfirm={handleConfirmFocusPress}
+        isSubmitting={isUpdatingFocus}
       />
     </>
   );

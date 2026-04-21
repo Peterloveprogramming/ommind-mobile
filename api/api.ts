@@ -1,6 +1,12 @@
 import { useGetSupplier,useCreateSupplier } from "./useSupplierApi/requests";
 import {useGetTodo} from './useTodoApi/requests'
-import {useCreateUser, useGetAccountDetails, useLoginUser, useUploadProfilePic} from './lambda/useUserApi/requests'
+import {
+    useCreateUser,
+    useGetAccountDetails,
+    useLoginUser,
+    useUpdateUserCurrentFocus,
+    useUploadProfilePic
+} from './lambda/useUserApi/requests'
 import {useSaveAnswersForRegistrationQuestions} from './lambda/useRegistrationQuestionApi/requests'
 import { useChatAi } from "./lambda/useAiChatApi/requests";
 import { useGetChatHistory } from "./lambda/useChatHistoryApi/requests";
@@ -86,6 +92,9 @@ export const useUserApi =() => {
     const {
         getAccountDetails,
     } = useGetAccountDetails()
+    const {
+        updateUserCurrentFocus,
+    } = useUpdateUserCurrentFocus()
 
     return {
         createUser:{
@@ -99,6 +108,9 @@ export const useUserApi =() => {
         },
         getAccountDetails:{
             getAccountDetails
+        },
+        updateUserCurrentFocus:{
+            updateUserCurrentFocus
         }
     }
 }

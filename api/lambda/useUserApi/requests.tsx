@@ -6,6 +6,10 @@ export type UploadProfilePicInput = {
     image: string;
 }
 
+export type UpdateUserCurrentFocusInput = {
+    current_focus: string[];
+}
+
 export const useCreateUser = () => {
     const {commonFetch} = useFetch<LambdaResult.CreateUserResult>({
         url: LAMBDA_SERVICE_URL,
@@ -90,4 +94,26 @@ export const useGetAccountDetails = () => {
     });
 
     return { getAccountDetails };
+}
+
+export const useUpdateUserCurrentFocus = () => {
+    const {commonFetch} = useFetch<LambdaResult.UpdateUserCurrentFocusResult>({
+        url: LAMBDA_SERVICE_URL,
+        method:"POST",
+        clearUserInfoFromCacheIfUnauthorized:true,
+        useAuthFromCache:true
+    });
+
+    const lambdaConfig:LambdaRequest = {
+        route:"update_user_focus",
+    }
+
+    const updateUserCurrentFocus = (updateUserCurrentFocusInput:UpdateUserCurrentFocusInput) => commonFetch({
+        input:{
+            ...lambdaConfig,
+            ...updateUserCurrentFocusInput
+        }
+    });
+
+    return { updateUserCurrentFocus };
 }
