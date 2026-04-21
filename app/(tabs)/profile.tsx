@@ -235,12 +235,21 @@ const Profile = () => {
         return;
       }
 
-      setLocalProfilePhotoUri(pendingProfilePhotoUri);
-      setAccountDetails((currentDetails: AccountDetails) => ({
-        ...currentDetails,
-        profile_pic: pendingProfilePhotoUri,
-      }));
-      await storeProfilePhotoUri(pendingProfilePhotoUri);
+      const accountDetailsResult = await getAccountDetails();
+
+      if (!checkIfLambdaResultIsSuccess(accountDetailsResult) || !accountDetailsResult.data) {
+        setProfilePhotoError("Profile photo was uploaded, but the updated profile could not be loaded.");
+        return;
+      }
+
+      const updatedProfilePhotoUri = accountDetailsResult.data.profile_pic ?? pendingProfilePhotoUri;
+
+      setLocalProfilePhotoUri(updatedProfilePhotoUri);
+      setAccountDetails({
+        ...DEFAULT_ACCOUNT_DETAILS,
+        ...accountDetailsResult.data,
+      });
+      await storeProfilePhotoUri(updatedProfilePhotoUri);
       setPendingProfilePhotoUri(null);
       setPendingProfilePhotoBase64(null);
       setIsProfileModalVisible(false);

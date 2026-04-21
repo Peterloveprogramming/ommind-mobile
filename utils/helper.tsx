@@ -82,7 +82,9 @@ export const storeProfilePhotoUri = async (uri: string) => {
 
 export const getProfilePhotoUri = async (): Promise<string | null> => {
   try {
-    return await AsyncStorage.getItem(PROFILE_PHOTO_URI_KEY);
+    const profilePic =  await AsyncStorage.getItem(PROFILE_PHOTO_URI_KEY);
+    console.log("profilepic",profilePic)
+    return profilePic
   } catch (e) {
     console.error("Error retrieving profile photo uri from AsyncStorage:", e);
     return null;

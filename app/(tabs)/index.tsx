@@ -109,19 +109,13 @@ const Home = () => {
     void loadUserName();
   }, []);
 
-  useEffect(() => {
-    const loadStoredProfilePhoto = async () => {
-      const storedUri = await getProfilePhotoUri();
-      if (storedUri) {
-        setProfileImageSource({ uri: storedUri });
-      }
-    };
-
-    void loadStoredProfilePhoto();
-  }, []);
-
   useFocusEffect(
     React.useCallback(() => {
+      const loadStoredProfilePhoto = async () => {
+        const storedUri = await getProfilePhotoUri();
+        setProfileImageSource(storedUri ? { uri: storedUri } : MEDITATION_ICON);
+      };
+
       const loadRecommendedMeditationCourses = async () => {
         try {
           const response = await fetchRecommendedMeditationCourses();
@@ -133,8 +127,9 @@ const Home = () => {
         }
       };
 
+      void loadStoredProfilePhoto();
       void loadRecommendedMeditationCourses();
-    }, [fetchRecommendedMeditationCourses])
+    }, [])
   );
 
   const handleNotificationPress = () => {
@@ -236,8 +231,18 @@ const Home = () => {
         return;
       }
 
-      setProfileImageSource({ uri: pendingProfilePhotoUri });
-      await storeProfilePhotoUri(pendingProfilePhotoUri);
+      const accountDetailsResult = await getAccountDetails();
+
+      if (!checkIfLambdaResultIsSuccess(accountDetailsResult) || !accountDetailsResult.data) {
+        setProfilePhotoError("Profile photo was uploaded, but the updated profile could not be loaded.");
+        return;
+      }
+
+      const updatedProfilePhotoUri = accountDetailsResult.data.profile_pic ?? pendingProfilePhotoUri;
+
+      setFirstName(capitalizeName(getFirstName(accountDetailsResult.data.name)));
+      setProfileImageSource({ uri: updatedProfilePhotoUri });
+      await storeProfilePhotoUri(updatedProfilePhotoUri);
       setPendingProfilePhotoUri(null);
       setPendingProfilePhotoBase64(null);
       setIsProfileModalVisible(false);
