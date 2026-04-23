@@ -27,7 +27,6 @@ export function useMeditationCourses(options: UseMeditationCoursesOptions = {}) 
     getMeditationCourses,
     getRecommendedMeditationCourses,
     getMeditationCourseDetails,
-    addRecentlyAccessedCourse,
   } =
     useMeditationApi();
 
@@ -89,10 +88,6 @@ export function useMeditationCourses(options: UseMeditationCoursesOptions = {}) 
     []
   );
 
-  const trackRecentlyAccessedCourse = useCallback(async (courseId: number) => {
-    return await addRecentlyAccessedCourse({ course_id: courseId });
-  }, [addRecentlyAccessedCourse]);
-
   const reset = useCallback(() => {
     setResult(null);
     setError(null);
@@ -114,7 +109,6 @@ export function useMeditationCourses(options: UseMeditationCoursesOptions = {}) 
     fetchMeditationCourses,
     fetchRecommendedMeditationCourses,
     fetchMeditationCourseDetails,
-    trackRecentlyAccessedCourse,
     reset,
     service: serviceRef.current,
     detailsService: detailsServiceRef.current,

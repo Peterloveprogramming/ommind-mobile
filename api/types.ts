@@ -85,6 +85,21 @@ export type LoginUserInput = {
     password:string,
 }
 
+export type MeditationCourseSummary = {
+    id: number;
+    course_id?: number;
+    uuid: string;
+    number_of_sessions: number;
+    type: "calm" | "awareness" | "insight";
+    course_number: number;
+    proper_type_name: string;
+    title: string;
+    image_url: string;
+    background_url?: string;
+    created_at?: string;
+    updated_at?: string;
+}
+
 
 export namespace LambdaResult {
   export type AwarenessLogItem = {
@@ -163,6 +178,7 @@ export namespace LambdaResult {
     total_meditation_time_in_mins: number | null;
     number_of_sessions_completed: number | null;
     current_focus: string[] | string | null;
+    recently_accessed_courses?: MeditationCourseSummary[] | null;
   } | null>;
 
   export type UpdateUserCurrentFocusResult = LambdaResult<{

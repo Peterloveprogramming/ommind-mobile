@@ -91,7 +91,7 @@ const Home = () => {
   const [profilePhotoError, setProfilePhotoError] = useState("");
   const [isUploadingProfilePhoto, setIsUploadingProfilePhoto] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const { fetchRecommendedMeditationCourses, trackRecentlyAccessedCourse } = useMeditationCourses();
+  const { fetchRecommendedMeditationCourses } = useMeditationCourses();
   const {
     uploadProfilePic: { uploadProfilePic },
   } = useUserApi();
@@ -282,25 +282,15 @@ const Home = () => {
     console.log("refresh guidance pressed");
   };
 
-  const handleCoursePress = async (item: MeditationCourse) => {
-    try {
-      const trackResult = await trackRecentlyAccessedCourse(item.course_id);
-
-      if (!checkIfLambdaResultIsSuccess(trackResult)) {
-        console.warn("Failed to add recently accessed course", trackResult);
-      }
-    } catch (error) {
-      console.error("Failed to add recently accessed course", error);
-    } finally {
-      router.push({
-        pathname: "/meditation_session/session",
-        params: {
-          uuid: item.uuid,
-          type: item.type,
-          course_number: String(item.course_number),
-        },
-      });
-    }
+  const handleCoursePress = (item: MeditationCourse) => {
+    router.push({
+      pathname: "/meditation_session/session",
+      params: {
+        uuid: item.uuid,
+        type: item.type,
+        course_number: String(item.course_number),
+      },
+    });
   };
 
   const handleLogoutPress = () => {

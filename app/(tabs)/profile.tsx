@@ -1,5 +1,7 @@
+import MeditationCard from "@/comp/explore/MeditationCard";
 import FocusSelectionModal from "@/comp/modals/FocusSelectionModal";
 import { useUserApi } from "@/api/api";
+import { MeditationCourseSummary } from "@/api/types";
 import ProfilePhotoUploadModal from "@/comp/modals/ProfilePhotoUploadModal";
 import { FONTS } from "@/theme";
 import {
@@ -9,11 +11,12 @@ import {
   storeProfilePhotoUri,
 } from "@/utils/helper";
 import * as ImagePicker from "expo-image-picker";
-import { useFocusEffect } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import React from "react";
 import {
   ActivityIndicator,
   Alert,
+  FlatList,
   Image,
   ImageSourcePropType,
   ScrollView,
@@ -40,6 +43,7 @@ type AccountDetails = {
   name: string;
   number_of_sessions_completed: number | null;
   profile_pic: string | null;
+  recently_accessed_courses: MeditationCourseSummary[];
   total_meditation_time_in_mins: number | null;
 };
 
@@ -50,6 +54,7 @@ const DEFAULT_ACCOUNT_DETAILS: AccountDetails = {
   name: "",
   number_of_sessions_completed: 0,
   profile_pic: null,
+  recently_accessed_courses: [],
   total_meditation_time_in_mins: 0,
 };
 
@@ -81,6 +86,7 @@ const formatCurrentFocus = (value: string[] | string | null | undefined) => {
 };
 
 const Profile = () => {
+  const router = useRouter();
   const {
     getAccountDetails: { getAccountDetails },
     updateUserCurrentFocus: { updateUserCurrentFocus },
@@ -118,7 +124,6 @@ const Profile = () => {
         try {
           const result = await getAccountDetails();
           console.log("getAccountDetails result", result);
-          console.log(result["data"]["recently_accessed_courses"])
 
           if (!checkIfLambdaResultIsSuccess(result)) {
             setErrorMessage(getLambdaErrorMessage(result));
@@ -296,6 +301,17 @@ const Profile = () => {
     }
   };
 
+  const handleCoursePress = (item: MeditationCourseSummary) => {
+    router.push({
+      pathname: "/meditation_session/session",
+      params: {
+        uuid: item.uuid,
+        type: item.type,
+        course_number: String(item.course_number),
+      },
+    });
+  };
+
   const profileImageSource: ImageSourcePropType = pendingProfilePhotoUri
     ? { uri: pendingProfilePhotoUri }
     : localProfilePhotoUri
@@ -305,6 +321,7 @@ const Profile = () => {
         : DEFAULT_PROFILE_IMAGE;
   const currentFocusText = formatCurrentFocus(accountDetails.current_focus);
   const selectedFocusItems = normalizeCurrentFocus(accountDetails.current_focus);
+  const recentlyPlayedCourses = accountDetails.recently_accessed_courses ?? [];
 
   const statCards = [
     {
@@ -384,6 +401,32 @@ const Profile = () => {
           >
             <Text style={styles.changeFocusButtonText}>Change focus</Text>
           </TouchableOpacity>
+        </View>
+
+        <View style={styles.recentlyPlayedSection}>
+          <View style={styles.recentlyPlayedHeader}>
+            <Text style={styles.recentlyPlayedTitle}>Recently Played</Text>
+            <Text style={styles.recentlyPlayedArrow}>→</Text>
+          </View>
+
+          <FlatList
+            horizontal
+            data={recentlyPlayedCourses}
+            keyExtractor={(item) => item.uuid}
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.recentlyPlayedRow}
+            renderItem={({ item }) => (
+              <MeditationCard
+                numberOfSessions={item.number_of_sessions}
+                description={`${item.proper_type_name} ${item.course_number}: ${item.title}`}
+                image_source={item.image_url}
+                onPress={() => void handleCoursePress(item)}
+              />
+            )}
+            ListEmptyComponent={
+              <Text style={styles.recentlyPlayedEmptyText}>No recently played meditations yet.</Text>
+            }
+          />
         </View>
       </ScrollView>
 
@@ -601,5 +644,39 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 20,
     color: "#FFFFFF",
+  },
+  recentlyPlayedSection: {
+    marginTop: 18,
+    paddingTop: 28,
+    borderTopWidth: 1,
+    borderTopColor: "#E7E0D7",
+  },
+  recentlyPlayedHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  recentlyPlayedTitle: {
+    fontFamily: FONTS.figtreeSemiBold,
+    fontSize: 18,
+    lineHeight: 24,
+    color: "#111111",
+  },
+  recentlyPlayedArrow: {
+    fontFamily: FONTS.interSemiBold,
+    fontSize: 28,
+    lineHeight: 28,
+    color: "#6D6965",
+  },
+  recentlyPlayedRow: {
+    gap: 12,
+    paddingTop: 16,
+    paddingRight: 12,
+  },
+  recentlyPlayedEmptyText: {
+    fontFamily: FONTS.inter,
+    fontSize: 14,
+    lineHeight: 20,
+    color: "#8B8B8B",
   },
 });

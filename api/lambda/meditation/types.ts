@@ -70,12 +70,3 @@ export type MeditationAudioUrls = {
 };
 
 export type GetMeditationAudioUrlResult = LambdaResult<MeditationAudioUrls | null>;
-
-export type AddRecentlyAccessedCourseInput = {
-  course_id: number;
-};
-
-export type AddRecentlyAccessedCourseResult = LambdaResult<{
-  user_id: number;
-  course_id: number;
-} | null>;

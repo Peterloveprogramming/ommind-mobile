@@ -2,8 +2,6 @@ import { useFetch } from "@/api/useFetch";
 import { LAMBDA_SERVICE_URL } from "@/constant";
 import { LambdaRequest } from "@/api/types";
 import {
-  AddRecentlyAccessedCourseInput,
-  AddRecentlyAccessedCourseResult,
   GetMeditationAudioInput,
   GetMeditationAudioUrlResult,
   GetMeditationCourseDetailsInput,
@@ -18,7 +16,6 @@ export const useMeditationApi = () => {
     | GetRecommendedMeditationCoursesResult
     | GetMeditationCourseDetailsResult
     | GetMeditationAudioUrlResult
-    | AddRecentlyAccessedCourseResult
   >({
     url: LAMBDA_SERVICE_URL,
     method: "POST",
@@ -76,24 +73,10 @@ export const useMeditationApi = () => {
     }) as Promise<GetRecommendedMeditationCoursesResult>;
   };
 
-  const addRecentlyAccessedCourse = (input: AddRecentlyAccessedCourseInput) => {
-    const lambdaConfig: LambdaRequest = {
-      route: "add_recently_accessed_course",
-    };
-
-    return commonFetch({
-      input: {
-        ...lambdaConfig,
-        ...input,
-      },
-    }) as Promise<AddRecentlyAccessedCourseResult>;
-  };
-
   return {
     getMeditationCourses,
     getRecommendedMeditationCourses,
     getMeditationCourseDetails,
     getMeditationAudioUrl,
-    addRecentlyAccessedCourse,
   };
 };

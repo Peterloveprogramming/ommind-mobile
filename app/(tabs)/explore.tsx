@@ -1,5 +1,4 @@
 import MeditationCard from "@/comp/explore/MeditationCard";
-import { checkIfLambdaResultIsSuccess } from "@/utils/helper";
 import { FONTS } from "@/theme";
 import React from "react";
 import { FlatList, ScrollView, StyleSheet, Text, View } from "react-native";
@@ -15,8 +14,7 @@ const formatSectionTitle = (value: keyof MeditationCoursesByType) => {
 
 const Explore = () => {
   const router = useRouter();
-  const { result, error, fetchMeditationCourses, trackRecentlyAccessedCourse } =
-    useMeditationCourses();
+  const { result, error, fetchMeditationCourses } = useMeditationCourses();
   const coursesByType = result?.data?.courses;
 
   useFocusEffect(
@@ -25,25 +23,15 @@ const Explore = () => {
     }, [fetchMeditationCourses])
   );
 
-  const handleCoursePress = async (item: MeditationCourse) => {
-    try {
-      const trackResult = await trackRecentlyAccessedCourse(item.course_id);
-
-      if (!checkIfLambdaResultIsSuccess(trackResult)) {
-        console.warn("Failed to add recently accessed course", trackResult);
-      }
-    } catch (error) {
-      console.error("Failed to add recently accessed course", error);
-    } finally {
-      router.push({
-        pathname: "/meditation_session/session",
-        params: {
-          uuid: item.uuid,
-          type: item.type,
-          course_number: String(item.course_number),
-        },
-      });
-    }
+  const handleCoursePress = (item: MeditationCourse) => {
+    router.push({
+      pathname: "/meditation_session/session",
+      params: {
+        uuid: item.uuid,
+        type: item.type,
+        course_number: String(item.course_number),
+      },
+    });
   };
 
   const renderCourseRow = (type: keyof MeditationCoursesByType) => {
