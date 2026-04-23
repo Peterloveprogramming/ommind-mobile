@@ -23,6 +23,7 @@ import { images } from "@/constants/images";
 import { FONTS } from "@/theme";
 import { useMeditationAudioService } from "@/services/useMeditationAudioService";
 import BookmarkButtonWhite from "../buttons/BookmarkButtonWhite";
+import { addRecentlyAccessedSession, checkIfLambdaResultIsSuccess } from "@/utils/helper";
 
 const SEEK_STEP_SECONDS = 10;
 const TRACKER_SIZE = 24;
@@ -105,6 +106,7 @@ const SessionPlayer = () => {
   const bgmPlayerRef = useRef(bgmPlayer);
   const isAdvancingSessionRef = useRef(false);
   const hasAutoPlayedRef = useRef(false);
+  const recentlyAccessedSessionKeyRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!meditationType || Number.isNaN(courseNumber) || Number.isNaN(sessionNumber)) {
@@ -248,6 +250,55 @@ const SessionPlayer = () => {
 
   const duration = voiceStatus.duration || 0;
   const currentTime = voiceStatus.currentTime || 0;
+
+  useEffect(() => {
+    if (
+      !meditationType ||
+      !title ||
+      !image_url ||
+      Number.isNaN(courseNumber) ||
+      Number.isNaN(sessionNumber) ||
+      !voiceStatus.isLoaded ||
+      duration <= 0
+    ) {
+      return;
+    }
+
+    const sessionKey = `${meditationType}-${courseNumber}-${sessionNumber}`;
+    if (recentlyAccessedSessionKeyRef.current === sessionKey) {
+      return;
+    }
+
+    recentlyAccessedSessionKeyRef.current = sessionKey;
+
+    const sessionLengthInMins = Math.ceil(duration / 60);
+    void addRecentlyAccessedSession({
+      course_number: courseNumber,
+      session_number: sessionNumber,
+      session_length_in_mins: sessionLengthInMins,
+      is_generated: 0,
+      type: meditationType,
+      session_title: title,
+      image_url,
+    }).then((result) => {
+      if (!checkIfLambdaResultIsSuccess(result)) {
+        console.error("Failed to add recently accessed session", result);
+        recentlyAccessedSessionKeyRef.current = null;
+      }
+    }).catch((error) => {
+      console.error("Failed to add recently accessed session", error);
+      recentlyAccessedSessionKeyRef.current = null;
+    });
+  }, [
+    courseNumber,
+    duration,
+    image_url,
+    meditationType,
+    sessionNumber,
+    title,
+    voiceStatus.isLoaded,
+  ]);
+
   const progress = duration > 0 ? Math.min(currentTime / duration, 1) : 0;
   const displayedProgress = dragProgress ?? progress;
   const clampProgress = (value: number) => Math.max(0, Math.min(value, 1));

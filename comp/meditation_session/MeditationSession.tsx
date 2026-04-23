@@ -1,6 +1,6 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { StyleSheet, ImageBackground, View, ScrollView ,Text, TouchableOpacity, Image} from "react-native";
-import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import {
   MeditationCourse,
   MeditationCourseDescriptionSection,
@@ -11,7 +11,6 @@ import BookmarkButton from "@/comp/buttons/BookmarkButton";
 import BaseButton from "../base/BaseButton";
 import { colors } from "@/constants/colors";
 import { useMeditationCourses } from "@/services/meditation/useMeditationCourses";
-import { addRecentlyAccessedSession, checkIfLambdaResultIsSuccess } from "@/utils/helper";
 
 type SessionCardProps = {
   title: string;
@@ -24,8 +23,6 @@ type SessionCardProps = {
   imageUrl: string;
   backgroundUrl: string;
   sessionTitles: string;
-  isSessionLoading: boolean;
-  setIsSessionLoading: (isLoading: boolean) => void;
 };
 
 type TagProps = {
@@ -43,8 +40,6 @@ const SessionCard = ({
   imageUrl,
   backgroundUrl,
   sessionTitles,
-  isSessionLoading,
-  setIsSessionLoading,
 }: SessionCardProps) => {
   const router = useRouter();
   const showLock = locked;
@@ -76,36 +71,7 @@ const SessionCard = ({
     return cardContent;
   }
 
-  const handlePress = async () => {
-    if (isSessionLoading) {
-      return;
-    }
-
-    setIsSessionLoading(true);
-
-    try {
-      const result = await addRecentlyAccessedSession({
-        course_number: courseNumber,
-        session_number: sessionNumber,
-        session_length_in_mins: sessionLengthInMins,
-        is_generated: 0,
-        type: meditationType,
-        session_title: title,
-        image_url: imageUrl,
-      });
-
-      if (!checkIfLambdaResultIsSuccess(result)) {
-        console.error("Failed to add recently accessed session", result);
-        setIsSessionLoading(false);
-        return;
-      }
-    } catch (error) {
-      console.error("Failed to add recently accessed session", error);
-      setIsSessionLoading(false);
-      return;
-    }
-
-    setIsSessionLoading(false);
+  const handlePress = () => {
     router.push({
       pathname: "/meditation_session/player",
       params: {
@@ -122,7 +88,6 @@ const SessionCard = ({
 
   return <TouchableOpacity
     onPress={handlePress}
-    disabled={isSessionLoading}
   >{cardContent}</TouchableOpacity>;
 };
 
@@ -151,14 +116,7 @@ const renderDescriptionSection = (section: MeditationCourseDescriptionSection) =
 const MeditationSession = () => {
   const params = useLocalSearchParams<{ uuid?: string; type?: string }>();
   const { detailsResult, detailsStatus, fetchMeditationCourseDetails } = useMeditationCourses();
-  const [isSessionLoading, setIsSessionLoading] = useState(false);
   const courseDetails = detailsResult?.data?.course_details;
-
-  useFocusEffect(
-    useCallback(() => {
-      setIsSessionLoading(false);
-    }, []),
-  );
 
   useEffect(() => {
     if (!params.uuid || !params.type) {
@@ -249,8 +207,6 @@ const MeditationSession = () => {
                   imageUrl={courseDetails.image_url}
                   backgroundUrl={courseDetails.background_url}
                   sessionTitles={sessionTitles}
-                  isSessionLoading={isSessionLoading}
-                  setIsSessionLoading={setIsSessionLoading}
                 />
               ))}
 
