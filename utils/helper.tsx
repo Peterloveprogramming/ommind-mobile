@@ -1,8 +1,19 @@
 import { LambdaResult } from "@/api/types";
 import { Router } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { LAMBDA_SERVICE_URL } from "@/constant";
 
 const PROFILE_PHOTO_URI_KEY = "profilePhotoUri";
+
+export type AddRecentlyAccessedSessionInput = {
+  course_number: number;
+  session_number: number;
+  session_length_in_mins: number;
+  is_generated: 0 | 1;
+  type: string;
+  session_title: string;
+  image_url: string;
+};
 
 export const generateRandomNumber = () => {
   return Math.floor(Math.random() * 10000) + 1;
@@ -120,4 +131,30 @@ export const navigateToNewChat = (
     pathname: "/chat",
     params: { session_id: generateUniqueId() },
   });
+};
+
+export const addRecentlyAccessedSession = async (
+  input: AddRecentlyAccessedSessionInput
+): Promise<LambdaResult<AddRecentlyAccessedSessionInput & { user_id: number } | null>> => {
+  const authInfo = await getAuthInfo();
+
+  if (!authInfo) {
+    throw new Error("Cannot add recently accessed session without authInfo");
+  }
+
+  const response = await fetch(LAMBDA_SERVICE_URL, {
+    method: "POST",
+    body: JSON.stringify({
+      route: "add_recently_accessed_session",
+      jwt_token: authInfo.jwtToken,
+      user_id: authInfo.userId,
+      ...input,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to add recently accessed session");
+  }
+
+  return response.json();
 };

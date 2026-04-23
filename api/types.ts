@@ -46,6 +46,7 @@ export type LambdaRequest = {
             "get_recommended_courses" |
             "get_meditation_course_details" |
             "add_recently_accessed_course" |
+            "add_recently_accessed_session" |
             "get_awareness_logs" |
             "get_awareness_log" |
             "add_awareness_log" |

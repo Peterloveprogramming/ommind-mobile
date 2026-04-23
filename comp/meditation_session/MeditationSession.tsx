@@ -1,6 +1,6 @@
-import React, { useEffect } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { StyleSheet, ImageBackground, View, ScrollView ,Text, TouchableOpacity, Image} from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import {
   MeditationCourse,
   MeditationCourseDescriptionSection,
@@ -11,6 +11,7 @@ import BookmarkButton from "@/comp/buttons/BookmarkButton";
 import BaseButton from "../base/BaseButton";
 import { colors } from "@/constants/colors";
 import { useMeditationCourses } from "@/services/meditation/useMeditationCourses";
+import { addRecentlyAccessedSession, checkIfLambdaResultIsSuccess } from "@/utils/helper";
 
 type SessionCardProps = {
   title: string;
@@ -18,10 +19,13 @@ type SessionCardProps = {
   locked: boolean;
   courseNumber: number;
   sessionNumber: number;
+  sessionLengthInMins: number;
   meditationType: string;
   imageUrl: string;
   backgroundUrl: string;
   sessionTitles: string;
+  isSessionLoading: boolean;
+  setIsSessionLoading: (isLoading: boolean) => void;
 };
 
 type TagProps = {
@@ -34,10 +38,13 @@ const SessionCard = ({
   locked,
   courseNumber,
   sessionNumber,
+  sessionLengthInMins,
   meditationType,
   imageUrl,
   backgroundUrl,
   sessionTitles,
+  isSessionLoading,
+  setIsSessionLoading,
 }: SessionCardProps) => {
   const router = useRouter();
   const showLock = locked;
@@ -54,7 +61,7 @@ const SessionCard = ({
       <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
         <View style={{ flexDirection: "row", gap: 12, marginTop: 8, alignItems: "center" }}>
           <Image source={statusIcon} style={{ width: 14, height: 14 }} resizeMode="contain" />
-          <Text style={{ fontFamily: FONTS.figtreeMedium, color: "#8E8E93" }}>20 Min</Text>
+          <Text style={{ fontFamily: FONTS.figtreeMedium, color: "#8E8E93" }}>{sessionLengthInMins} Min</Text>
         </View>
         {showLock ? (
           <View>
@@ -69,21 +76,53 @@ const SessionCard = ({
     return cardContent;
   }
 
-  return <TouchableOpacity
-    onPress={() =>
-      router.push({
-        pathname: "/meditation_session/player",
-        params: {
-          title,
-          course_number: String(courseNumber),
-          session_number: String(sessionNumber),
-          type: meditationType,
-          image_url: imageUrl,
-          backgroundUrl:backgroundUrl,
-          session_titles: sessionTitles,
-        },
-      })
+  const handlePress = async () => {
+    if (isSessionLoading) {
+      return;
     }
+
+    setIsSessionLoading(true);
+
+    try {
+      const result = await addRecentlyAccessedSession({
+        course_number: courseNumber,
+        session_number: sessionNumber,
+        session_length_in_mins: sessionLengthInMins,
+        is_generated: 0,
+        type: meditationType,
+        session_title: title,
+        image_url: imageUrl,
+      });
+
+      if (!checkIfLambdaResultIsSuccess(result)) {
+        console.error("Failed to add recently accessed session", result);
+        setIsSessionLoading(false);
+        return;
+      }
+    } catch (error) {
+      console.error("Failed to add recently accessed session", error);
+      setIsSessionLoading(false);
+      return;
+    }
+
+    setIsSessionLoading(false);
+    router.push({
+      pathname: "/meditation_session/player",
+      params: {
+        title,
+        course_number: String(courseNumber),
+        session_number: String(sessionNumber),
+        type: meditationType,
+        image_url: imageUrl,
+        backgroundUrl:backgroundUrl,
+        session_titles: sessionTitles,
+      },
+    });
+  };
+
+  return <TouchableOpacity
+    onPress={handlePress}
+    disabled={isSessionLoading}
   >{cardContent}</TouchableOpacity>;
 };
 
@@ -112,7 +151,14 @@ const renderDescriptionSection = (section: MeditationCourseDescriptionSection) =
 const MeditationSession = () => {
   const params = useLocalSearchParams<{ uuid?: string; type?: string }>();
   const { detailsResult, detailsStatus, fetchMeditationCourseDetails } = useMeditationCourses();
+  const [isSessionLoading, setIsSessionLoading] = useState(false);
   const courseDetails = detailsResult?.data?.course_details;
+
+  useFocusEffect(
+    useCallback(() => {
+      setIsSessionLoading(false);
+    }, []),
+  );
 
   useEffect(() => {
     if (!params.uuid || !params.type) {
@@ -198,10 +244,13 @@ const MeditationSession = () => {
                   locked={false}
                   courseNumber={courseDetails.course_number}
                   sessionNumber={session.session_number}
+                  sessionLengthInMins={session.session_length}
                   meditationType={courseDetails.type}
                   imageUrl={courseDetails.image_url}
                   backgroundUrl={courseDetails.background_url}
                   sessionTitles={sessionTitles}
+                  isSessionLoading={isSessionLoading}
+                  setIsSessionLoading={setIsSessionLoading}
                 />
               ))}
 
