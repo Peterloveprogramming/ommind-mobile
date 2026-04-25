@@ -8,6 +8,7 @@ import {
   Image,
   ImageBackground,
   LayoutChangeEvent,
+  Modal,
   PanResponder,
   Pressable,
   StyleSheet,
@@ -43,6 +44,18 @@ const formatTime = (timeInSeconds: number) => {
   const seconds = Math.floor(safeTime % 60);
 
   return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+};
+
+const formatProgressPromptTime = (timeInSeconds: number) => {
+  const safeTime = Number.isFinite(timeInSeconds) ? Math.max(Math.floor(timeInSeconds), 0) : 0;
+  const minutes = Math.floor(safeTime / 60);
+  const seconds = safeTime % 60;
+
+  if (minutes <= 0) {
+    return `${seconds} ${seconds === 1 ? "second" : "seconds"}`;
+  }
+
+  return `${minutes} ${minutes === 1 ? "minute" : "minutes"} ${seconds} ${seconds === 1 ? "second" : "seconds"}`;
 };
 
 
@@ -96,6 +109,12 @@ const SessionPlayer = () => {
     () => Object.keys(sessionTitles).map(Number).filter((value) => !Number.isNaN(value)).sort((a, b) => a - b),
     [sessionTitles],
   );
+  const sessionKey = `${meditationType ?? ""}-${courseNumber}-${sessionNumber}`;
+  const hasInitialProgress = Number.isFinite(initialProgress) && initialProgress > 0;
+  const initialProgressPromptTime = useMemo(
+    () => formatProgressPromptTime(initialProgress),
+    [initialProgress],
+  );
 
   const { status, result, error, fetchMeditationAudioUrl } = useMeditationAudioService();
   const audioUrl = result?.data?.audio?.[0] ?? null;
@@ -108,6 +127,9 @@ const SessionPlayer = () => {
   const [dragProgress, setDragProgress] = useState<number | null>(null);
   const [isPlaybackEnabled, setIsPlaybackEnabled] = useState(false);
   const [isBgmEnabled, setIsBgmEnabled] = useState(true);
+  const [isResumePromptVisible, setIsResumePromptVisible] = useState(hasInitialProgress);
+  const [isInitialPlaybackReady, setIsInitialPlaybackReady] = useState(!hasInitialProgress);
+  const [pendingInitialStartSeconds, setPendingInitialStartSeconds] = useState<number | null>(null);
   const dragStartProgressRef = useRef(0);
   const progressRef = useRef(0);
   const currentTimeRef = useRef(0);
@@ -139,6 +161,14 @@ const SessionPlayer = () => {
       session_number: sessionNumber,
     });
   }, [courseNumber, fetchMeditationAudioUrl, meditationType, sessionNumber]);
+
+  useEffect(() => {
+    setIsResumePromptVisible(hasInitialProgress);
+    setIsInitialPlaybackReady(!hasInitialProgress);
+    setPendingInitialStartSeconds(null);
+    initialSeekKeyRef.current = null;
+    hasAutoPlayedRef.current = false;
+  }, [hasInitialProgress, sessionKey]);
 
 
 
@@ -185,6 +215,10 @@ const SessionPlayer = () => {
       return;
     }
 
+    if (!isInitialPlaybackReady) {
+      return;
+    }
+
     if (!voiceStatus.isLoaded || !bgmStatus.isLoaded || voiceStatus.playing || bgmStatus.playing) {
       return;
     }
@@ -197,6 +231,7 @@ const SessionPlayer = () => {
     bgmStatus.isLoaded,
     bgmStatus.playing,
     bgmPlayer,
+    isInitialPlaybackReady,
     voicePlayer,
     bgmUrl,
     voiceStatus.isLoaded,
@@ -438,30 +473,31 @@ const SessionPlayer = () => {
 
   useEffect(() => {
     if (
+      pendingInitialStartSeconds === null ||
       !voiceStatus.isLoaded ||
       !bgmStatus.isLoaded ||
-      duration <= 0 ||
-      !Number.isFinite(initialProgress) ||
-      initialProgress <= 0
+      duration <= 0
     ) {
       return;
     }
 
-    const sessionKey = `${meditationType}-${courseNumber}-${sessionNumber}`;
     if (initialSeekKeyRef.current === sessionKey) {
       return;
     }
 
     initialSeekKeyRef.current = sessionKey;
-    void seekToTime(initialProgress);
+
+    void (async () => {
+      await seekToTime(pendingInitialStartSeconds);
+      setPendingInitialStartSeconds(null);
+      setIsInitialPlaybackReady(true);
+    })();
   }, [
     bgmStatus.isLoaded,
-    courseNumber,
     duration,
-    initialProgress,
-    meditationType,
-    sessionNumber,
+    pendingInitialStartSeconds,
     seekToTime,
+    sessionKey,
     voiceStatus.isLoaded,
   ]);
 
@@ -585,6 +621,10 @@ const SessionPlayer = () => {
   );
 
   const handlePlay = () => {
+    if (!isInitialPlaybackReady) {
+      return;
+    }
+
     if (!audioUrl || !bgmUrl) {
       console.log("play blocked: missing audio urls");
       return;
@@ -629,6 +669,16 @@ const SessionPlayer = () => {
 
   const handleTogglePlayback = () => {
     setIsPlaybackEnabled((currentValue) => !currentValue);
+  };
+
+  const handleResumeFromProgress = () => {
+    setIsResumePromptVisible(false);
+    setPendingInitialStartSeconds(initialProgress);
+  };
+
+  const handleStartFromBeginning = () => {
+    setIsResumePromptVisible(false);
+    setPendingInitialStartSeconds(0);
   };
 
   return (
@@ -732,6 +782,35 @@ const SessionPlayer = () => {
 
        </View>
       </View>
+      <Modal
+        animationType="fade"
+        transparent
+        visible={isResumePromptVisible}
+        onRequestClose={handleStartFromBeginning}
+      >
+        <View style={styles.resumeModalOverlay}>
+          <View style={styles.resumeModalContent}>
+            <Text style={styles.resumeModalTitle}>Continue your session?</Text>
+            <Text style={styles.resumeModalText}>
+              You were at {initialProgressPromptTime}. Would you like to continue from there?
+            </Text>
+            <View style={styles.resumeModalButtonRow}>
+              <TouchableOpacity
+                style={[styles.resumeModalButton, styles.resumeModalSecondaryButton]}
+                onPress={handleStartFromBeginning}
+              >
+                <Text style={styles.resumeModalSecondaryButtonText}>Start over</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.resumeModalButton, styles.resumeModalPrimaryButton]}
+                onPress={handleResumeFromProgress}
+              >
+                <Text style={styles.resumeModalPrimaryButtonText}>Continue</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ImageBackground>
   );
 };
@@ -859,5 +938,60 @@ const styles = StyleSheet.create({
   primaryIconPreviewImage: {
     width: 44,
     height: 44,
+  },
+  resumeModalOverlay: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 24,
+    backgroundColor: "rgba(0, 0, 0, 0.45)",
+  },
+  resumeModalContent: {
+    width: "100%",
+    maxWidth: 340,
+    borderRadius: 18,
+    padding: 22,
+    backgroundColor: "#FFFFFF",
+  },
+  resumeModalTitle: {
+    fontFamily: FONTS.figtreeSemiBold,
+    fontSize: 20,
+    color: "#1C1C1E",
+  },
+  resumeModalText: {
+    marginTop: 10,
+    fontFamily: FONTS.figtreeMedium,
+    fontSize: 15,
+    lineHeight: 22,
+    color: "#4A4A4D",
+  },
+  resumeModalButtonRow: {
+    flexDirection: "row",
+    gap: 12,
+    marginTop: 22,
+  },
+  resumeModalButton: {
+    flex: 1,
+    minHeight: 46,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 12,
+  },
+  resumeModalPrimaryButton: {
+    backgroundColor: "#1C1C1E",
+  },
+  resumeModalSecondaryButton: {
+    backgroundColor: "#F0F0F2",
+  },
+  resumeModalPrimaryButtonText: {
+    fontFamily: FONTS.figtreeSemiBold,
+    fontSize: 15,
+    color: "#FFFFFF",
+  },
+  resumeModalSecondaryButtonText: {
+    fontFamily: FONTS.figtreeSemiBold,
+    fontSize: 15,
+    color: "#1C1C1E",
   },
 });
