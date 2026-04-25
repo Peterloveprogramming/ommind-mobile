@@ -1,8 +1,8 @@
-import MeditationCard from "@/comp/explore/MeditationCard";
 import FocusSelectionModal from "@/comp/modals/FocusSelectionModal";
 import { useUserApi } from "@/api/api";
-import { MeditationCourseSummary } from "@/api/types";
+import { RecentlyAccessedSession } from "@/api/types";
 import ProfilePhotoUploadModal from "@/comp/modals/ProfilePhotoUploadModal";
+import MeditationSessionCard from "@/comp/meditation_session/MeditationSessionCard";
 import { FONTS } from "@/theme";
 import {
   checkIfLambdaResultIsSuccess,
@@ -43,7 +43,7 @@ type AccountDetails = {
   name: string;
   number_of_sessions_completed: number | null;
   profile_pic: string | null;
-  recently_accessed_courses: MeditationCourseSummary[];
+  recently_accessed_sessions: RecentlyAccessedSession[];
   total_meditation_time_in_mins: number | null;
 };
 
@@ -54,7 +54,7 @@ const DEFAULT_ACCOUNT_DETAILS: AccountDetails = {
   name: "",
   number_of_sessions_completed: 0,
   profile_pic: null,
-  recently_accessed_courses: [],
+  recently_accessed_sessions: [],
   total_meditation_time_in_mins: 0,
 };
 
@@ -124,6 +124,7 @@ const Profile = () => {
         try {
           const result = await getAccountDetails();
           console.log("getAccountDetails result", result);
+          console.log("recently_accessed_sessions", result.data?.recently_accessed_sessions);
 
           if (!checkIfLambdaResultIsSuccess(result)) {
             setErrorMessage(getLambdaErrorMessage(result));
@@ -133,6 +134,7 @@ const Profile = () => {
           setAccountDetails({
             ...DEFAULT_ACCOUNT_DETAILS,
             ...result.data,
+            recently_accessed_sessions: result.data?.recently_accessed_sessions ?? [],
           });
         } catch (error) {
           console.error("Failed to fetch account details", error);
@@ -254,6 +256,7 @@ const Profile = () => {
       setAccountDetails({
         ...DEFAULT_ACCOUNT_DETAILS,
         ...accountDetailsResult.data,
+        recently_accessed_sessions: accountDetailsResult.data.recently_accessed_sessions ?? [],
       });
       await storeProfilePhotoUri(updatedProfilePhotoUri);
       setPendingProfilePhotoUri(null);
@@ -301,13 +304,17 @@ const Profile = () => {
     }
   };
 
-  const handleCoursePress = (item: MeditationCourseSummary) => {
+  const handleSessionPress = (item: RecentlyAccessedSession) => {
     router.push({
-      pathname: "/meditation_session/session",
+      pathname: "/meditation_session/player",
       params: {
-        uuid: item.uuid,
         type: item.type,
         course_number: String(item.course_number),
+        session_number: String(item.session_number),
+        title: item.session_title,
+        image_url: item.image_url,
+        backgroundUrl: item.background_url ?? "",
+        progress: item.session_progress_in_secs == null ? "" : String(item.session_progress_in_secs),
       },
     });
   };
@@ -321,7 +328,7 @@ const Profile = () => {
         : DEFAULT_PROFILE_IMAGE;
   const currentFocusText = formatCurrentFocus(accountDetails.current_focus);
   const selectedFocusItems = normalizeCurrentFocus(accountDetails.current_focus);
-  const recentlyPlayedCourses = accountDetails.recently_accessed_courses ?? [];
+  const recentlyPlayedSessions = accountDetails.recently_accessed_sessions ?? [];
 
   const statCards = [
     {
@@ -411,20 +418,21 @@ const Profile = () => {
 
           <FlatList
             horizontal
-            data={recentlyPlayedCourses}
-            keyExtractor={(item) => item.uuid}
+            data={recentlyPlayedSessions}
+            keyExtractor={(item) => `${item.type}-${item.course_number}-${item.session_number}-${item.id}`}
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.recentlyPlayedRow}
             renderItem={({ item }) => (
-              <MeditationCard
-                numberOfSessions={item.number_of_sessions}
-                description={`${item.proper_type_name} ${item.course_number}: ${item.title}`}
-                image_source={item.image_url}
-                onPress={() => void handleCoursePress(item)}
+              <MeditationSessionCard
+                session_length={item.session_length_in_mins}
+                session_title={item.session_title}
+                image_url={item.image_url}
+                session_progress={item.session_progress_in_secs}
+                onPress={() => void handleSessionPress(item)}
               />
             )}
             ListEmptyComponent={
-              <Text style={styles.recentlyPlayedEmptyText}>No recently played meditations yet.</Text>
+              <Text style={styles.recentlyPlayedEmptyText}>No recently played sessions yet.</Text>
             }
           />
         </View>

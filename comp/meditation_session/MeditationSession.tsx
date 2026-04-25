@@ -23,6 +23,7 @@ type SessionCardProps = {
   imageUrl: string;
   backgroundUrl: string;
   sessionTitles: string;
+  progress?: number | null;
 };
 
 type TagProps = {
@@ -40,6 +41,7 @@ const SessionCard = ({
   imageUrl,
   backgroundUrl,
   sessionTitles,
+  progress,
 }: SessionCardProps) => {
   const router = useRouter();
   const showLock = locked;
@@ -82,6 +84,7 @@ const SessionCard = ({
         image_url: imageUrl,
         backgroundUrl:backgroundUrl,
         session_titles: sessionTitles,
+        progress: progress == null ? "" : String(progress),
       },
     });
   };
@@ -207,6 +210,7 @@ const MeditationSession = () => {
                   imageUrl={courseDetails.image_url}
                   backgroundUrl={courseDetails.background_url}
                   sessionTitles={sessionTitles}
+                  progress={session.progress}
                 />
               ))}
 

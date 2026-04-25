@@ -1,5 +1,5 @@
 // const URL = "https://api.hulolo.xyz";
-const URL = "https://8a11-202-91-47-182.ngrok-free.app"
+const URL = "https://0a42-116-212-248-106.ngrok-free.app"
 //export constants 
 export const LAMBDA_SERVICE_URL = URL + "/2015-03-31/functions/function/invocations"
 //for audio to text using websocket 

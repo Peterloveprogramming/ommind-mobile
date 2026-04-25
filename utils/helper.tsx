@@ -2,6 +2,10 @@ import { LambdaResult } from "@/api/types";
 import { Router } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LAMBDA_SERVICE_URL } from "@/constant";
+import {
+  UpdateSessionProgressInput,
+  UpdateSessionProgressResult,
+} from "@/api/lambda/meditation/types";
 
 const PROFILE_PHOTO_URI_KEY = "profilePhotoUri";
 
@@ -13,6 +17,7 @@ export type AddRecentlyAccessedSessionInput = {
   type: string;
   session_title: string;
   image_url: string;
+  background_url: string;
 };
 
 export const generateRandomNumber = () => {
@@ -154,6 +159,32 @@ export const addRecentlyAccessedSession = async (
 
   if (!response.ok) {
     throw new Error("Failed to add recently accessed session");
+  }
+
+  return response.json();
+};
+
+export const updateSessionProgress = async (
+  input: UpdateSessionProgressInput
+): Promise<UpdateSessionProgressResult> => {
+  const authInfo = await getAuthInfo();
+
+  if (!authInfo) {
+    throw new Error("Cannot update session progress without authInfo");
+  }
+
+  const response = await fetch(LAMBDA_SERVICE_URL, {
+    method: "POST",
+    body: JSON.stringify({
+      route: "update_session_progress",
+      jwt_token: authInfo.jwtToken,
+      user_id: authInfo.userId,
+      ...input,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to update session progress");
   }
 
   return response.json();

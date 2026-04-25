@@ -4,6 +4,7 @@ export type MeditationCourseSession = {
   session_title: string;
   session_length: number;
   session_number: number;
+  progress?: number | null;
 };
 
 export type MeditationCourseDescriptionSection = {
@@ -70,3 +71,14 @@ export type MeditationAudioUrls = {
 };
 
 export type GetMeditationAudioUrlResult = LambdaResult<MeditationAudioUrls | null>;
+
+export type UpdateSessionProgressInput = {
+  course_number: number;
+  session_number: number;
+  type: string;
+  progress: number;
+};
+
+export type UpdateSessionProgressResult = LambdaResult<
+  (UpdateSessionProgressInput & { user_id: number }) | null
+>;
