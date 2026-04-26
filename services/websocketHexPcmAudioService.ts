@@ -33,7 +33,7 @@ export class WebsocketHexPcmAudioService {
   private socket: WebSocket | null = null;
   private connectPromise: Promise<void> | null = null;
   private status: ConnectionStatus = "idle";
-
+  
   constructor(options: WebsocketHexPcmAudioServiceOptions = {}) {
     this.wsUrl = options.wsUrl ?? TEXT_TO_AUDIO_URL;
     this.authorization = options.authorization ?? SECRET_TOKEN;

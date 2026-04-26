@@ -5,6 +5,7 @@ import { FlatList, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useFocusEffect, useRouter } from "expo-router";
 import { MeditationCourse, MeditationCoursesByType } from "@/api/lambda/meditation/types";
 import { useMeditationCourses } from "@/services/meditation/useMeditationCourses";
+import WebsocketConnectionTest from "@/dummy/tests/WebsocketConnectionTest";
 
 const COURSE_TYPES: Array<keyof MeditationCoursesByType> = ["calm", "awareness", "insight"];
 
@@ -76,6 +77,10 @@ const Explore = () => {
   );
 };
 
+// const Explore = () => {
+    // testing websocket connection 
+//   return <WebsocketConnectionTest />;
+// }
 export default Explore
 
 const styles = StyleSheet.create({
