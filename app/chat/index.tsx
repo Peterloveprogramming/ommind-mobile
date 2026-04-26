@@ -229,7 +229,6 @@ const SpiritualMentorChat = () => {
                     content: "Guided meditation playing",
                   },
                   status: "ready",
-                  mode: GUIDED_MEDITATION,
                   showPlayBackControl: true,
                   isPlaybackPaused: false,
                   showRating: true,
