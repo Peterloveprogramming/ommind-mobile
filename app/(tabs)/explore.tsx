@@ -6,14 +6,21 @@ import { useFocusEffect, useRouter } from "expo-router";
 import { MeditationCourse, MeditationCoursesByType } from "@/api/lambda/meditation/types";
 import { useMeditationCourses } from "@/services/meditation/useMeditationCourses";
 import WebsocketConnectionTest from "@/dummy/tests/WebsocketConnectionTest";
-
+import AudioTest from "@/dummy/tests/AudioTest";
 const COURSE_TYPES: Array<keyof MeditationCoursesByType> = ["calm", "awareness", "insight"];
 
 const formatSectionTitle = (value: keyof MeditationCoursesByType) => {
   return value.charAt(0).toUpperCase() + value.slice(1);
 };
 
+const testing = true
+
 const Explore = () => {
+    if (testing)
+    {
+      return <AudioTest />
+    }
+
   const router = useRouter();
   const { result, error, fetchMeditationCourses } = useMeditationCourses();
   const coursesByType = result?.data?.courses;
@@ -37,6 +44,8 @@ const Explore = () => {
 
   const renderCourseRow = (type: keyof MeditationCoursesByType) => {
     const courses = coursesByType?.[type] ?? [];
+
+
 
     return (
       <View style={styles.rowContainer} key={type}>
@@ -77,10 +86,6 @@ const Explore = () => {
   );
 };
 
-// const Explore = () => {
-    // testing websocket connection 
-//   return <WebsocketConnectionTest />;
-// }
 export default Explore
 
 const styles = StyleSheet.create({
