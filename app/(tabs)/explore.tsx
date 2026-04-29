@@ -13,7 +13,7 @@ const formatSectionTitle = (value: keyof MeditationCoursesByType) => {
   return value.charAt(0).toUpperCase() + value.slice(1);
 };
 
-const testing = true
+const testing = false
 
 const Explore = () => {
     if (testing)

@@ -429,6 +429,7 @@ const Profile = () => {
                 image_url={item.image_url}
                 session_progress={item.session_progress_in_secs}
                 onPress={() => void handleSessionPress(item)}
+                generated_meditation={item.is_generated}
               />
             )}
             ListEmptyComponent={

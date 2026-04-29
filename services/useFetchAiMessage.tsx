@@ -1,9 +1,9 @@
 import { useChatAiApi } from "@/api/api";
 import { useState,useCallback } from "react"
 import { LambdaResult } from "@/api/types";
-import { checkIfLambdaResultIsSuccess } from "@/utils/helper";
+import { addRecentlyAccessedSession, checkIfLambdaResultIsSuccess } from "@/utils/helper";
 import { useToast } from "@/context/useToast";
-import { GENERAL } from "@/constant";
+import { GENERAL, GUIDED_MEDITATION } from "@/constant";
 const comfortingQuotes = [
     "Even the darkest night will end and the sun will rise. - Victor Hugo",
     "You are braver than you believe, stronger than you seem, and smarter than you think. - A.A. Milne"
@@ -108,6 +108,30 @@ export default function useFetchAiMessage (testMode:boolean = true,session_id:st
           }
           //TODO: if the mode is GUIDED_MEDITATION then we want to 
           console.log("the response is",response)
+          if (response.data?.classification === GUIDED_MEDITATION) {
+            try {
+              const addRecentlyAccessedSessionResult = await addRecentlyAccessedSession({
+                course_number: null,
+                session_number: null,
+                session_length_in_mins: null,
+                is_generated: 1,
+                type: GUIDED_MEDITATION,
+                session_title: response.data.session_title ?? "Guided Meditation",
+                image_url: null,
+                background_url: null,
+                message_id: response.data.message_id ?? response.data.id,
+              });
+
+              if (!checkIfLambdaResultIsSuccess(addRecentlyAccessedSessionResult)) {
+                console.error(
+                  "Failed to add recently accessed guided meditation",
+                  addRecentlyAccessedSessionResult
+                );
+              }
+            } catch (error) {
+              console.error("Failed to add recently accessed guided meditation", error);
+            }
+          }
           setAiMessage(response.data ?? null)
           setAiMode(
             response.data.classification

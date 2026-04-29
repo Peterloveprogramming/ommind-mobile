@@ -10,14 +10,15 @@ import {
 const PROFILE_PHOTO_URI_KEY = "profilePhotoUri";
 
 export type AddRecentlyAccessedSessionInput = {
-  course_number: number;
-  session_number: number;
-  session_length_in_mins: number;
+  course_number?: number | null;
+  session_number?: number | null;
+  session_length_in_mins?: number | null;
   is_generated: 0 | 1;
   type: string;
   session_title: string;
-  image_url: string;
-  background_url: string;
+  image_url?: string | null;
+  background_url?: string | null;
+  message_id?: number | null;
 };
 
 export const generateRandomNumber = () => {

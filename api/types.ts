@@ -213,12 +213,14 @@ export namespace LambdaResult {
 
   export type ChatMessageItem = {
     id: number;
+    message_id?: number | null;
     session_id: string;
     user_id: number;
     content: string;
     role: string;
     model: string | null;
     classification: string | null;
+    session_title?: string | null;
     needs_stage: string | null;
     needs_categorization_reasoning: string | null;
     needs_categorization_confidence: number | null;

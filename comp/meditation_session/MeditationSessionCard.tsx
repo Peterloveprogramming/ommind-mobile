@@ -15,6 +15,7 @@ type MeditationSessionCardProps = {
   session_title: string;
   image_url?: string;
   session_progress?: number | null;
+  generated_meditation?:number | null;
   onPress: () => void;
 };
 
@@ -26,6 +27,7 @@ const MeditationSessionCard = ({
   image_url,
   session_progress,
   onPress,
+  generated_meditation,
 }: MeditationSessionCardProps) => {
   const progressWidth = useMemo<DimensionValue>(() => {
     const sessionLengthInSeconds = Math.max(session_length * 60, 0);
@@ -46,9 +48,9 @@ const MeditationSessionCard = ({
         />
 
         <View style={styles.rightPanel}>
-          <Text style={styles.lengthText}>{session_length} min</Text>
+          {generated_meditation?"":<Text style={styles.lengthText}>{session_length} min</Text>}
           <Text style={styles.titleText} numberOfLines={3}>{session_title}</Text>
-          <Text style={styles.typeText}>Guided Meditation</Text>
+          <Text style={styles.typeText}>{generated_meditation?"Generated Guided Meditation":"Guided Meditation"}</Text>
         </View>
 
         <View style={styles.progressTrack}>
