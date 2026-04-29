@@ -26,6 +26,8 @@ import {
 import { images } from "@/constants/images";
 import { FONTS } from "@/theme";
 import { useMeditationAudioService } from "@/services/useMeditationAudioService";
+import useChatMessageContentById from "@/services/useChatMessageContentById";
+import { useWebsocketHexPcmAudio } from "@/services/useWebsocketHexPcmAudio";
 import BookmarkButtonWhite from "../buttons/BookmarkButtonWhite";
 import {
   addRecentlyAccessedSession,
@@ -93,13 +95,18 @@ const SessionPlayer = () => {
     course_number?: string | string[];
     session_number?: string | string[];
     progress?: string | string[];
-
+    is_generated?: string | string[];
+    is_genrated?: string | string[];
+    message_id?: string | string[];
   }>();
   const backgroundUrl = getSingleParam(params.backgroundUrl);
   const image_url = getSingleParam(params.image_url);
   const fallbackTitle = getSingleParam(params.title);
   const sessionTitlesParam = getSingleParam(params.session_titles);
   const meditationType = getSingleParam(params.type);
+  const generatedParam = getSingleParam(params.is_generated) ?? getSingleParam(params.is_genrated);
+  const isGenerated = generatedParam === "1" || generatedParam === "true";
+  const generatedMessageId = getSingleParam(params.message_id);
   const courseNumber = Number(getSingleParam(params.course_number));
   const sessionNumber = Number(getSingleParam(params.session_number));
   const initialProgress = Number(getSingleParam(params.progress) ?? 0);
@@ -123,6 +130,19 @@ const SessionPlayer = () => {
   const bgmPlayer = useAudioPlayer(bgmUrl, { updateInterval: 500 });
   const voiceStatus = useAudioPlayerStatus(voicePlayer);
   const bgmStatus = useAudioPlayerStatus(bgmPlayer);
+  const {
+    content: generatedContent,
+    isLoading: isGeneratedContentLoading,
+    error: generatedContentError,
+    fetchChatMessageContent,
+  } = useChatMessageContentById();
+  const {
+    playbackStatus: generatedPlaybackStatus,
+    playAudio: playGeneratedAudio,
+    pause: pauseGeneratedAudio,
+    resume: resumeGeneratedAudio,
+    dispose: disposeGeneratedAudio,
+  } = useWebsocketHexPcmAudio();
   const [progressTrackWidth, setProgressTrackWidth] = useState(0);
   const [dragProgress, setDragProgress] = useState<number | null>(null);
   const [isPlaybackEnabled, setIsPlaybackEnabled] = useState(false);
@@ -143,6 +163,7 @@ const SessionPlayer = () => {
   const initialSeekKeyRef = useRef<string | null>(null);
   const lastSavedProgressKeyRef = useRef<string | null>(null);
   const recentlyAccessedSessionKeyRef = useRef<string | null>(null);
+  const generatedContentRef = useRef<string | null>(null);
   const progressMetadataRef = useRef({
     meditationType,
     courseNumber,
@@ -150,6 +171,10 @@ const SessionPlayer = () => {
   });
 
   useEffect(() => {
+    if (isGenerated) {
+      return;
+    }
+
     if (!meditationType || Number.isNaN(courseNumber) || Number.isNaN(sessionNumber)) {
         console.error("meditationType or courseNumber or sessionNumber is missing ")
       return;
@@ -160,7 +185,7 @@ const SessionPlayer = () => {
       course_number: courseNumber,
       session_number: sessionNumber,
     });
-  }, [courseNumber, fetchMeditationAudioUrl, meditationType, sessionNumber]);
+  }, [courseNumber, fetchMeditationAudioUrl, isGenerated, meditationType, sessionNumber]);
 
   useEffect(() => {
     setIsResumePromptVisible(hasInitialProgress);
@@ -184,6 +209,45 @@ const SessionPlayer = () => {
 
     void configureAudio();
   }, []);
+
+  useEffect(() => {
+    if (!isGenerated) {
+      return;
+    }
+
+    let isCancelled = false;
+
+    void (async () => {
+      await disposeGeneratedAudio();
+
+      if (!generatedMessageId) {
+        console.error("message_id is missing for generated session playback");
+        return;
+      }
+
+      const nextContent = await fetchChatMessageContent({ messageId: generatedMessageId });
+      if (isCancelled || !nextContent) {
+        return;
+      }
+
+      generatedContentRef.current = nextContent;
+
+      try {
+        await playGeneratedAudio(nextContent);
+      } catch (error) {
+        console.error("Generated meditation playback failed:", error);
+      }
+    })();
+
+    return () => {
+      isCancelled = true;
+      void disposeGeneratedAudio();
+    };
+  }, [generatedMessageId, isGenerated]);
+
+  useEffect(() => {
+    generatedContentRef.current = generatedContent;
+  }, [generatedContent]);
 
   useEffect(() => {
     if (!audioUrl || !bgmUrl) {
@@ -680,6 +744,49 @@ const SessionPlayer = () => {
     setIsResumePromptVisible(false);
     setPendingInitialStartSeconds(0);
   };
+
+  const isGeneratedPlaybackBusy =
+    isGeneratedContentLoading || generatedPlaybackStatus === "buffering";
+  const generatedStatusText = generatedContentError
+    ? generatedContentError
+    : !generatedMessageId
+      ? "Generated meditation is missing its message id."
+      : isGeneratedPlaybackBusy
+        ? "Buffering audio..."
+        : generatedPlaybackStatus === "paused"
+          ? "Generated meditation paused"
+          : generatedPlaybackStatus === "ended"
+            ? "Generated meditation ended"
+            : generatedPlaybackStatus === "playing"
+              ? "Generated meditation playing"
+              : "Preparing generated meditation...";
+
+  if (isGenerated) {
+    return (
+      <ImageBackground
+        source={backgroundUrl ? { uri: backgroundUrl } : undefined}
+        style={styles.backgroundContainer}
+      >
+        <View style={styles.container}>
+          <ImageBackground
+            source={image_url ? { uri: image_url } : images.meditation_test}
+            style={styles.image}
+          />
+          <Text style={styles.currentTime}>0:00</Text>
+
+          <View style={{ flexDirection: "row", marginVertical: 5 }}>
+            <Text style={styles.title}>{title ?? "Generated Guided Meditation"}</Text>
+            <BookmarkButtonWhite onTouch={() => console.log("Bookmark pressed")} />
+          </View>
+
+          <View style={styles.bufferingBadge}>
+            {isGeneratedPlaybackBusy ? <ActivityIndicator size="small" color="#FFFFFF" /> : null}
+            <Text style={styles.bufferingText}>{generatedStatusText}</Text>
+          </View>
+        </View>
+      </ImageBackground>
+    );
+  }
 
   return (
     <ImageBackground

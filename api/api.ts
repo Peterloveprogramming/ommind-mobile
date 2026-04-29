@@ -10,7 +10,7 @@ import {
 import {useSaveAnswersForRegistrationQuestions} from './lambda/useRegistrationQuestionApi/requests'
 import { useChatAi } from "./lambda/useAiChatApi/requests";
 import { useGetChatHistory } from "./lambda/useChatHistoryApi/requests";
-import { useGetChatMessagesBySessionId } from "./lambda/useChatMessagesApi/requests";
+import { useGetChatMessageContentById, useGetChatMessagesBySessionId } from "./lambda/useChatMessagesApi/requests";
 import { useAddMessageRating } from "./lambda/useMessageRatingApi/requests";
 import { useAddMessageReport } from "./lambda/useMessageReportApi/requests";
 import {
@@ -158,10 +158,16 @@ export const useChatMessagesApi = () => {
     const {
         getChatMessagesBySessionId
     } = useGetChatMessagesBySessionId()
+    const {
+        getChatMessageContentById
+    } = useGetChatMessageContentById()
 
     return {
         getChatMessagesBySessionId: {
             getChatMessagesBySessionId
+        },
+        getChatMessageContentById: {
+            getChatMessageContentById
         }
     }
 }

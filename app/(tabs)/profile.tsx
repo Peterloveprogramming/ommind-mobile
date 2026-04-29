@@ -305,16 +305,20 @@ const Profile = () => {
   };
 
   const handleSessionPress = (item: RecentlyAccessedSession) => {
+    const isGenerated = item.is_generated === 1;
+
     router.push({
       pathname: "/meditation_session/player",
       params: {
         type: item.type,
-        course_number: String(item.course_number),
-        session_number: String(item.session_number),
+        course_number: item.course_number == null ? "" : String(item.course_number),
+        session_number: item.session_number == null ? "" : String(item.session_number),
         title: item.session_title,
-        image_url: item.image_url,
+        image_url: item.image_url ?? "",
         backgroundUrl: item.background_url ?? "",
         progress: item.session_progress_in_secs == null ? "" : String(item.session_progress_in_secs),
+        is_generated: isGenerated ? "1" : "0",
+        message_id: item.message_id == null ? "" : String(item.message_id),
       },
     });
   };
@@ -424,9 +428,9 @@ const Profile = () => {
             contentContainerStyle={styles.recentlyPlayedRow}
             renderItem={({ item }) => (
               <MeditationSessionCard
-                session_length={item.session_length_in_mins}
+                session_length={item.session_length_in_mins ?? 0}
                 session_title={item.session_title}
-                image_url={item.image_url}
+                image_url={item.image_url ?? undefined}
                 session_progress={item.session_progress_in_secs}
                 onPress={() => void handleSessionPress(item)}
                 generated_meditation={item.is_generated}

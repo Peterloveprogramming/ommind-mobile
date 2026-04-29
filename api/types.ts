@@ -39,6 +39,7 @@ export type LambdaRequest = {
             "chat" |
             "get_chat_history" |
             "get_chat_messages_by_session_id" |
+            "get_chat_message_content_by_id" |
             "add_message_rating" |
             "add_message_report" |
             "get_audio_url" |
@@ -105,15 +106,16 @@ export type MeditationCourseSummary = {
 export type RecentlyAccessedSession = {
     id: number;
     user_id: number;
-    course_number: number;
-    session_number: number;
-    session_length_in_mins: number;
+    course_number: number | null;
+    session_number: number | null;
+    session_length_in_mins: number | null;
     session_progress_in_secs?: number | null;
     session_title: string;
-    image_url: string;
-    background_url?: string;
+    image_url?: string | null;
+    background_url?: string | null;
     is_generated: 0 | 1;
     type: "calm" | "awareness" | "insight" | string;
+    message_id?: number | null;
     timestamp?: string | null;
 }
 
@@ -232,6 +234,7 @@ export namespace LambdaResult {
   };
 
   export type GetChatMessagesBySessionIdResult = LambdaResult<ChatMessageItem[]>;
+  export type GetChatMessageContentByIdResult = LambdaResult<string | { content?: string | null } | null>;
 
   export type ChatResult = LambdaResult<ChatMessageItem, ChatMessageItem> & {
     mode?: string | null;
