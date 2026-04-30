@@ -32,6 +32,13 @@ const RED_ICON = require("@/assets/images/profile/red.png");
 const YELLOW_ICON = require("@/assets/images/profile/yellow.png");
 const BLUE_ICON = require("@/assets/images/profile/blue.png");
 const CHANGE_FOCUS_ICON = require("@/assets/images/profile/change_focus_icon.png");
+const MANAGE_SUBSCRIPTIONS_ICON = require("@/assets/images/profile/manage_subscriptions.png");
+const REPORT_A_BUG_ICON = require("@/assets/images/profile/report_a_bug.png");
+const SUGGEST_AN_IMPROVEMENT_ICON = require("@/assets/images/profile/suggest_an_improvement.png");
+const CONTACT_US_ICON = require("@/assets/images/profile/contact_us.png");
+const YOUTUBE_ICON = require("@/assets/images/profile/youtube.png");
+const TIKTOK_ICON = require("@/assets/images/profile/tiktok.png");
+const INSTAGRAM_ICON = require("@/assets/images/profile/instagram.png");
 const MAX_PROFILE_PHOTO_SIZE_BYTES = 5 * 1024 * 1024;
 const ACCEPTED_PROFILE_PHOTO_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const ACCEPTED_PROFILE_PHOTO_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp"];
@@ -323,6 +330,14 @@ const Profile = () => {
     });
   };
 
+  const handleProfileMenuItemPress = () => {
+    // Functionality for these menu items will be wired up later.
+  };
+
+  const handleSocialButtonPress = () => {
+    // Social links will be wired up later.
+  };
+
   const profileImageSource: ImageSourcePropType = pendingProfilePhotoUri
     ? { uri: pendingProfilePhotoUri }
     : localProfilePhotoUri
@@ -333,6 +348,18 @@ const Profile = () => {
   const currentFocusText = formatCurrentFocus(accountDetails.current_focus);
   const selectedFocusItems = normalizeCurrentFocus(accountDetails.current_focus);
   const recentlyPlayedSessions = accountDetails.recently_accessed_sessions ?? [];
+  const menuItems: { label: string; icon?: ImageSourcePropType }[] = [
+    { label: "Saved" },
+    { label: "Manage subscriptions", icon: MANAGE_SUBSCRIPTIONS_ICON },
+    { label: "Report a bug", icon: REPORT_A_BUG_ICON },
+    { label: "Suggest an improvement", icon: SUGGEST_AN_IMPROVEMENT_ICON },
+    { label: "Contact us", icon: CONTACT_US_ICON },
+  ];
+  const socialItems: { label: string; icon: ImageSourcePropType }[] = [
+    { label: "YouTube", icon: YOUTUBE_ICON },
+    { label: "TikTok", icon: TIKTOK_ICON },
+    { label: "Instagram", icon: INSTAGRAM_ICON },
+  ];
 
   const statCards = [
     {
@@ -440,6 +467,38 @@ const Profile = () => {
               <Text style={styles.recentlyPlayedEmptyText}>No recently played sessions yet.</Text>
             }
           />
+        </View>
+
+        <View style={styles.profileMenuSection}>
+          {menuItems.map((item) => (
+            <TouchableOpacity
+              key={item.label}
+              activeOpacity={0.85}
+              onPress={handleProfileMenuItemPress}
+              style={[styles.profileMenuItem, !item.icon && styles.profileMenuItemTextOnly]}
+            >
+              {item.icon ? <Image source={item.icon} style={styles.profileMenuIcon} /> : null}
+              <Text style={styles.profileMenuText}>{item.label}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        <View style={styles.followSection}>
+          <Text style={styles.followTitle}>Follow OmMind</Text>
+          <View style={styles.socialButtonRow}>
+            {socialItems.map((item) => (
+              <TouchableOpacity
+                key={item.label}
+                activeOpacity={0.85}
+                accessibilityRole="button"
+                accessibilityLabel={item.label}
+                onPress={handleSocialButtonPress}
+                style={styles.socialButton}
+              >
+                <Image source={item.icon} style={styles.socialIcon} />
+              </TouchableOpacity>
+            ))}
+          </View>
         </View>
       </ScrollView>
 
@@ -691,5 +750,70 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
     color: "#8B8B8B",
+  },
+  profileMenuSection: {
+    marginTop: 28,
+    paddingTop: 24,
+    borderTopWidth: 1,
+    borderTopColor: "#E7E0D7",
+    gap: 12,
+  },
+  profileMenuItem: {
+    minHeight: 56,
+    borderRadius: 10,
+    backgroundColor: "#E4E4E8",
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  profileMenuItemTextOnly: {
+    paddingLeft: 24,
+  },
+  profileMenuIcon: {
+    width: 30,
+    height: 30,
+    marginRight: 16,
+    resizeMode: "contain",
+  },
+  profileMenuText: {
+    flex: 1,
+    fontFamily: FONTS.figtreeSemiBold,
+    fontSize: 18,
+    lineHeight: 28,
+    color: "#686B72",
+  },
+  followSection: {
+    marginTop: 36,
+    paddingTop: 28,
+    marginBottom:100,
+    borderTopWidth: 1,
+    borderTopColor: "#E7E0D7",
+    alignItems: "center",
+  },
+  followTitle: {
+    fontFamily: FONTS.figtreeSemiBold,
+    fontSize: 22,
+    lineHeight: 28,
+    color: "#686B72",
+    textAlign: "center",
+  },
+  socialButtonRow: {
+    marginTop: 24,
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 30,
+  },
+  socialButton: {
+    width: 50,
+    height: 50,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  socialIcon: {
+    width: 64,
+    height: 64,
+    resizeMode: "contain",
   },
 });
