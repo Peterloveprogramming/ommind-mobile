@@ -33,6 +33,7 @@ export default function useChatMessageContentById() {
           showToastMessage(message, false);
           return null;
         }
+        console.log("the response is",response)
 
         const nextContent =
           typeof response.data === "string"

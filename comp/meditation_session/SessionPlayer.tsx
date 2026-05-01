@@ -333,6 +333,8 @@ const SessionPlayer = () => {
     bgmStatus.isLoaded,
     bgmStatus.playing,
   ]);
+  console.log("isgenerated",isGenerated)
+  console.log("generatedMessageId",generatedMessageId)
 
   const getCurrentProgressSecond = useCallback((overrideSeconds?: number) => {
     const rawSeconds = overrideSeconds ?? currentTimeRef.current;
@@ -345,6 +347,10 @@ const SessionPlayer = () => {
   }, []);
 
   const saveSessionProgress = useCallback(async (overrideSeconds?: number) => {
+    if (isGenerated) {
+      return;
+    }
+
     const {
       meditationType: currentMeditationType,
       courseNumber: currentCourseNumber,
@@ -383,11 +389,12 @@ const SessionPlayer = () => {
       console.error("Failed to update session progress", error);
       lastSavedProgressKeyRef.current = null;
     }
-  }, []);
+  }, [getCurrentProgressSecond, isGenerated]);
 
   useEffect(() => {
     const unsubscribe = navigation.addListener("beforeRemove", (event: any) => {
       if (isAdvancingSessionRef.current || isLeavingAfterSaveRef.current) {
+        console.log("can not exit")
         return;
       }
 

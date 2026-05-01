@@ -3,6 +3,8 @@ import { useUserApi } from "@/api/api";
 import { RecentlyAccessedSession } from "@/api/types";
 import ProfilePhotoUploadModal from "@/comp/modals/ProfilePhotoUploadModal";
 import MeditationSessionCard from "@/comp/meditation_session/MeditationSessionCard";
+import ProfileContactForm from "@/comp/profile/ProfileContactForm";
+import ProfileFeedbackForm from "@/comp/profile/ProfileFeedbackForm";
 import { FONTS } from "@/theme";
 import {
   checkIfLambdaResultIsSuccess,
@@ -42,6 +44,13 @@ const INSTAGRAM_ICON = require("@/assets/images/profile/instagram.png");
 const MAX_PROFILE_PHOTO_SIZE_BYTES = 5 * 1024 * 1024;
 const ACCEPTED_PROFILE_PHOTO_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const ACCEPTED_PROFILE_PHOTO_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp"];
+
+type ProfileMenuItemId =
+  | "saved"
+  | "manage-subscriptions"
+  | "report-bug"
+  | "suggest-improvement"
+  | "contact-us";
 
 type AccountDetails = {
   average_meditation_time_in_mins: number | null;
@@ -110,6 +119,10 @@ const Profile = () => {
   const [isUploadingProfilePhoto, setIsUploadingProfilePhoto] = React.useState(false);
   const [isFocusModalVisible, setIsFocusModalVisible] = React.useState(false);
   const [isUpdatingFocus, setIsUpdatingFocus] = React.useState(false);
+  const [activeFeedbackForm, setActiveFeedbackForm] = React.useState<
+    "report-bug" | "suggest-improvement" | null
+  >(null);
+  const [isContactFormVisible, setIsContactFormVisible] = React.useState(false);
 
   React.useEffect(() => {
     const loadStoredProfilePhoto = async () => {
@@ -330,11 +343,29 @@ const Profile = () => {
     });
   };
 
-  const handleProfileMenuItemPress = () => {
+  const handleProfileMenuItemPress = (itemId: ProfileMenuItemId) => {
+    if (itemId === "report-bug" || itemId === "suggest-improvement") {
+      setActiveFeedbackForm(itemId);
+      return;
+    }
+
+    if (itemId === "contact-us") {
+      setIsContactFormVisible(true);
+      return;
+    }
+
     // Functionality for these menu items will be wired up later.
   };
 
-  const handleSocialButtonPress = () => {
+  const handleCloseFeedbackForm = () => {
+    setActiveFeedbackForm(null);
+  };
+
+  const handleCloseContactForm = () => {
+    setIsContactFormVisible(false);
+  };
+
+  const handleSocialButtonPress = (_label: string) => {
     // Social links will be wired up later.
   };
 
@@ -348,18 +379,55 @@ const Profile = () => {
   const currentFocusText = formatCurrentFocus(accountDetails.current_focus);
   const selectedFocusItems = normalizeCurrentFocus(accountDetails.current_focus);
   const recentlyPlayedSessions = accountDetails.recently_accessed_sessions ?? [];
-  const menuItems: { label: string; icon?: ImageSourcePropType }[] = [
-    { label: "Saved" },
-    { label: "Manage subscriptions", icon: MANAGE_SUBSCRIPTIONS_ICON },
-    { label: "Report a bug", icon: REPORT_A_BUG_ICON },
-    { label: "Suggest an improvement", icon: SUGGEST_AN_IMPROVEMENT_ICON },
-    { label: "Contact us", icon: CONTACT_US_ICON },
+  const menuItems: { id: ProfileMenuItemId; label: string; icon?: ImageSourcePropType }[] = [
+    { id: "saved", label: "Saved" },
+    { id: "manage-subscriptions", label: "Manage subscriptions", icon: MANAGE_SUBSCRIPTIONS_ICON },
+    { id: "report-bug", label: "Report a bug", icon: REPORT_A_BUG_ICON },
+    { id: "suggest-improvement", label: "Suggest an improvement", icon: SUGGEST_AN_IMPROVEMENT_ICON },
+    { id: "contact-us", label: "Contact us", icon: CONTACT_US_ICON },
   ];
   const socialItems: { label: string; icon: ImageSourcePropType }[] = [
     { label: "YouTube", icon: YOUTUBE_ICON },
     { label: "TikTok", icon: TIKTOK_ICON },
     { label: "Instagram", icon: INSTAGRAM_ICON },
   ];
+
+  const feedbackFormContent = {
+    "report-bug": {
+      title: "Report a bug",
+      placeholder: "Describe the problem",
+      attachmentHelperText: "You can attach a screenshot to help us better understand the problem",
+    },
+    "suggest-improvement": {
+      title: "Suggest an improvement",
+      placeholder: "Your suggestion",
+      attachmentHelperText: "You can attach a screenshot to help us better understand the problem",
+    },
+  };
+
+  if (activeFeedbackForm) {
+    const formContent = feedbackFormContent[activeFeedbackForm];
+
+    return (
+      <ProfileFeedbackForm
+        title={formContent.title}
+        placeholder={formContent.placeholder}
+        attachmentHelperText={formContent.attachmentHelperText}
+        onBackPress={handleCloseFeedbackForm}
+      />
+    );
+  }
+
+  if (isContactFormVisible) {
+    return (
+      <ProfileContactForm
+        title="Contact us"
+        responseTimeText="Our team will reply via email in 3 working days"
+        emailAddress="ommind.contact@gmail.com"
+        onBackPress={handleCloseContactForm}
+      />
+    );
+  }
 
   const statCards = [
     {
@@ -474,7 +542,7 @@ const Profile = () => {
             <TouchableOpacity
               key={item.label}
               activeOpacity={0.85}
-              onPress={handleProfileMenuItemPress}
+              onPress={() => handleProfileMenuItemPress(item.id)}
               style={[styles.profileMenuItem, !item.icon && styles.profileMenuItemTextOnly]}
             >
               {item.icon ? <Image source={item.icon} style={styles.profileMenuIcon} /> : null}
@@ -492,7 +560,8 @@ const Profile = () => {
                 activeOpacity={0.85}
                 accessibilityRole="button"
                 accessibilityLabel={item.label}
-                onPress={handleSocialButtonPress}
+                hitSlop={8}
+                onPress={() => handleSocialButtonPress(item.label)}
                 style={styles.socialButton}
               >
                 <Image source={item.icon} style={styles.socialIcon} />
