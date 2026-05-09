@@ -1,9 +1,10 @@
 import React, { useEffect } from "react";
 import { StyleSheet, ImageBackground, View, ScrollView ,Text, TouchableOpacity, Image} from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import {
+import type {
   MeditationCourse,
   MeditationCourseDescriptionSection,
+  MeditationCourseSession,
 } from "@/api/lambda/meditation/types";
 import { images } from "@/constants/images";
 import { FONTS } from "@/theme";
@@ -16,6 +17,9 @@ type SessionCardProps = {
   title: string;
   completed: boolean;
   locked: boolean;
+  courseId?: MeditationCourseSession["course_id"];
+  favourite: MeditationCourseSession["favourite"];
+  messageId?: MeditationCourseSession["message_id"];
   courseNumber: number;
   sessionNumber: number;
   sessionLengthInMins: number;
@@ -23,6 +27,7 @@ type SessionCardProps = {
   imageUrl: string;
   backgroundUrl: string;
   sessionTitles: string;
+  sessionMetadata: string;
   progress?: number | null;
 };
 
@@ -34,6 +39,9 @@ const SessionCard = ({
   title,
   completed,
   locked,
+  courseId,
+  favourite,
+  messageId,
   courseNumber,
   sessionNumber,
   sessionLengthInMins,
@@ -41,6 +49,7 @@ const SessionCard = ({
   imageUrl,
   backgroundUrl,
   sessionTitles,
+  sessionMetadata,
   progress,
 }: SessionCardProps) => {
   const router = useRouter();
@@ -78,12 +87,16 @@ const SessionCard = ({
       pathname: "/meditation_session/player",
       params: {
         title,
+        course_id: courseId == null ? "" : String(courseId),
+        favourite: String(favourite),
+        message_id: messageId == null ? "" : String(messageId),
         course_number: String(courseNumber),
         session_number: String(sessionNumber),
         type: meditationType,
         image_url: imageUrl,
         backgroundUrl:backgroundUrl,
         session_titles: sessionTitles,
+        session_metadata: sessionMetadata,
         progress: progress == null ? "" : String(progress),
       },
     });
@@ -155,6 +168,19 @@ const MeditationSession = () => {
       return titlesBySession;
     }, {}),
   );
+  const sessionMetadata = JSON.stringify(
+    courseDetails.sessions.reduce<
+      Record<string, Pick<MeditationCourseSession, "course_id" | "favourite" | "message_id">>
+    >((metadataBySession, session) => {
+      metadataBySession[String(session.session_number)] = {
+        course_id: session.course_id ?? null,
+        favourite: session.favourite,
+        message_id: session.message_id ?? null,
+      };
+      return metadataBySession;
+    }, {}),
+  );
+  console.log("data is",detailsResult.data)
 
   return (
     <View style={styles.container}>
@@ -184,7 +210,7 @@ const MeditationSession = () => {
                     ? `${courseDetails.proper_type_name} ${courseDetails.course_number}: ${courseDetails.title}`
                     : "Meditation Course"}
                 </Text>
-                <BookmarkButton onTouch={() => console.log("Bookmark pressed")} />
+                {/* <BookmarkButton onTouch={() => console.log("Bookmark pressed")} /> */}
               </View>
               <Text style={{fontFamily:FONTS.figtreeMedium,color:"#8B8B8B",fontSize:16}}>By OmMind</Text>
 
@@ -203,6 +229,9 @@ const MeditationSession = () => {
                   title={`Session ${session.session_number}: ${session.session_title}`}
                   completed={false}
                   locked={false}
+                  courseId={session.course_id}
+                  favourite={session.favourite}
+                  messageId={session.message_id}
                   courseNumber={courseDetails.course_number}
                   sessionNumber={session.session_number}
                   sessionLengthInMins={session.session_length}
@@ -210,6 +239,7 @@ const MeditationSession = () => {
                   imageUrl={courseDetails.image_url}
                   backgroundUrl={courseDetails.background_url}
                   sessionTitles={sessionTitles}
+                  sessionMetadata={sessionMetadata}
                   progress={session.progress}
                 />
               ))}

@@ -49,6 +49,7 @@ export type LambdaRequest = {
             "add_recently_accessed_course" |
             "add_recently_accessed_session" |
             "update_session_progress" |
+            "update_favourite" |
             "get_awareness_logs" |
             "get_awareness_log" |
             "add_awareness_log" |
@@ -107,10 +108,12 @@ export type RecentlyAccessedSession = {
     id: number;
     user_id: number;
     course_number: number | null;
+    course_id?: number | null;
     session_number: number | null;
     session_length_in_mins: number | null;
     session_progress_in_secs?: number | null;
     session_title: string;
+    favourite?: 0 | 1 | null;
     image_url?: string | null;
     background_url?: string | null;
     is_generated: 0 | 1;

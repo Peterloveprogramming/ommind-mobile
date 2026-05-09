@@ -32,11 +32,20 @@ import BookmarkButtonWhite from "../buttons/BookmarkButtonWhite";
 import {
   addRecentlyAccessedSession,
   checkIfLambdaResultIsSuccess,
+  getLambdaErrorMessage,
+  updateFavourite,
   updateSessionProgress,
 } from "@/utils/helper";
+import { useToast } from "@/context/useToast";
 
 const SEEK_STEP_SECONDS = 10;
 const TRACKER_SIZE = 24;
+type FavouriteValue = 0 | 1;
+type SessionMetadata = {
+  course_id?: number | null;
+  favourite?: FavouriteValue | null;
+  message_id?: number | null;
+};
 
 
 
@@ -69,7 +78,31 @@ const getSingleParam = (value?: string | string[]) => {
   return value;
 };
 
-const parseSessionTitles = (value?: string) => {
+const getOptionalNumberParam = (value?: string) => {
+  if (value == null || value.trim() === "") {
+    return null;
+  }
+
+  const numericValue = Number(value);
+  return Number.isFinite(numericValue) ? numericValue : null;
+};
+
+const parseFavouriteParam = (
+  value?: string,
+  fallback: FavouriteValue = 0
+): FavouriteValue => {
+  if (value === "1" || value === "true") {
+    return 1;
+  }
+
+  if (value === "0" || value === "false") {
+    return 0;
+  }
+
+  return fallback;
+};
+
+const parseSessionTitles = (value?: string): Record<string, string> => {
   if (!value) {
     return {};
   }
@@ -77,6 +110,21 @@ const parseSessionTitles = (value?: string) => {
   try {
     const parsedValue = JSON.parse(value);
     return typeof parsedValue === "object" && parsedValue !== null ? parsedValue as Record<string, string> : {};
+  } catch {
+    return {};
+  }
+};
+
+const parseSessionMetadata = (value?: string): Record<string, SessionMetadata> => {
+  if (!value) {
+    return {};
+  }
+
+  try {
+    const parsedValue = JSON.parse(value);
+    return typeof parsedValue === "object" && parsedValue !== null
+      ? parsedValue as Record<string, SessionMetadata>
+      : {};
   } catch {
     return {};
   }
@@ -91,7 +139,10 @@ const SessionPlayer = () => {
     backgroundUrl?: string | string[];
     title?: string | string[];
     session_titles?: string | string[];
+    session_metadata?: string | string[];
     type?: string | string[];
+    course_id?: string | string[];
+    favourite?: string | string[];
     course_number?: string | string[];
     session_number?: string | string[];
     progress?: string | string[];
@@ -103,12 +154,25 @@ const SessionPlayer = () => {
   const image_url = getSingleParam(params.image_url);
   const fallbackTitle = getSingleParam(params.title);
   const sessionTitlesParam = getSingleParam(params.session_titles);
+  const sessionMetadataParam = getSingleParam(params.session_metadata);
   const meditationType = getSingleParam(params.type);
   const generatedParam = getSingleParam(params.is_generated) ?? getSingleParam(params.is_genrated);
   const isGenerated = generatedParam === "1" || generatedParam === "true";
-  const generatedMessageId = getSingleParam(params.message_id);
   const courseNumber = Number(getSingleParam(params.course_number));
   const sessionNumber = Number(getSingleParam(params.session_number));
+  const sessionMetadata = useMemo(() => parseSessionMetadata(sessionMetadataParam), [sessionMetadataParam]);
+  const currentSessionMetadata = sessionMetadata[String(sessionNumber)];
+  const messageId =
+    getSingleParam(params.message_id) ||
+    (currentSessionMetadata?.message_id == null ? undefined : String(currentSessionMetadata.message_id));
+  const sessionCourseId =
+    getOptionalNumberParam(getSingleParam(params.course_id)) ??
+    currentSessionMetadata?.course_id ??
+    null;
+  const sessionFavourite = parseFavouriteParam(
+    getSingleParam(params.favourite),
+    currentSessionMetadata?.favourite ?? 0
+  );
   const initialProgress = Number(getSingleParam(params.progress) ?? 0);
   const sessionTitles = useMemo(() => parseSessionTitles(sessionTitlesParam), [sessionTitlesParam]);
   const title = sessionTitles[String(sessionNumber)] ?? fallbackTitle;
@@ -143,10 +207,13 @@ const SessionPlayer = () => {
     resume: resumeGeneratedAudio,
     dispose: disposeGeneratedAudio,
   } = useWebsocketHexPcmAudio();
+  const { showToastMessage } = useToast();
   const [progressTrackWidth, setProgressTrackWidth] = useState(0);
   const [dragProgress, setDragProgress] = useState<number | null>(null);
   const [isPlaybackEnabled, setIsPlaybackEnabled] = useState(false);
   const [isBgmEnabled, setIsBgmEnabled] = useState(true);
+  const [currentFavourite, setCurrentFavourite] = useState<FavouriteValue>(sessionFavourite);
+  const [isFavouriteUpdating, setIsFavouriteUpdating] = useState(false);
   const [isResumePromptVisible, setIsResumePromptVisible] = useState(hasInitialProgress);
   const [isInitialPlaybackReady, setIsInitialPlaybackReady] = useState(!hasInitialProgress);
   const [pendingInitialStartSeconds, setPendingInitialStartSeconds] = useState<number | null>(null);
@@ -165,10 +232,17 @@ const SessionPlayer = () => {
   const recentlyAccessedSessionKeyRef = useRef<string | null>(null);
   const generatedContentRef = useRef<string | null>(null);
   const progressMetadataRef = useRef({
+    courseId: sessionCourseId,
+    favourite: sessionFavourite,
+    messageId,
     meditationType,
     courseNumber,
     sessionNumber,
   });
+
+  useEffect(() => {
+    setCurrentFavourite(sessionFavourite);
+  }, [sessionFavourite, sessionKey]);
 
   useEffect(() => {
     if (isGenerated) {
@@ -220,12 +294,12 @@ const SessionPlayer = () => {
     void (async () => {
       await disposeGeneratedAudio();
 
-      if (!generatedMessageId) {
+      if (!messageId) {
         console.error("message_id is missing for generated session playback");
         return;
       }
 
-      const nextContent = await fetchChatMessageContent({ messageId: generatedMessageId });
+      const nextContent = await fetchChatMessageContent({ messageId });
       if (isCancelled || !nextContent) {
         return;
       }
@@ -243,11 +317,68 @@ const SessionPlayer = () => {
       isCancelled = true;
       void disposeGeneratedAudio();
     };
-  }, [generatedMessageId, isGenerated]);
+  }, [messageId, isGenerated]);
 
   useEffect(() => {
     generatedContentRef.current = generatedContent;
   }, [generatedContent]);
+
+  const handleBookmarkPress = useCallback(async () => {
+    if (isFavouriteUpdating) {
+      return;
+    }
+
+    const nextFavourite: FavouriteValue = currentFavourite === 1 ? 0 : 1;
+    const favouriteInput = isGenerated
+      ? messageId
+        ? {
+            type: "generated_meditation" as const,
+            message_id: messageId,
+            favourite: nextFavourite,
+          }
+        : null
+      : sessionCourseId != null
+        ? {
+            type: "course_session" as const,
+            course_session_id: sessionCourseId,
+            favourite: nextFavourite,
+          }
+        : null;
+
+    if (!favouriteInput) {
+      showToastMessage("Unable to update favourite for this session.", false);
+      return;
+    }
+
+    setIsFavouriteUpdating(true);
+
+    try {
+      const result = await updateFavourite(favouriteInput);
+
+      if (!checkIfLambdaResultIsSuccess(result)) {
+        showToastMessage(getLambdaErrorMessage(result), false);
+        return;
+      }
+
+      setCurrentFavourite(nextFavourite);
+      showToastMessage(
+        nextFavourite === 1 ? "Added to favourites" : "Removed from favourites",
+        true
+      );
+    } catch (error) {
+      console.error("Failed to update favourite", error);
+      showToastMessage("Unable to update favourite.", false);
+    } finally {
+      setIsFavouriteUpdating(false);
+    }
+  }, [
+    currentFavourite,
+    isFavouriteUpdating,
+    isGenerated,
+    messageId,
+    sessionCourseId,
+    showToastMessage,
+  ]);
 
   useEffect(() => {
     if (!audioUrl || !bgmUrl) {
@@ -334,7 +465,7 @@ const SessionPlayer = () => {
     bgmStatus.playing,
   ]);
   console.log("isgenerated",isGenerated)
-  console.log("generatedMessageId",generatedMessageId)
+  console.log("messageId", messageId)
 
   const getCurrentProgressSecond = useCallback((overrideSeconds?: number) => {
     const rawSeconds = overrideSeconds ?? currentTimeRef.current;
@@ -431,20 +562,25 @@ const SessionPlayer = () => {
       voicePlayer.pause();
       bgmPlayer.pause();
       void bgmPlayer.seekTo(0);
+      const nextSessionMetadata = sessionMetadata[String(nextSessionNumber)];
       router.replace({
         pathname: "/meditation_session/player",
         params: {
           title: sessionTitles[String(nextSessionNumber)] ?? title,
+          course_id: nextSessionMetadata?.course_id == null ? "" : String(nextSessionMetadata.course_id),
+          favourite: String(nextSessionMetadata?.favourite ?? 0),
+          message_id: nextSessionMetadata?.message_id == null ? "" : String(nextSessionMetadata.message_id),
           course_number: String(courseNumber),
           session_number: String(nextSessionNumber),
           session_titles: sessionTitlesParam ?? "",
+          session_metadata: sessionMetadataParam ?? "",
           type: meditationType,
           image_url: image_url ?? "",
           backgroundUrl: backgroundUrl ?? "",
         },
       });
     })();
-  }, [backgroundUrl, bgmPlayer, courseNumber, image_url, isPlaybackEnabled, meditationType, router, saveSessionProgress, sessionNumber, sessionNumbers.length, sessionTitles, sessionTitlesParam, title, voicePlayer, voiceStatus.didJustFinish]);
+  }, [backgroundUrl, bgmPlayer, courseNumber, image_url, isPlaybackEnabled, meditationType, router, saveSessionProgress, sessionMetadata, sessionMetadataParam, sessionNumber, sessionNumbers.length, sessionTitles, sessionTitlesParam, title, voicePlayer, voiceStatus.didJustFinish]);
 
   const duration = voiceStatus.duration || 0;
   const currentTime = voiceStatus.currentTime || 0;
@@ -517,6 +653,9 @@ const SessionPlayer = () => {
   voicePlayerRef.current = voicePlayer;
   bgmPlayerRef.current = bgmPlayer;
   progressMetadataRef.current = {
+    courseId: sessionCourseId,
+    favourite: currentFavourite,
+    messageId,
     meditationType,
     courseNumber,
     sessionNumber,
@@ -618,13 +757,18 @@ const SessionPlayer = () => {
     await saveSessionProgress();
     voicePlayer.pause();
     bgmPlayer.pause();
+    const nextSessionMetadata = sessionMetadata[String(nextSessionNumber)];
     router.replace({
       pathname: "/meditation_session/player",
       params: {
         title: sessionTitles[String(nextSessionNumber)] ?? title,
+        course_id: nextSessionMetadata?.course_id == null ? "" : String(nextSessionMetadata.course_id),
+        favourite: String(nextSessionMetadata?.favourite ?? 0),
+        message_id: nextSessionMetadata?.message_id == null ? "" : String(nextSessionMetadata.message_id),
         course_number: String(courseNumber),
         session_number: String(nextSessionNumber),
         session_titles: sessionTitlesParam ?? "",
+        session_metadata: sessionMetadataParam ?? "",
         type: meditationType,
         image_url: image_url ?? "",
         backgroundUrl: backgroundUrl ?? "",
@@ -756,7 +900,7 @@ const SessionPlayer = () => {
     isGeneratedContentLoading || generatedPlaybackStatus === "buffering";
   const generatedStatusText = generatedContentError
     ? generatedContentError
-    : !generatedMessageId
+    : !messageId
       ? "Generated meditation is missing its message id."
       : isGeneratedPlaybackBusy
         ? "Buffering audio..."
@@ -767,11 +911,14 @@ const SessionPlayer = () => {
             : generatedPlaybackStatus === "playing"
               ? "Generated meditation playing"
               : "Preparing generated meditation...";
+  const backgroundSource = backgroundUrl ? { uri: backgroundUrl } : images.meditation_test;
+  const backgroundBlurRadius = backgroundUrl ? 0 : 24;
 
   if (isGenerated) {
     return (
       <ImageBackground
-        source={backgroundUrl ? { uri: backgroundUrl } : undefined}
+        source={backgroundSource}
+        blurRadius={backgroundBlurRadius}
         style={styles.backgroundContainer}
       >
         <View style={styles.container}>
@@ -779,11 +926,15 @@ const SessionPlayer = () => {
             source={image_url ? { uri: image_url } : images.meditation_test}
             style={styles.image}
           />
-          <Text style={styles.currentTime}>0:00</Text>
+          {!isGenerated && <Text style={styles.currentTime}>0:00</Text>}
 
-          <View style={{ flexDirection: "row", marginVertical: 5 }}>
+          <View style={{ flexDirection: "row", marginVertical: 15 }}>
             <Text style={styles.title}>{title ?? "Generated Guided Meditation"}</Text>
-            <BookmarkButtonWhite onTouch={() => console.log("Bookmark pressed")} />
+            <BookmarkButtonWhite
+              onTouch={handleBookmarkPress}
+              isBookmarked={currentFavourite === 1}
+              disabled={isFavouriteUpdating}
+            />
           </View>
 
           <View style={styles.bufferingBadge}>
@@ -797,7 +948,8 @@ const SessionPlayer = () => {
 
   return (
     <ImageBackground
-      source={backgroundUrl ? { uri: backgroundUrl } : undefined}
+      source={backgroundSource}
+      blurRadius={backgroundBlurRadius}
       style={styles.backgroundContainer}
     >
       <View style={styles.container}>
@@ -817,7 +969,11 @@ const SessionPlayer = () => {
           >
 
             <Text style={styles.title}>{title}</Text>
-            <BookmarkButtonWhite onTouch={() => console.log("Bookmark pressed")} />
+            <BookmarkButtonWhite
+              onTouch={handleBookmarkPress}
+              isBookmarked={currentFavourite === 1}
+              disabled={isFavouriteUpdating}
+            />
           </View>
 
           {isWaitingForInitialAudio ? (

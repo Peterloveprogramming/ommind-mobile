@@ -9,10 +9,11 @@ import lhamo_mini_loading from "@/assets/images/rinpoche_mini_loading.png";
 import lhamo_background_one from "@/assets/images/Lhamo/background_image_one.png";
 import lhamo_background_two from "@/assets/images/Lhamo/background_image_two.png";
 import lhamo_background_three from "@/assets/images/Lhamo/background_image_three.png";
-import meditation_test from "@/assets/images/explore/calm/test.jpeg";
+import meditation_test from "@/assets/images/explore/calm/test.jpg";
 import calm_abiding from "@/assets/images/meditation_session/calm_abiding.jpg";
 import bookmark from "@/assets/images/meditation_session/Bookmark.png";
 import bookmark_white from "@/assets/images/meditation_session/Bookmark_white.png";
+import bookmarked from "@/assets/images/meditation_session/bookmarked.png";
 import unchecked from "@/assets/images/meditation_session/unchecked.png";
 import checked from "@/assets/images/meditation_session/checked.png";
 import lock from "@/assets/images/meditation_session/Lock.png";
@@ -50,6 +51,7 @@ export const images = {
   meditation_test,
   calm_abiding,
   bookmark,
+  bookmarked,
   unchecked,
   checked,
   lock,

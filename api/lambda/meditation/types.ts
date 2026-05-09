@@ -1,6 +1,9 @@
 import { LambdaResult } from "@/api/types";
 
 export type MeditationCourseSession = {
+  course_id?: number | null;
+  favourite: 0 | 1;
+  message_id?: number | null;
   session_title: string;
   session_length: number;
   session_number: number;
@@ -15,7 +18,7 @@ export type MeditationCourseDescriptionSection = {
 
 export type MeditationCourse = {
   id: number;
-  course_id:number;
+  course_id: number;
   uuid: string;
   number_of_sessions: number;
   type: "calm" | "awareness" | "insight";

@@ -21,6 +21,20 @@ export type AddRecentlyAccessedSessionInput = {
   message_id?: number | null;
 };
 
+export type UpdateFavouriteInput =
+  | {
+      type: "generated_meditation";
+      message_id: string | number;
+      course_session_id?: never;
+      favourite: 0 | 1;
+    }
+  | {
+      type: "course_session";
+      course_session_id: string | number;
+      message_id?: never;
+      favourite: 0 | 1;
+    };
+
 export const generateRandomNumber = () => {
   return Math.floor(Math.random() * 10000) + 1;
 };
@@ -186,6 +200,32 @@ export const updateSessionProgress = async (
 
   if (!response.ok) {
     throw new Error("Failed to update session progress");
+  }
+
+  return response.json();
+};
+
+export const updateFavourite = async (
+  input: UpdateFavouriteInput
+): Promise<LambdaResult<null>> => {
+  const authInfo = await getAuthInfo();
+
+  if (!authInfo) {
+    throw new Error("Cannot update favourite without authInfo");
+  }
+
+  const response = await fetch(LAMBDA_SERVICE_URL, {
+    method: "POST",
+    body: JSON.stringify({
+      route: "update_favourite",
+      jwt_token: authInfo.jwtToken,
+      user_id: authInfo.userId,
+      ...input,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to update favourite");
   }
 
   return response.json();
