@@ -42,7 +42,6 @@ const SEEK_STEP_SECONDS = 10;
 const TRACKER_SIZE = 24;
 type FavouriteValue = 0 | 1;
 type SessionMetadata = {
-  course_id?: number | null;
   favourite?: FavouriteValue | null;
   message_id?: number | null;
 };
@@ -76,15 +75,6 @@ const getSingleParam = (value?: string | string[]) => {
   }
 
   return value;
-};
-
-const getOptionalNumberParam = (value?: string) => {
-  if (value == null || value.trim() === "") {
-    return null;
-  }
-
-  const numericValue = Number(value);
-  return Number.isFinite(numericValue) ? numericValue : null;
 };
 
 const parseFavouriteParam = (
@@ -141,7 +131,6 @@ const SessionPlayer = () => {
     session_titles?: string | string[];
     session_metadata?: string | string[];
     type?: string | string[];
-    course_id?: string | string[];
     favourite?: string | string[];
     course_number?: string | string[];
     session_number?: string | string[];
@@ -165,10 +154,6 @@ const SessionPlayer = () => {
   const messageId =
     getSingleParam(params.message_id) ||
     (currentSessionMetadata?.message_id == null ? undefined : String(currentSessionMetadata.message_id));
-  const sessionCourseId =
-    getOptionalNumberParam(getSingleParam(params.course_id)) ??
-    currentSessionMetadata?.course_id ??
-    null;
   const sessionFavourite = parseFavouriteParam(
     getSingleParam(params.favourite),
     currentSessionMetadata?.favourite ?? 0
@@ -232,7 +217,6 @@ const SessionPlayer = () => {
   const recentlyAccessedSessionKeyRef = useRef<string | null>(null);
   const generatedContentRef = useRef<string | null>(null);
   const progressMetadataRef = useRef({
-    courseId: sessionCourseId,
     favourite: sessionFavourite,
     messageId,
     meditationType,
@@ -337,10 +321,11 @@ const SessionPlayer = () => {
             favourite: nextFavourite,
           }
         : null
-      : sessionCourseId != null
+      : Number.isFinite(courseNumber) && Number.isFinite(sessionNumber)
         ? {
             type: "course_session" as const,
-            course_session_id: sessionCourseId,
+            course_number: courseNumber,
+            session_number: sessionNumber,
             favourite: nextFavourite,
           }
         : null;
@@ -376,7 +361,8 @@ const SessionPlayer = () => {
     isFavouriteUpdating,
     isGenerated,
     messageId,
-    sessionCourseId,
+    courseNumber,
+    sessionNumber,
     showToastMessage,
   ]);
 
@@ -567,7 +553,6 @@ const SessionPlayer = () => {
         pathname: "/meditation_session/player",
         params: {
           title: sessionTitles[String(nextSessionNumber)] ?? title,
-          course_id: nextSessionMetadata?.course_id == null ? "" : String(nextSessionMetadata.course_id),
           favourite: String(nextSessionMetadata?.favourite ?? 0),
           message_id: nextSessionMetadata?.message_id == null ? "" : String(nextSessionMetadata.message_id),
           course_number: String(courseNumber),
@@ -653,7 +638,6 @@ const SessionPlayer = () => {
   voicePlayerRef.current = voicePlayer;
   bgmPlayerRef.current = bgmPlayer;
   progressMetadataRef.current = {
-    courseId: sessionCourseId,
     favourite: currentFavourite,
     messageId,
     meditationType,
@@ -762,7 +746,6 @@ const SessionPlayer = () => {
       pathname: "/meditation_session/player",
       params: {
         title: sessionTitles[String(nextSessionNumber)] ?? title,
-        course_id: nextSessionMetadata?.course_id == null ? "" : String(nextSessionMetadata.course_id),
         favourite: String(nextSessionMetadata?.favourite ?? 0),
         message_id: nextSessionMetadata?.message_id == null ? "" : String(nextSessionMetadata.message_id),
         course_number: String(courseNumber),
@@ -935,6 +918,7 @@ const SessionPlayer = () => {
               isBookmarked={currentFavourite === 1}
               disabled={isFavouriteUpdating}
             />
+
           </View>
 
           <View style={styles.bufferingBadge}>

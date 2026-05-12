@@ -12,6 +12,8 @@ type AiProps = {
     onPlaybackControlPress?: () => void;
     onReplayPress?: () => void;
     onFavouritePress?: () => void;
+    isFavourite?: boolean;
+    isFavouriteUpdating?: boolean;
     showRating?:boolean;
     message_id?:string|number;
     session_id?:string|number;
@@ -32,6 +34,8 @@ const Ai = ({
     onPlaybackControlPress,
     onReplayPress,
     onFavouritePress,
+    isFavourite = false,
+    isFavouriteUpdating = false,
     showRating = true,
     message_id,
     session_id,
@@ -141,6 +145,7 @@ const Ai = ({
                                 </TouchableOpacity>
                                 <TouchableOpacity
                                     onPress={onFavouritePress}
+                                    disabled={isFavouriteUpdating}
                                     hitSlop={6}
                                     style={{
                                         width: 30,
@@ -150,7 +155,7 @@ const Ai = ({
                                     }}
                                 >
                                     <Image
-                                        source={images.favourite_button}
+                                        source={isFavourite ? images.bookmarked : images.favourite_button}
                                         style={{ width: 30, height: 30 }}
                                         resizeMode="contain"
                                     />

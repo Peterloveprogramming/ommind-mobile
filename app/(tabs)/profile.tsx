@@ -331,7 +331,6 @@ const Profile = () => {
       pathname: "/meditation_session/player",
       params: {
         type: item.type,
-        course_id: item.course_id == null ? "" : String(item.course_id),
         favourite: String(item.favourite ?? 0),
         course_number: item.course_number == null ? "" : String(item.course_number),
         session_number: item.session_number == null ? "" : String(item.session_number),

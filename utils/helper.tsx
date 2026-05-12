@@ -25,12 +25,14 @@ export type UpdateFavouriteInput =
   | {
       type: "generated_meditation";
       message_id: string | number;
-      course_session_id?: never;
+      course_number?: never;
+      session_number?: never;
       favourite: 0 | 1;
     }
   | {
       type: "course_session";
-      course_session_id: string | number;
+      course_number: string | number;
+      session_number: string | number;
       message_id?: never;
       favourite: 0 | 1;
     };

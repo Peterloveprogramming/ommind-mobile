@@ -226,6 +226,7 @@ export namespace LambdaResult {
     model: string | null;
     classification: string | null;
     session_title?: string | null;
+    favourite?: 0 | 1 | null;
     needs_stage: string | null;
     needs_categorization_reasoning: string | null;
     needs_categorization_confidence: number | null;

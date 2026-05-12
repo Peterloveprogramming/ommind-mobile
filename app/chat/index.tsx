@@ -2,7 +2,6 @@ import { StyleSheet,Text,View,TextInput, Platform, TouchableOpacity,FlatList,Key
 import React, { useEffect, useLayoutEffect } from 'react'
 import { useState,useRef } from 'react'
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router'
-import { generateRandomNumber } from '@/utils/helper'
 import SendButton from '@/assets/svg/chat/SendButton'
 import MicButton from '@/assets/svg/chat/MicButton' 
 import PrecautionButton from '@/assets/svg/chat/PrecautionButton'
@@ -21,6 +20,12 @@ import useChatMessagesBySessionId from '@/services/useChatMessagesBySessionId';
 import useMessageRating from '@/services/useMessageRating';
 import { LambdaResult } from '@/api/types';
 import { FeedBackPayload } from '@/comp/chat/FeedBackModal';
+import {
+  checkIfLambdaResultIsSuccess,
+  generateRandomNumber,
+  getLambdaErrorMessage,
+  updateFavourite,
+} from '@/utils/helper';
 
 const COMPOSER_BOTTOM_SPACE = 96;
 const ANDROID_KEYBOARD_CLEARANCE = 36;
@@ -34,7 +39,14 @@ type ChatMessage = {
   showPlayBackControl?: boolean;
   isPlaybackPaused?: boolean;
   showRating?: boolean;
+  isFavourite?: boolean;
 };
+
+const getGeneratedMeditationMessageId = (message?: LambdaResult.ChatMessageItem | null) =>
+  message?.message_id ?? message?.id;
+
+const normalizeMessageId = (messageId?: string | number | null) =>
+  messageId == null ? null : String(messageId);
 
 const SpiritualMentorChat = () => {
     const { session_id, existing_chat } = useLocalSearchParams<{ session_id?: string | string[]; existing_chat?: string | string[] }>()
@@ -70,6 +82,7 @@ const SpiritualMentorChat = () => {
       },
     });
     const [messages,setMessages] = useState<ChatMessage[]>([])
+    const [updatingFavouriteMessageId, setUpdatingFavouriteMessageId] = useState<string | null>(null);
     const flatListRef = useRef<FlatList<ChatMessage> | null>(null);
     const insets = useSafeAreaInsets();
     const headerHeight = useHeaderHeight();
@@ -138,6 +151,7 @@ const SpiritualMentorChat = () => {
             showPlayBackControl: false,
             isPlaybackPaused: true,
             showRating: false,
+            isFavourite: message.favourite === 1,
           }))
         );
       })();
@@ -232,12 +246,14 @@ const SpiritualMentorChat = () => {
                   showPlayBackControl: true,
                   isPlaybackPaused: false,
                   showRating: true,
+                  isFavourite: aiMessage.favourite === 1,
                 }
               : {
                   role: "ai",
                   chatMessage: aiMessage,
                   status: "ready",
                   showRating: true,
+                  isFavourite: aiMessage.favourite === 1,
                 };
           const lastMessage = prevMessages[prevMessages.length - 1];
 
@@ -473,7 +489,66 @@ const SpiritualMentorChat = () => {
 
     return Boolean(response);
   };
-    
+
+  const handleFavouritePress = async (messageId?: string | number | null) => {
+    const messageKey = normalizeMessageId(messageId);
+
+    if (!messageKey || messageId == null) {
+      showToastMessage("Unable to update favourite for this meditation.", false);
+      return;
+    }
+
+    if (updatingFavouriteMessageId) {
+      return;
+    }
+
+    const currentMessage = messages.find(
+      (message) => normalizeMessageId(getGeneratedMeditationMessageId(message.chatMessage)) === messageKey
+    );
+    const nextFavourite: 0 | 1 = currentMessage?.isFavourite ? 0 : 1;
+
+    setUpdatingFavouriteMessageId(messageKey);
+
+    try {
+      const result = await updateFavourite({
+        type: "generated_meditation",
+        message_id: messageId,
+        favourite: nextFavourite,
+      });
+
+      if (!checkIfLambdaResultIsSuccess(result)) {
+        showToastMessage(getLambdaErrorMessage(result), false);
+        return;
+      }
+
+      setMessages((prevMessages) =>
+        prevMessages.map((message) => {
+          if (normalizeMessageId(getGeneratedMeditationMessageId(message.chatMessage)) !== messageKey) {
+            return message;
+          }
+
+          return {
+            ...message,
+            isFavourite: nextFavourite === 1,
+            chatMessage: message.chatMessage
+              ? { ...message.chatMessage, favourite: nextFavourite }
+              : message.chatMessage,
+          };
+        })
+      );
+
+      showToastMessage(
+        nextFavourite === 1 ? "Added to favourites" : "Removed from favourites",
+        true
+      );
+    } catch (error) {
+      console.error("Failed to update generated meditation favourite", error);
+      showToastMessage("Unable to update favourite.", false);
+    } finally {
+      setUpdatingFavouriteMessageId(null);
+    }
+  };
+
     return (
       <View style={styles.Parent}>
       <Container
@@ -523,12 +598,18 @@ const SpiritualMentorChat = () => {
                   }
 
                   if (item.role === "ai") {
+                      const favouriteMessageId = getGeneratedMeditationMessageId(item.chatMessage);
+                      const favouriteMessageKey = normalizeMessageId(favouriteMessageId);
+
                       return (
                         <Ai
                           message={item.chatMessage.content}
                           showPlaybackControl={item.showPlayBackControl}
                           showPlayButton={item.isPlaybackPaused}
                           onPlaybackControlPress={handleGuidedMeditationPlaybackPress}
+                          onFavouritePress={() => void handleFavouritePress(favouriteMessageId)}
+                          isFavourite={item.isFavourite}
+                          isFavouriteUpdating={updatingFavouriteMessageId === favouriteMessageKey}
                           showRating={item.showRating}
                           message_id={item.chatMessage.id}
                           session_id={item.chatMessage.session_id}

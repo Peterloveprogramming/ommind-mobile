@@ -1,6 +1,6 @@
-import React, { useEffect } from "react";
+import React, { useCallback, useEffect } from "react";
 import { StyleSheet, ImageBackground, View, ScrollView ,Text, TouchableOpacity, Image} from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import type {
   MeditationCourse,
   MeditationCourseDescriptionSection,
@@ -17,7 +17,6 @@ type SessionCardProps = {
   title: string;
   completed: boolean;
   locked: boolean;
-  courseId?: MeditationCourseSession["course_id"];
   favourite: MeditationCourseSession["favourite"];
   messageId?: MeditationCourseSession["message_id"];
   courseNumber: number;
@@ -39,7 +38,6 @@ const SessionCard = ({
   title,
   completed,
   locked,
-  courseId,
   favourite,
   messageId,
   courseNumber,
@@ -87,7 +85,6 @@ const SessionCard = ({
       pathname: "/meditation_session/player",
       params: {
         title,
-        course_id: courseId == null ? "" : String(courseId),
         favourite: String(favourite),
         message_id: messageId == null ? "" : String(messageId),
         course_number: String(courseNumber),
@@ -134,16 +131,18 @@ const MeditationSession = () => {
   const { detailsResult, detailsStatus, fetchMeditationCourseDetails } = useMeditationCourses();
   const courseDetails = detailsResult?.data?.course_details;
 
-  useEffect(() => {
-    if (!params.uuid || !params.type) {
-      return;
-    }
+  useFocusEffect(
+    useCallback(() => {
+      if (!params.uuid || !params.type) {
+        return;
+      }
 
-    void fetchMeditationCourseDetails({
-      uuid: params.uuid,
-      type: params.type as MeditationCourse["type"],
-    });
-  }, [fetchMeditationCourseDetails, params.type, params.uuid]);
+      void fetchMeditationCourseDetails({
+        uuid: params.uuid,
+        type: params.type as MeditationCourse["type"],
+      });
+    }, [fetchMeditationCourseDetails, params.type, params.uuid])
+  );
 
   useEffect(() => {
     if (detailsResult?.data?.course_details) {
@@ -170,10 +169,9 @@ const MeditationSession = () => {
   );
   const sessionMetadata = JSON.stringify(
     courseDetails.sessions.reduce<
-      Record<string, Pick<MeditationCourseSession, "course_id" | "favourite" | "message_id">>
+      Record<string, Pick<MeditationCourseSession, "favourite" | "message_id">>
     >((metadataBySession, session) => {
       metadataBySession[String(session.session_number)] = {
-        course_id: session.course_id ?? null,
         favourite: session.favourite,
         message_id: session.message_id ?? null,
       };
@@ -229,7 +227,6 @@ const MeditationSession = () => {
                   title={`Session ${session.session_number}: ${session.session_title}`}
                   completed={false}
                   locked={false}
-                  courseId={session.course_id}
                   favourite={session.favourite}
                   messageId={session.message_id}
                   courseNumber={courseDetails.course_number}
