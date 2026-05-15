@@ -1,7 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Alert,
-  FlatList,
   Image,
   ImageBackground,
   ImageSourcePropType,
@@ -14,8 +13,8 @@ import {
 import { useFocusEffect, usePathname, useRouter } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import { useUserApi } from "@/api/api";
-import MeditationCard from "@/comp/explore/MeditationCard";
-import { MeditationCourse } from "@/api/lambda/meditation/types";
+import { useMeditationApi } from "@/api/lambda/meditation/requests";
+import { DEFAULT_HOME_PAGE_TEXT } from "@/constant";
 import {
   checkIfLambdaResultIsSuccess,
   deleteFromCache,
@@ -28,7 +27,6 @@ import {
 } from "@/utils/helper";
 import BaseButton from "@/comp/base/BaseButton";
 import { FONTS } from "@/theme";
-import { useMeditationCourses } from "@/services/meditation/useMeditationCourses";
 import ProfilePhotoUploadModal from "@/comp/modals/ProfilePhotoUploadModal";
 
 const MEDITATION_ICON = require("@/assets/images/home/meditation_icon.png");
@@ -82,7 +80,7 @@ const Home = () => {
   const pathname = usePathname();
   const [firstName, setFirstName] = useState("");
   const [selectedFeeling, setSelectedFeeling] = useState("");
-  const [recommendedCourses, setRecommendedCourses] = useState<MeditationCourse[]>([]);
+  const [homePageText, setHomePageText] = useState(DEFAULT_HOME_PAGE_TEXT);
   const [isNavigating, setIsNavigating] = useState(false);
   const [isProfileModalVisible, setIsProfileModalVisible] = useState(false);
   const [profileImageSource, setProfileImageSource] = useState<ImageSourcePropType>(MEDITATION_ICON);
@@ -91,9 +89,12 @@ const Home = () => {
   const [profilePhotoError, setProfilePhotoError] = useState("");
   const [isUploadingProfilePhoto, setIsUploadingProfilePhoto] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const { fetchRecommendedMeditationCourses } = useMeditationCourses();
+  const { getHomePageText } = useMeditationApi();
+  const getHomePageTextRef = useRef(getHomePageText);
+  getHomePageTextRef.current = getHomePageText;
   const {
     uploadProfilePic: { uploadProfilePic },
+    getAccountDetails: { getAccountDetails },
   } = useUserApi();
 
   useEffect(() => {
@@ -111,25 +112,40 @@ const Home = () => {
 
   useFocusEffect(
     React.useCallback(() => {
+      let isActive = true;
+
       const loadStoredProfilePhoto = async () => {
         const storedUri = await getProfilePhotoUri();
-        setProfileImageSource(storedUri ? { uri: storedUri } : MEDITATION_ICON);
+        if (isActive) {
+          setProfileImageSource(storedUri ? { uri: storedUri } : MEDITATION_ICON);
+        }
       };
 
-      const loadRecommendedMeditationCourses = async () => {
+      const loadHomePageText = async () => {
         try {
-          const response = await fetchRecommendedMeditationCourses();
-          const courses = response.data?.courses ?? [];
-          setRecommendedCourses(courses);
-          console.log("recommended meditation courses", courses);
+          const response = await getHomePageTextRef.current();
+          const nextHomePageText = checkIfLambdaResultIsSuccess(response)
+            ? response.data?.home_page_text?.trim()
+            : "";
+
+          if (isActive) {
+            setHomePageText(nextHomePageText || DEFAULT_HOME_PAGE_TEXT);
+          }
         } catch (error) {
-          console.error("Failed to load recommended meditation courses", error);
+          console.error("Failed to load home page text", error);
+          if (isActive) {
+            setHomePageText(DEFAULT_HOME_PAGE_TEXT);
+          }
         }
       };
 
       void loadStoredProfilePhoto();
-      void loadRecommendedMeditationCourses();
-    }, [fetchRecommendedMeditationCourses])
+      void loadHomePageText();
+
+      return () => {
+        isActive = false;
+      };
+    }, [])
   );
 
   const handleNotificationPress = () => {
@@ -282,17 +298,6 @@ const Home = () => {
     console.log("refresh guidance pressed");
   };
 
-  const handleCoursePress = (item: MeditationCourse) => {
-    router.push({
-      pathname: "/meditation_session/session",
-      params: {
-        uuid: item.uuid,
-        type: item.type,
-        course_number: String(item.course_number),
-      },
-    });
-  };
-
   const handleLogoutPress = () => {
     if (isLoggingOut) {
       return;
@@ -386,9 +391,7 @@ const Home = () => {
             </View>
 
             <View style={styles.messageBubble}>
-              <Text style={styles.messageText}>
-                Last time, you practiced grounding.{"\n"}Continue today?
-              </Text>
+              <Text style={styles.messageText}>{homePageText}</Text>
             </View>
 
             <View style={styles.buttonStack}>
@@ -483,29 +486,6 @@ const Home = () => {
             </TouchableOpacity>
           </ImageBackground>
         </View>
-
-        {recommendedCourses.length ? (
-          <View style={styles.practiceSection}>
-            <Text style={styles.practiceTitle}>Your Practice Today</Text>
-            <View style={styles.practiceCardWrap}>
-              <FlatList
-                horizontal
-                data={recommendedCourses}
-                keyExtractor={(item) => item.uuid}
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.practiceCardsRow}
-                renderItem={({ item }) => (
-                  <MeditationCard
-                    numberOfSessions={item.number_of_sessions}
-                    description={`${item.proper_type_name} ${item.course_number}: ${item.title}`}
-                    image_source={item.image_url}
-                    onPress={() => void handleCoursePress(item)}
-                  />
-                )}
-              />
-            </View>
-          </View>
-        ) : null}
 
         <View style={styles.bottomDivider} />
       </ScrollView>
@@ -831,22 +811,5 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 16,
     color: "#FFFFFF",
-  },
-  practiceSection: {
-    paddingTop: 28,
-    paddingHorizontal: 20,
-  },
-  practiceTitle: {
-    fontFamily: FONTS.figtreeSemiBold,
-    fontSize: 18,
-    lineHeight: 24,
-    color: "#111111",
-  },
-  practiceCardWrap: {
-    marginTop: 18,
-  },
-  practiceCardsRow: {
-    paddingRight: 15,
-    gap: 12,
   },
 });

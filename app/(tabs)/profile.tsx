@@ -344,7 +344,16 @@ const Profile = () => {
     });
   };
 
+  const handleRecentlyPlayedPress = () => {
+    router.push("/recently-played");
+  };
+
   const handleProfileMenuItemPress = (itemId: ProfileMenuItemId) => {
+    if (itemId === "saved") {
+      router.push("/saved");
+      return;
+    }
+
     if (itemId === "report-bug" || itemId === "suggest-improvement") {
       setActiveFeedbackForm(itemId);
       return;
@@ -513,7 +522,15 @@ const Profile = () => {
         <View style={styles.recentlyPlayedSection}>
           <View style={styles.recentlyPlayedHeader}>
             <Text style={styles.recentlyPlayedTitle}>Recently Played</Text>
-            <Text style={styles.recentlyPlayedArrow}>→</Text>
+            <TouchableOpacity
+              activeOpacity={0.75}
+              accessibilityRole="button"
+              accessibilityLabel="View all recently played sessions"
+              hitSlop={10}
+              onPress={handleRecentlyPlayedPress}
+            >
+              <Text style={styles.recentlyPlayedArrow}>→</Text>
+            </TouchableOpacity>
           </View>
 
           <FlatList

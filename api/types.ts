@@ -33,6 +33,8 @@ export type LambdaRequest = {
             "login" |
             "upload_profile_pic" |
             "get_account_details" |
+            "get_recently_accessed_meditation_sessions_by_user_id" |
+            "get_favourite" |
             "update_user_focus" |
             "jwt_valid"|
             "save_registration_question_answers" |
@@ -45,6 +47,7 @@ export type LambdaRequest = {
             "get_audio_url" |
             "get_all_courses" |
             "get_recommended_courses" |
+            "get_home_page_text" |
             "get_meditation_course_details" |
             "add_recently_accessed_course" |
             "add_recently_accessed_session" |
@@ -202,6 +205,14 @@ export namespace LambdaResult {
     current_focus: string[] | string | null;
     recently_accessed_courses?: MeditationCourseSummary[] | null;
     recently_accessed_sessions?: RecentlyAccessedSession[] | null;
+  } | null>;
+
+  export type GetRecentlyAccessedMeditationSessionsResult = LambdaResult<{
+    recently_accessed_sessions: RecentlyAccessedSession[];
+  } | null>;
+
+  export type GetFavouriteResult = LambdaResult<{
+    favourite_sessions: RecentlyAccessedSession[];
   } | null>;
 
   export type UpdateUserCurrentFocusResult = LambdaResult<{

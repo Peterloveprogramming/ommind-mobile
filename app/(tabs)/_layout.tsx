@@ -1,22 +1,22 @@
-import { Tabs } from 'expo-router';
+import { Tabs, usePathname } from 'expo-router';
 import BottomNavigationBar from '@/assets/svg/BottomNavigationBar';
-import { View, Text,StyleSheet,Image,TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import Home from '@/assets/svg/Home';
 import Explore from '@/assets/svg/Explore';
 import Journal from '@/assets/svg/Journal';
 import Profile from '@/assets/svg/Profile';
-import {useContext} from 'react';
+import { useContext, type ComponentType } from 'react';
 import { BottomNavVisibilityContext } from '@/context/BottomNavVisibilityContext';
 import LhamoHeader from "@/comp/headers/LhamoHeader";
 import { COLORS, FONTS } from "@/theme.js";
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+type IconName = "home" | "explore" | "journal" | "profile";
 
 
-
-const icon = (focused:Boolean, iconName:string) => {
+const icon = (focused: boolean, iconName: IconName) => {
   // Define a mapping between iconName and corresponding icon component
-  const icons = {
+  const icons: Record<IconName, ComponentType<{ color?: string }>> = {
     home: Home,
     explore: Explore,
     journal: Journal,
@@ -24,15 +24,15 @@ const icon = (focused:Boolean, iconName:string) => {
   };
 
   // Get the corresponding icon component based on iconName
-  const IconComponent = icons[iconName.toLowerCase()];
+  const IconComponent = icons[iconName];
 
   return (
     <View style={styles.iconWrapper}>
-      <View style={{marginLeft:iconName == "journal"?4:0}}>
+      <View style={{marginLeft:iconName === "journal"?4:0}}>
         <IconComponent color={focused ? "#242424" : "white"} />
       </View>
       <View>
-        <Text style={[styles.iconText, { color: focused ? "#242424" : "white",marginLeft:iconName == "home"?3:0}]}>
+        <Text style={[styles.iconText, { color: focused ? "#242424" : "white",marginLeft:iconName === "home"?3:0}]}>
           {iconName.charAt(0).toUpperCase() + iconName.slice(1)}
         </Text>
       </View>
@@ -41,9 +41,13 @@ const icon = (focused:Boolean, iconName:string) => {
 };
 
 export default function TabLayout() {
-    const insets = useSafeAreaInsets();
+  const insets = useSafeAreaInsets();
+  const pathname = usePathname();
+  const isRecentlyPlayedRoute = pathname === "/recently-played";
+  const isSavedRoute = pathname === "/saved";
 
-  const {isVisible} = useContext(BottomNavVisibilityContext)
+  const bottomNavVisibility = useContext(BottomNavVisibilityContext);
+  const isVisible = bottomNavVisibility?.isVisible ?? true;
   console.log("bottomNavigationVisible",isVisible);
   return (
     <View style={{ flex: 1 }}>
@@ -130,8 +134,22 @@ export default function TabLayout() {
           name="profile"
           options={{
             title: 'Search',
-            tabBarIcon: ({focused}) =>  icon(focused,"profile"),
+            tabBarIcon: ({focused}) =>  icon(focused || isRecentlyPlayedRoute || isSavedRoute,"profile"),
           headerShown:false,
+          }}
+        />
+        <Tabs.Screen
+          name="recently-played"
+          options={{
+            href: null,
+            headerShown:false,
+          }}
+        />
+        <Tabs.Screen
+          name="saved"
+          options={{
+            href: null,
+            headerShown:false,
           }}
         />
       </Tabs>

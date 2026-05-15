@@ -3,6 +3,8 @@ import {useGetTodo} from './useTodoApi/requests'
 import {
     useCreateUser,
     useGetAccountDetails,
+    useGetFavourite,
+    useGetRecentlyAccessedMeditationSessionsByUserId,
     useLoginUser,
     useUpdateUserCurrentFocus,
     useUploadProfilePic
@@ -93,6 +95,12 @@ export const useUserApi =() => {
         getAccountDetails,
     } = useGetAccountDetails()
     const {
+        getRecentlyAccessedMeditationSessionsByUserId,
+    } = useGetRecentlyAccessedMeditationSessionsByUserId()
+    const {
+        getFavourite,
+    } = useGetFavourite()
+    const {
         updateUserCurrentFocus,
     } = useUpdateUserCurrentFocus()
 
@@ -108,6 +116,12 @@ export const useUserApi =() => {
         },
         getAccountDetails:{
             getAccountDetails
+        },
+        getRecentlyAccessedMeditationSessionsByUserId:{
+            getRecentlyAccessedMeditationSessionsByUserId
+        },
+        getFavourite:{
+            getFavourite
         },
         updateUserCurrentFocus:{
             updateUserCurrentFocus

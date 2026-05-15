@@ -10,6 +10,11 @@ export type UpdateUserCurrentFocusInput = {
     current_focus: string[];
 }
 
+export type GetRecentlyAccessedMeditationSessionsInput = {
+    offset: number;
+    limit: number;
+}
+
 export const useCreateUser = () => {
     const {commonFetch} = useFetch<LambdaResult.CreateUserResult>({
         url: LAMBDA_SERVICE_URL,
@@ -94,6 +99,51 @@ export const useGetAccountDetails = () => {
     });
 
     return { getAccountDetails };
+}
+
+export const useGetRecentlyAccessedMeditationSessionsByUserId = () => {
+    const {commonFetch} = useFetch<LambdaResult.GetRecentlyAccessedMeditationSessionsResult>({
+        url: LAMBDA_SERVICE_URL,
+        method:"POST",
+        clearUserInfoFromCacheIfUnauthorized:true,
+        useAuthFromCache:true
+    });
+
+    const lambdaConfig:LambdaRequest = {
+        route:"get_recently_accessed_meditation_sessions_by_user_id",
+    }
+
+    const getRecentlyAccessedMeditationSessionsByUserId = (
+        getRecentlyAccessedMeditationSessionsInput:GetRecentlyAccessedMeditationSessionsInput
+    ) => commonFetch({
+        input:{
+            ...lambdaConfig,
+            ...getRecentlyAccessedMeditationSessionsInput
+        }
+    });
+
+    return { getRecentlyAccessedMeditationSessionsByUserId };
+}
+
+export const useGetFavourite = () => {
+    const {commonFetch} = useFetch<LambdaResult.GetFavouriteResult>({
+        url: LAMBDA_SERVICE_URL,
+        method:"POST",
+        clearUserInfoFromCacheIfUnauthorized:true,
+        useAuthFromCache:true
+    });
+
+    const lambdaConfig:LambdaRequest = {
+        route:"get_favourite",
+    }
+
+    const getFavourite = () => commonFetch({
+        input:{
+            ...lambdaConfig
+        }
+    });
+
+    return { getFavourite };
 }
 
 export const useUpdateUserCurrentFocus = () => {
