@@ -3,6 +3,9 @@ const URL = "http://192.168.5.4:8000"
 //export constants 
 export const LAMBDA_SERVICE_URL = URL + "/2015-03-31/functions/function/invocations"
 export const DEFAULT_HOME_PAGE_TEXT = "How are you feeling today?"
+export const DEFAULT_MOOD = ""
+export const DEFAULT_INTENTION = "Compassion"
+export const DEFAULT_AFFIRMATION = "\u201cI am grounded and soft with myself today.\u201d"
 //for audio to text using websocket 
 // export const TEXT_TO_AUDIO_URL = "wss://audio.hulolo.xyz";
 // if testing locally then use "ipconfig getifaddr en0" to get the actual ip address for testing

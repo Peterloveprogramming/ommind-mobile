@@ -5,6 +5,8 @@ import {
   GetMeditationAudioInput,
   GetMeditationAudioUrlResult,
   GetHomePageTextResult,
+  GetIntentionAndAffirmationInput,
+  GetIntentionAndAffirmationResult,
   GetMeditationCourseDetailsInput,
   GetMeditationCourseDetailsResult,
   GetMeditationCoursesResult,
@@ -16,6 +18,7 @@ export const useMeditationApi = () => {
     | GetMeditationCoursesResult
     | GetRecommendedMeditationCoursesResult
     | GetHomePageTextResult
+    | GetIntentionAndAffirmationResult
     | GetMeditationCourseDetailsResult
     | GetMeditationAudioUrlResult
   >({
@@ -87,10 +90,24 @@ export const useMeditationApi = () => {
     }) as Promise<GetHomePageTextResult>;
   };
 
+  const getIntentionAndAffirmation = (input: GetIntentionAndAffirmationInput) => {
+    const lambdaConfig: LambdaRequest = {
+      route: "get_intention_and_affirmation",
+    };
+
+    return commonFetch({
+      input: {
+        ...lambdaConfig,
+        ...input,
+      },
+    }) as Promise<GetIntentionAndAffirmationResult>;
+  };
+
   return {
     getMeditationCourses,
     getRecommendedMeditationCourses,
     getHomePageText,
+    getIntentionAndAffirmation,
     getMeditationCourseDetails,
     getMeditationAudioUrl,
   };

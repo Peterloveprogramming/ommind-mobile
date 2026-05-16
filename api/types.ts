@@ -48,6 +48,7 @@ export type LambdaRequest = {
             "get_all_courses" |
             "get_recommended_courses" |
             "get_home_page_text" |
+            "get_intention_and_affirmation" |
             "get_meditation_course_details" |
             "add_recently_accessed_course" |
             "add_recently_accessed_session" |

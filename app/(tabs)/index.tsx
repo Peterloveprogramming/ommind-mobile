@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   Image,
   ImageBackground,
@@ -14,7 +15,12 @@ import { useFocusEffect, usePathname, useRouter } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import { useUserApi } from "@/api/api";
 import { useMeditationApi } from "@/api/lambda/meditation/requests";
-import { DEFAULT_HOME_PAGE_TEXT } from "@/constant";
+import {
+  DEFAULT_AFFIRMATION,
+  DEFAULT_HOME_PAGE_TEXT,
+  DEFAULT_INTENTION,
+  DEFAULT_MOOD,
+} from "@/constant";
 import {
   checkIfLambdaResultIsSuccess,
   deleteFromCache,
@@ -51,7 +57,7 @@ const MAX_PROFILE_PHOTO_SIZE_BYTES = 5 * 1024 * 1024;
 const ACCEPTED_PROFILE_PHOTO_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const ACCEPTED_PROFILE_PHOTO_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp"];
 
-const FEELING_OPTIONS = [
+const MOOD_OPTIONS = [
   { label: "Calm", icon: CALM_ICON },
   { label: "Peaceful", icon: PEACEFUL_ICON },
   { label: "Focused", icon: FOCUSED_ICON },
@@ -79,8 +85,11 @@ const Home = () => {
   const router = useRouter();
   const pathname = usePathname();
   const [firstName, setFirstName] = useState("");
-  const [selectedFeeling, setSelectedFeeling] = useState("");
+  const [selectedMood, setSelectedMood] = useState(DEFAULT_MOOD);
   const [homePageText, setHomePageText] = useState(DEFAULT_HOME_PAGE_TEXT);
+  const [intention, setIntention] = useState(DEFAULT_INTENTION);
+  const [affirmation, setAffirmation] = useState(DEFAULT_AFFIRMATION);
+  const [isGuidanceLoading, setIsGuidanceLoading] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
   const [isProfileModalVisible, setIsProfileModalVisible] = useState(false);
   const [profileImageSource, setProfileImageSource] = useState<ImageSourcePropType>(MEDITATION_ICON);
@@ -89,9 +98,12 @@ const Home = () => {
   const [profilePhotoError, setProfilePhotoError] = useState("");
   const [isUploadingProfilePhoto, setIsUploadingProfilePhoto] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const { getHomePageText } = useMeditationApi();
+  const { getHomePageText, getIntentionAndAffirmation } = useMeditationApi();
   const getHomePageTextRef = useRef(getHomePageText);
+  const getIntentionAndAffirmationRef = useRef(getIntentionAndAffirmation);
+  const intentionRequestIdRef = useRef(0);
   getHomePageTextRef.current = getHomePageText;
+  getIntentionAndAffirmationRef.current = getIntentionAndAffirmation;
   const {
     uploadProfilePic: { uploadProfilePic },
     getAccountDetails: { getAccountDetails },
@@ -147,6 +159,50 @@ const Home = () => {
       };
     }, [])
   );
+
+  const resetIntentionAndAffirmation = () => {
+    setIsGuidanceLoading(false);
+    setIntention(DEFAULT_INTENTION);
+    setAffirmation(DEFAULT_AFFIRMATION);
+  };
+
+  const loadIntentionAndAffirmation = async (mood: string) => {
+    const requestId = intentionRequestIdRef.current + 1;
+    intentionRequestIdRef.current = requestId;
+    setIsGuidanceLoading(true);
+
+    try {
+      const response = await getIntentionAndAffirmationRef.current({ mood });
+
+      if (requestId !== intentionRequestIdRef.current) {
+        return;
+      }
+
+      const nextIntention = checkIfLambdaResultIsSuccess(response)
+        ? response.data?.intention?.trim()
+        : "";
+      const nextAffirmation = checkIfLambdaResultIsSuccess(response)
+        ? response.data?.affirmation?.trim()
+        : "";
+
+      setIntention(nextIntention || DEFAULT_INTENTION);
+      setAffirmation(nextAffirmation || DEFAULT_AFFIRMATION);
+    } catch (error) {
+      console.error("Failed to load intention and affirmation", error);
+      if (requestId === intentionRequestIdRef.current) {
+        resetIntentionAndAffirmation();
+      }
+    } finally {
+      if (requestId === intentionRequestIdRef.current) {
+        setIsGuidanceLoading(false);
+      }
+    }
+  };
+
+  const handleMoodPress = (mood: string) => {
+    setSelectedMood(mood);
+    void loadIntentionAndAffirmation(mood);
+  };
 
   const handleNotificationPress = () => {
     console.log("notification icon pressed");
@@ -295,7 +351,12 @@ const Home = () => {
   };
 
   const handleRefreshGuidancePress = () => {
-    console.log("refresh guidance pressed");
+    if (!selectedMood) {
+      resetIntentionAndAffirmation();
+      return;
+    }
+
+    void loadIntentionAndAffirmation(selectedMood);
   };
 
   const handleLogoutPress = () => {
@@ -428,21 +489,21 @@ const Home = () => {
           <Text style={styles.feelingsSubtitle}>Choose what feels closest</Text>
 
           <View style={styles.feelingsGrid}>
-            {FEELING_OPTIONS.map((feeling) => (
+            {MOOD_OPTIONS.map((feeling) => (
               <TouchableOpacity
                 key={feeling.label}
                 activeOpacity={0.85}
                 style={[
                   styles.feelingPill,
-                  selectedFeeling === feeling.label && styles.feelingPillSelected,
+                  selectedMood === feeling.label && styles.feelingPillSelected,
                 ]}
-                onPress={() => setSelectedFeeling(feeling.label)}
+                onPress={() => handleMoodPress(feeling.label)}
               >
                 <Image source={feeling.icon} style={styles.feelingIcon} />
                 <Text
                   style={[
                     styles.feelingLabel,
-                    selectedFeeling === feeling.label && styles.feelingLabelSelected,
+                    selectedMood === feeling.label && styles.feelingLabelSelected,
                   ]}
                 >
                   {feeling.label}
@@ -466,15 +527,25 @@ const Home = () => {
               Lhamo senses how you&apos;re feeling...{"\n"}and gently suggests:
             </Text>
 
-            <Text style={styles.intentionWord}>Compassion</Text>
+            {isGuidanceLoading ? (
+              <View style={styles.intentionLoadingWrap}>
+                <ActivityIndicator size="small" color="#4B4748" />
+              </View>
+            ) : (
+              <Text style={styles.intentionWord}>{intention}</Text>
+            )}
 
             <View style={styles.intentionDivider} />
 
             <Text style={styles.affirmationLead}>Lhamo&apos;s Affirmation for you</Text>
 
-            <Text style={styles.affirmationText}>
-              “I am grounded and soft with myself today.”
-            </Text>
+            {isGuidanceLoading ? (
+              <View style={styles.affirmationLoadingWrap}>
+                <ActivityIndicator size="small" color="#4B4748" />
+              </View>
+            ) : (
+              <Text style={styles.affirmationText}>{affirmation}</Text>
+            )}
 
             <TouchableOpacity
               activeOpacity={0.85}
@@ -768,6 +839,12 @@ const styles = StyleSheet.create({
     lineHeight: 28,
     color: "#111111",
   },
+  intentionLoadingWrap: {
+    marginTop: 6,
+    minHeight: 28,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   intentionDivider: {
     marginTop: 14,
     width: "115%",
@@ -789,6 +866,12 @@ const styles = StyleSheet.create({
     fontSize: 18,
     lineHeight: 24,
     color: "#111111",
+  },
+  affirmationLoadingWrap: {
+    marginTop: 10,
+    minHeight: 24,
+    alignItems: "center",
+    justifyContent: "center",
   },
   refreshButton: {
     marginTop: 16,

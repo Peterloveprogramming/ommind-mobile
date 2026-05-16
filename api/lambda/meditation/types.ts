@@ -57,6 +57,15 @@ export type GetHomePageTextResult = LambdaResult<{
   home_page_text: string;
 } | null>;
 
+export type GetIntentionAndAffirmationInput = {
+  mood: string;
+};
+
+export type GetIntentionAndAffirmationResult = LambdaResult<{
+  intention: string;
+  affirmation: string;
+} | null>;
+
 export type GetMeditationCourseDetailsInput = {
   type: MeditationCourse["type"];
   uuid: string;
