@@ -441,7 +441,7 @@ const Profile = () => {
 
   const statCards = [
     {
-      title: "Average Meditation Time",
+      title: "Average Daily Meditation Time",
       value: formatStatValue(accountDetails.average_meditation_time_in_mins),
       unit: "Minutes",
       icon: RED_ICON,
@@ -904,3 +904,7 @@ const styles = StyleSheet.create({
     resizeMode: "contain",
   },
 });
+
+
+//mark session as completed - course_number, session_number 
+//update meditation time 

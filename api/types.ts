@@ -67,6 +67,13 @@ export type LambdaRequest = {
             "update_dream_log" |
             "delete_dream_log" |
             "bulk_delete_dream_logs",
+    action?: string;
+    user_id?: number | string;
+    ip_address?: string;
+    device_type?: string;
+    os_version?: string;
+    app_version?: string;
+    jwt_token?: string;
 }
 
 // Lambda Result 

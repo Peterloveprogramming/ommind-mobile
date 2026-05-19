@@ -1,4 +1,5 @@
 import { deleteFromCache,getAuthInfo } from "@/utils/helper";
+import { buildLambdaRequestPayload } from "@/utils/requestContext";
 import { useRouter } from "expo-router"; // Import useRouter for navigation
 const DEFAULT_FETCH_OPTIONS = {}
 
@@ -41,21 +42,13 @@ export function useFetch <ResultType> ({
             input,
         });
 
-        if (useAuthFromCache){
-            const userInfo = await getAuthInfo();
-            if (userInfo){
-                if (input){
-                    input.jwt_token = userInfo.jwtToken
-                    input.user_id = userInfo.userId
-                }
-            } 
-        }
-        console.log("the input is",input)
+        const userInfo = useAuthFromCache ? await getAuthInfo() : null;
+        const requestBody = await buildLambdaRequestPayload(input ?? {}, userInfo);
         const response = await fetch(url,{
             method,
             ...DEFAULT_FETCH_OPTIONS,//const
             ...fetchOptions, // this allows you to override default fetch options on a case by case basis,
-            body:JSON.stringify(input)
+            body:JSON.stringify(requestBody)
         });
 
         if (!response.ok){

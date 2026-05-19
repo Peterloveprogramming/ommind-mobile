@@ -2,6 +2,7 @@ import { LambdaResult } from "@/api/types";
 import { Router } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LAMBDA_SERVICE_URL } from "@/constant";
+import { buildLambdaRequestPayload } from "@/utils/requestContext";
 import {
   UpdateSessionProgressInput,
   UpdateSessionProgressResult,
@@ -164,14 +165,17 @@ export const addRecentlyAccessedSession = async (
     throw new Error("Cannot add recently accessed session without authInfo");
   }
 
+  const requestBody = await buildLambdaRequestPayload(
+    {
+      route: "add_recently_accessed_session",
+      ...input,
+    },
+    authInfo
+  );
+
   const response = await fetch(LAMBDA_SERVICE_URL, {
     method: "POST",
-    body: JSON.stringify({
-      route: "add_recently_accessed_session",
-      jwt_token: authInfo.jwtToken,
-      user_id: authInfo.userId,
-      ...input,
-    }),
+    body: JSON.stringify(requestBody),
   });
 
   if (!response.ok) {
@@ -190,14 +194,17 @@ export const updateSessionProgress = async (
     throw new Error("Cannot update session progress without authInfo");
   }
 
+  const requestBody = await buildLambdaRequestPayload(
+    {
+      route: "update_session_progress",
+      ...input,
+    },
+    authInfo
+  );
+
   const response = await fetch(LAMBDA_SERVICE_URL, {
     method: "POST",
-    body: JSON.stringify({
-      route: "update_session_progress",
-      jwt_token: authInfo.jwtToken,
-      user_id: authInfo.userId,
-      ...input,
-    }),
+    body: JSON.stringify(requestBody),
   });
 
   if (!response.ok) {
@@ -216,14 +223,17 @@ export const updateFavourite = async (
     throw new Error("Cannot update favourite without authInfo");
   }
 
+  const requestBody = await buildLambdaRequestPayload(
+    {
+      route: "update_favourite",
+      ...input,
+    },
+    authInfo
+  );
+
   const response = await fetch(LAMBDA_SERVICE_URL, {
     method: "POST",
-    body: JSON.stringify({
-      route: "update_favourite",
-      jwt_token: authInfo.jwtToken,
-      user_id: authInfo.userId,
-      ...input,
-    }),
+    body: JSON.stringify(requestBody),
   });
 
   if (!response.ok) {
