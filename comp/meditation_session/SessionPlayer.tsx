@@ -216,6 +216,9 @@ const SessionPlayer = () => {
   const lastSavedProgressKeyRef = useRef<string | null>(null);
   const recentlyAccessedSessionKeyRef = useRef<string | null>(null);
   const generatedContentRef = useRef<string | null>(null);
+  const accumulatedPlaybackSecondsRef = useRef(0);
+  const playbackStartedAtMsRef = useRef<number | null>(null);
+  const isVoicePlayingRef = useRef(false);
   const progressMetadataRef = useRef({
     favourite: sessionFavourite,
     messageId,
@@ -251,6 +254,8 @@ const SessionPlayer = () => {
     setPendingInitialStartSeconds(null);
     initialSeekKeyRef.current = null;
     hasAutoPlayedRef.current = false;
+    accumulatedPlaybackSecondsRef.current = 0;
+    playbackStartedAtMsRef.current = null;
   }, [hasInitialProgress, sessionKey]);
 
 
@@ -321,9 +326,9 @@ const SessionPlayer = () => {
             favourite: nextFavourite,
           }
         : null
-      : Number.isFinite(courseNumber) && Number.isFinite(sessionNumber)
+      : meditationType && Number.isFinite(courseNumber) && Number.isFinite(sessionNumber)
         ? {
-            type: "course_session" as const,
+            type: meditationType,
             course_number: courseNumber,
             session_number: sessionNumber,
             favourite: nextFavourite,
@@ -463,7 +468,22 @@ const SessionPlayer = () => {
     return Math.floor(clampedSeconds);
   }, []);
 
-  const saveSessionProgress = useCallback(async (overrideSeconds?: number) => {
+  const flushAccumulatedPlaybackTime = useCallback(() => {
+    const startedAtMs = playbackStartedAtMsRef.current;
+    if (startedAtMs === null) {
+      return;
+    }
+
+    const nowMs = Date.now();
+    const elapsedMs = nowMs - startedAtMs;
+    if (elapsedMs > 0) {
+      accumulatedPlaybackSecondsRef.current += elapsedMs / 1000;
+    }
+
+    playbackStartedAtMsRef.current = isVoicePlayingRef.current ? nowMs : null;
+  }, []);
+
+  const saveSessionProgress = useCallback(async (overrideSeconds?: number, completed = false) => {
     if (isGenerated) {
       return;
     }
@@ -483,19 +503,24 @@ const SessionPlayer = () => {
     }
 
     const progressSeconds = getCurrentProgressSecond(overrideSeconds);
-    const saveKey = `${currentMeditationType}-${currentCourseNumber}-${currentSessionNumber}-${progressSeconds}`;
-    if (lastSavedProgressKeyRef.current === saveKey) {
+    flushAccumulatedPlaybackTime();
+    const accumulatedMinutes = Math.floor(accumulatedPlaybackSecondsRef.current / 60);
+    const progressSaveKey = `${currentMeditationType}-${currentCourseNumber}-${currentSessionNumber}-${progressSeconds}`;
+    if (!completed && accumulatedMinutes <= 0 && lastSavedProgressKeyRef.current === progressSaveKey) {
       return;
     }
 
-    lastSavedProgressKeyRef.current = saveKey;
+    lastSavedProgressKeyRef.current = progressSaveKey;
 
     try {
       const result = await updateSessionProgress({
+        type: currentMeditationType,
         course_number: currentCourseNumber,
         session_number: currentSessionNumber,
-        type: currentMeditationType,
+        accessed_type: currentMeditationType,
         progress: progressSeconds,
+        accumulated_minutes: accumulatedMinutes,
+        completed,
       });
 
       if (!checkIfLambdaResultIsSuccess(result)) {
@@ -505,8 +530,27 @@ const SessionPlayer = () => {
     } catch (error) {
       console.error("Failed to update session progress", error);
       lastSavedProgressKeyRef.current = null;
+    } finally {
+      accumulatedPlaybackSecondsRef.current = 0;
     }
-  }, [getCurrentProgressSecond, isGenerated]);
+  }, [flushAccumulatedPlaybackTime, getCurrentProgressSecond, isGenerated]);
+
+  useEffect(() => {
+    if (isGenerated) {
+      accumulatedPlaybackSecondsRef.current = 0;
+      playbackStartedAtMsRef.current = null;
+      return;
+    }
+
+    if (voiceStatus.playing) {
+      if (playbackStartedAtMsRef.current === null) {
+        playbackStartedAtMsRef.current = Date.now();
+      }
+      return;
+    }
+
+    flushAccumulatedPlaybackTime();
+  }, [flushAccumulatedPlaybackTime, isGenerated, voiceStatus.playing]);
 
   useEffect(() => {
     const unsubscribe = navigation.addListener("beforeRemove", (event: any) => {
@@ -538,13 +582,13 @@ const SessionPlayer = () => {
 
     const nextSessionNumber = isPlaybackEnabled ? sessionNumber : sessionNumber + 1;
     if (sessionNumbers.length > 0 && !sessionTitles[String(nextSessionNumber)]) {
-      void saveSessionProgress(Math.ceil(durationRef.current || currentTimeRef.current));
+      void saveSessionProgress(Math.ceil(durationRef.current || currentTimeRef.current), true);
       return;
     }
 
     isAdvancingSessionRef.current = true;
     void (async () => {
-      await saveSessionProgress(Math.ceil(durationRef.current || currentTimeRef.current));
+      await saveSessionProgress(Math.ceil(durationRef.current || currentTimeRef.current), true);
       voicePlayer.pause();
       bgmPlayer.pause();
       void bgmPlayer.seekTo(0);
@@ -637,6 +681,7 @@ const SessionPlayer = () => {
   progressTrackWidthRef.current = progressTrackWidth;
   voicePlayerRef.current = voicePlayer;
   bgmPlayerRef.current = bgmPlayer;
+  isVoicePlayingRef.current = voiceStatus.playing;
   progressMetadataRef.current = {
     favourite: currentFavourite,
     messageId,

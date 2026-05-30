@@ -1,6 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import {
+  ActivityIndicator,
+  Image,
   ScrollView,
   StyleSheet,
   Text,
@@ -15,9 +17,13 @@ type ProfileFeedbackFormProps = {
   title: string;
   placeholder: string;
   attachmentHelperText: string;
+  errorText?: string;
+  imagePreviewUri?: string | null;
+  isSubmitting?: boolean;
   submitLabel?: string;
   onBackPress: () => void;
   onAddImagePress?: () => void;
+  onRemoveImagePress?: () => void;
   onSubmitPress?: (message: string) => void;
 };
 
@@ -25,9 +31,13 @@ const ProfileFeedbackForm = ({
   title,
   placeholder,
   attachmentHelperText,
+  errorText,
+  imagePreviewUri,
+  isSubmitting = false,
   submitLabel = "Submit",
   onBackPress,
   onAddImagePress,
+  onRemoveImagePress,
   onSubmitPress,
 }: ProfileFeedbackFormProps) => {
   const [message, setMessage] = React.useState("");
@@ -76,20 +86,43 @@ const ProfileFeedbackForm = ({
           activeOpacity={0.85}
           onPress={handleAddImagePress}
           style={styles.addImageButton}
+          disabled={isSubmitting}
         >
           <Ionicons name="attach-outline" size={26} color="#8F9097" />
-          <Text style={styles.addImageText}>Add an image</Text>
+          <Text style={styles.addImageText}>{imagePreviewUri ? "Change image" : "Add an image"}</Text>
         </TouchableOpacity>
 
+        {imagePreviewUri ? (
+          <View style={styles.imagePreviewWrap}>
+            <Image source={{ uri: imagePreviewUri }} style={styles.imagePreview} />
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={onRemoveImagePress}
+              style={styles.removeImageButton}
+              disabled={isSubmitting}
+            >
+              <Ionicons name="close" size={18} color="#FFFFFF" />
+            </TouchableOpacity>
+          </View>
+        ) : null}
+
         <Text style={styles.attachmentHelperText}>{attachmentHelperText}</Text>
+        {errorText ? <Text style={styles.errorText}>{errorText}</Text> : null}
 
         <TouchableOpacity
           activeOpacity={0.85}
           onPress={handleSubmitPress}
-          style={styles.submitButton}
+          disabled={isSubmitting}
+          style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]}
         >
-          <Ionicons name="paper-plane-outline" size={22} color="#FFFFFF" />
-          <Text style={styles.submitButtonText}>{submitLabel}</Text>
+          {isSubmitting ? (
+            <ActivityIndicator color="#FFFFFF" />
+          ) : (
+            <>
+              <Ionicons name="paper-plane-outline" size={22} color="#FFFFFF" />
+              <Text style={styles.submitButtonText}>{submitLabel}</Text>
+            </>
+          )}
         </TouchableOpacity>
       </View>
     </ScrollView>
@@ -185,6 +218,39 @@ const styles = StyleSheet.create({
     color: "#8F9097",
     textAlign: "center",
   },
+  imagePreviewWrap: {
+    marginTop: 20,
+    width: 180,
+    height: 120,
+    borderRadius: 12,
+    overflow: "hidden",
+    backgroundColor: "#E9E9E9",
+  },
+  imagePreview: {
+    width: "100%",
+    height: "100%",
+    resizeMode: "cover",
+  },
+  removeImageButton: {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: "rgba(17, 17, 17, 0.62)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  errorText: {
+    marginTop: 14,
+    maxWidth: 310,
+    fontFamily: FONTS.inter,
+    fontSize: 14,
+    lineHeight: 20,
+    color: "#C2452D",
+    textAlign: "center",
+  },
   submitButton: {
     marginTop: 112,
     minHeight: 52,
@@ -194,6 +260,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
+  },
+  submitButtonDisabled: {
+    opacity: 0.7,
   },
   submitButtonText: {
     marginLeft: 8,

@@ -33,6 +33,10 @@ export type LambdaRequest = {
             "login" |
             "upload_profile_pic" |
             "get_account_details" |
+            "get_user_name_and_email" |
+            "update_user_name_and_email" |
+            "submit_feedback" |
+            "notify_customer_feedback" |
             "get_recently_accessed_meditation_sessions_by_user_id" |
             "get_favourite" |
             "update_user_focus" |
@@ -66,7 +70,8 @@ export type LambdaRequest = {
             "add_dream_log" |
             "update_dream_log" |
             "delete_dream_log" |
-            "bulk_delete_dream_logs",
+            "bulk_delete_dream_logs" |
+            "analyze_dream",
     action?: string;
     user_id?: number | string;
     ip_address?: string;
@@ -98,6 +103,22 @@ export type CreateUserInput = {
 export type LoginUserInput = {
     email:string,
     password:string,
+}
+
+export type UpdateUserNameAndEmailInput = {
+    name:string,
+    email:string,
+    password?:string,
+}
+
+export type SubmitFeedbackInput = {
+    type:"bug" | "improvement",
+    description:string,
+    image_data?:string | null,
+}
+
+export type NotifyCustomerFeedbackInput = {
+    message: string,
 }
 
 export type MeditationCourseSummary = {
@@ -210,10 +231,25 @@ export namespace LambdaResult {
     average_meditation_time_in_mins: number | null;
     total_meditation_time_in_mins: number | null;
     number_of_sessions_completed: number | null;
+    number_of_days_active: number | null;
     current_focus: string[] | string | null;
     recently_accessed_courses?: MeditationCourseSummary[] | null;
     recently_accessed_sessions?: RecentlyAccessedSession[] | null;
   } | null>;
+
+  export type GetUserNameAndEmailResult = LambdaResult<{
+    name: string;
+    email: string;
+  } | null>;
+
+  export type UpdateUserNameAndEmailResult = LambdaResult<{
+    name: string;
+    email: string;
+  } | null>;
+
+  export type SubmitFeedbackResult = LambdaResult<Record<string, unknown> | null>;
+
+  export type NotifyCustomerFeedbackResult = LambdaResult<Record<string, unknown> | null>;
 
   export type GetRecentlyAccessedMeditationSessionsResult = LambdaResult<{
     recently_accessed_sessions: RecentlyAccessedSession[];
@@ -289,6 +325,16 @@ export namespace LambdaResult {
   export type BulkDeleteDreamLogsResult = LambdaResult<{
     deleted_ids?: number[];
     deleted_count?: number;
+  } | null>;
+  export type AnalyzeDreamResult = LambdaResult<{
+    final_response?: string;
+    feedback?: string;
+    session_id?: string;
+    session_title?: string;
+    logs?: unknown;
+    saved_chat_message?: unknown;
+    missing_log_ids?: number[];
+    [key: string]: unknown;
   } | null>;
 
 }

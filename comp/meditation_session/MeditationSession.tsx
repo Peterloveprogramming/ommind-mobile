@@ -225,7 +225,7 @@ const MeditationSession = () => {
                 <SessionCard
                   key={session.session_number}
                   title={`Session ${session.session_number}: ${session.session_title}`}
-                  completed={false}
+                  completed={session.session_completed === 1}
                   locked={false}
                   favourite={session.favourite}
                   messageId={session.message_id}

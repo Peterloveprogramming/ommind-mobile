@@ -31,7 +31,7 @@ export type UpdateFavouriteInput =
       favourite: 0 | 1;
     }
   | {
-      type: "course_session";
+      type: string;
       course_number: string | number;
       session_number: string | number;
       message_id?: never;

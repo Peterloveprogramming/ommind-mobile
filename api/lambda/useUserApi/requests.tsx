@@ -1,6 +1,14 @@
 import { useFetch } from "@/api/useFetch";
 import {LAMBDA_SERVICE_URL} from "@/constant"
-import { LambdaResult,CreateUserInput, LoginUserInput, LambdaRequest} from "../../types";
+import {
+    LambdaResult,
+    CreateUserInput,
+    LoginUserInput,
+    LambdaRequest,
+    NotifyCustomerFeedbackInput,
+    SubmitFeedbackInput,
+    UpdateUserNameAndEmailInput
+} from "../../types";
 
 export type UploadProfilePicInput = {
     image: string;
@@ -99,6 +107,93 @@ export const useGetAccountDetails = () => {
     });
 
     return { getAccountDetails };
+}
+
+export const useGetUserNameAndEmail = () => {
+    const {commonFetch} = useFetch<LambdaResult.GetUserNameAndEmailResult>({
+        url: LAMBDA_SERVICE_URL,
+        method:"POST",
+        clearUserInfoFromCacheIfUnauthorized:true,
+        useAuthFromCache:true
+    });
+
+    const lambdaConfig:LambdaRequest = {
+        route:"get_user_name_and_email",
+    }
+
+    const getUserNameAndEmail = () => commonFetch({
+        input:{
+            ...lambdaConfig
+        }
+    });
+
+    return { getUserNameAndEmail };
+}
+
+export const useUpdateUserNameAndEmail = () => {
+    const {commonFetch} = useFetch<LambdaResult.UpdateUserNameAndEmailResult>({
+        url: LAMBDA_SERVICE_URL,
+        method:"POST",
+        clearUserInfoFromCacheIfUnauthorized:true,
+        useAuthFromCache:true
+    });
+
+    const lambdaConfig:LambdaRequest = {
+        route:"update_user_name_and_email",
+    }
+
+    const updateUserNameAndEmail = (updateUserNameAndEmailInput:UpdateUserNameAndEmailInput) => commonFetch({
+        input:{
+            ...lambdaConfig,
+            ...updateUserNameAndEmailInput
+        }
+    });
+
+    return { updateUserNameAndEmail };
+}
+
+export const useSubmitFeedback = () => {
+    const {commonFetch} = useFetch<LambdaResult.SubmitFeedbackResult>({
+        url: LAMBDA_SERVICE_URL,
+        method:"POST",
+        clearUserInfoFromCacheIfUnauthorized:true,
+        useAuthFromCache:true
+    });
+
+    const lambdaConfig:LambdaRequest = {
+        route:"submit_feedback",
+    }
+
+    const submitFeedback = (submitFeedbackInput:SubmitFeedbackInput) => commonFetch({
+        input:{
+            ...lambdaConfig,
+            ...submitFeedbackInput
+        }
+    });
+
+    return { submitFeedback };
+}
+
+export const useNotifyCustomerFeedback = () => {
+    const {commonFetch} = useFetch<LambdaResult.NotifyCustomerFeedbackResult>({
+        url: LAMBDA_SERVICE_URL,
+        method:"POST",
+        clearUserInfoFromCacheIfUnauthorized:true,
+        useAuthFromCache:true
+    });
+
+    const lambdaConfig:LambdaRequest = {
+        route:"notify_customer_feedback",
+    }
+
+    const notifyCustomerFeedback = (notifyCustomerFeedbackInput:NotifyCustomerFeedbackInput) => commonFetch({
+        input:{
+            ...lambdaConfig,
+            ...notifyCustomerFeedbackInput
+        }
+    });
+
+    return { notifyCustomerFeedback };
 }
 
 export const useGetRecentlyAccessedMeditationSessionsByUserId = () => {

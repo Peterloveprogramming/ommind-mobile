@@ -5,8 +5,12 @@ import {
     useGetAccountDetails,
     useGetFavourite,
     useGetRecentlyAccessedMeditationSessionsByUserId,
+    useGetUserNameAndEmail,
     useLoginUser,
+    useNotifyCustomerFeedback,
+    useSubmitFeedback,
     useUpdateUserCurrentFocus,
+    useUpdateUserNameAndEmail,
     useUploadProfilePic
 } from './lambda/useUserApi/requests'
 import {useSaveAnswersForRegistrationQuestions} from './lambda/useRegistrationQuestionApi/requests'
@@ -26,6 +30,7 @@ import {
 } from "./lambda/useAwarenessLogsApi/requests";
 import {
     useAddDreamLog,
+    useAnalyzeDream,
     useBulkDeleteDreamLogs,
     useDeleteDreamLog,
     useGetDreamLog,
@@ -95,6 +100,18 @@ export const useUserApi =() => {
         getAccountDetails,
     } = useGetAccountDetails()
     const {
+        getUserNameAndEmail,
+    } = useGetUserNameAndEmail()
+    const {
+        updateUserNameAndEmail,
+    } = useUpdateUserNameAndEmail()
+    const {
+        submitFeedback,
+    } = useSubmitFeedback()
+    const {
+        notifyCustomerFeedback,
+    } = useNotifyCustomerFeedback()
+    const {
         getRecentlyAccessedMeditationSessionsByUserId,
     } = useGetRecentlyAccessedMeditationSessionsByUserId()
     const {
@@ -116,6 +133,18 @@ export const useUserApi =() => {
         },
         getAccountDetails:{
             getAccountDetails
+        },
+        getUserNameAndEmail:{
+            getUserNameAndEmail
+        },
+        updateUserNameAndEmail:{
+            updateUserNameAndEmail
+        },
+        submitFeedback:{
+            submitFeedback
+        },
+        notifyCustomerFeedback:{
+            notifyCustomerFeedback
         },
         getRecentlyAccessedMeditationSessionsByUserId:{
             getRecentlyAccessedMeditationSessionsByUserId
@@ -229,6 +258,9 @@ export const useDreamLogsApi = () => {
     const {
         bulkDeleteDreamLogs
     } = useBulkDeleteDreamLogs()
+    const {
+        analyzeDream
+    } = useAnalyzeDream()
 
     return {
         getDreamLogs: {
@@ -248,6 +280,9 @@ export const useDreamLogsApi = () => {
         },
         bulkDeleteDreamLogs: {
             bulkDeleteDreamLogs
+        },
+        analyzeDream: {
+            analyzeDream
         }
     }
 }

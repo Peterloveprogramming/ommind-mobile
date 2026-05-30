@@ -140,8 +140,10 @@ const Journal = () => {
     dreamLogs,
     isLoading,
     isDeleting: isDeletingDreamLogs,
+    isAnalyzing: isAnalyzingDreamLogs,
     fetchDreamLogs,
     bulkDeleteDreamLogs,
+    analyzeDreamLogs,
   } = useDreamLogs();
   const {
     awarenessLogs,
@@ -279,12 +281,15 @@ const Journal = () => {
   };
 
   const handleReflectPress = async () => {
-    if (isAnalyzingAwarenessLogs || activeTab !== "awareness" || selectedEntryIds.length === 0) {
+    if (isAnalyzingDreamLogs || isAnalyzingAwarenessLogs || selectedEntryIds.length === 0) {
       return;
     }
 
-    const response = await analyzeAwarenessLogs({ logs_id: selectedEntryIds });
-    console.log("analyze awareness response:", response);
+    const response =
+      activeTab === "dreams"
+        ? await analyzeDreamLogs({ logs_id: selectedEntryIds })
+        : await analyzeAwarenessLogs({ logs_id: selectedEntryIds });
+    console.log(`analyze ${activeTab} response:`, response);
 
     const sessionId =
       typeof response?.data?.session_id === "string" ? response.data.session_id : null;
@@ -318,7 +323,7 @@ const Journal = () => {
   const isDeleteDisabled =
     selectedEntryIds.length === 0 || isDeletingDreamLogs || isDeletingAwarenessLogs;
   const isReflectDisabled =
-    activeTab !== "awareness" || selectedEntryIds.length === 0;
+    selectedEntryIds.length === 0 || isAnalyzingDreamLogs || isAnalyzingAwarenessLogs;
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -435,10 +440,10 @@ const Journal = () => {
                 style={({ pressed }) => [
                   styles.selectionActionButton,
                   isReflectDisabled && styles.selectionActionButtonDisabled,
-                  pressed && !isReflectDisabled && !isAnalyzingAwarenessLogs && styles.selectionActionButtonPressed,
+                  pressed && !isReflectDisabled && styles.selectionActionButtonPressed,
                 ]}
               >
-                {isAnalyzingAwarenessLogs ? (
+                {isAnalyzingDreamLogs || isAnalyzingAwarenessLogs ? (
                   <ActivityIndicator size="small" color="#FFFFFF" />
                 ) : (
                   <>

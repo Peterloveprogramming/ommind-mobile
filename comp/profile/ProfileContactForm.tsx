@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import {
+  ActivityIndicator,
   ScrollView,
   StyleSheet,
   Text,
@@ -13,32 +14,40 @@ import { FONTS } from "@/theme";
 
 type ProfileContactFormProps = {
   title: string;
-  subjectPlaceholder?: string;
   messagePlaceholder?: string;
   submitLabel?: string;
   responseTimeText: string;
   emailLabel?: string;
   emailAddress: string;
+  errorText?: string;
+  isSubmitting?: boolean;
   onBackPress: () => void;
-  onSubmitPress?: (input: { subject: string; message: string }) => void;
+  onSubmitPress?: (message: string) => void;
 };
 
 const ProfileContactForm = ({
   title,
-  subjectPlaceholder = "Subject",
   messagePlaceholder = "Message",
   submitLabel = "Submit",
   responseTimeText,
   emailLabel = "Email:",
   emailAddress,
+  errorText,
+  isSubmitting = false,
   onBackPress,
   onSubmitPress,
 }: ProfileContactFormProps) => {
-  const [subject, setSubject] = React.useState("");
   const [message, setMessage] = React.useState("");
+  const [localErrorText, setLocalErrorText] = React.useState("");
 
   const handleSubmitPress = () => {
-    onSubmitPress?.({ subject, message });
+    if (!message.trim()) {
+      setLocalErrorText("Description is missing");
+      return;
+    }
+
+    setLocalErrorText("");
+    onSubmitPress?.(message);
   };
 
   return (
@@ -62,20 +71,14 @@ const ProfileContactForm = ({
 
       <View style={styles.formContent}>
         <TextInput
-          value={subject}
-          onChangeText={setSubject}
-          placeholder={subjectPlaceholder}
-          placeholderTextColor="#8F9097"
-          textAlign="center"
-          style={styles.subjectInput}
-        />
-
-        <View style={styles.divider} />
-
-        <TextInput
           multiline
           value={message}
-          onChangeText={setMessage}
+          onChangeText={(value) => {
+            setMessage(value);
+            if (localErrorText) {
+              setLocalErrorText("");
+            }
+          }}
           placeholder={messagePlaceholder}
           placeholderTextColor="#8F9097"
           textAlign="center"
@@ -84,13 +87,24 @@ const ProfileContactForm = ({
 
         <View style={styles.divider} />
 
+        {errorText || localErrorText ? (
+          <Text style={styles.errorText}>{localErrorText || errorText}</Text>
+        ) : null}
+
         <TouchableOpacity
           activeOpacity={0.85}
           onPress={handleSubmitPress}
-          style={styles.submitButton}
+          disabled={isSubmitting}
+          style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]}
         >
-          <Ionicons name="paper-plane-outline" size={22} color="#FFFFFF" />
-          <Text style={styles.submitButtonText}>{submitLabel}</Text>
+          {isSubmitting ? (
+            <ActivityIndicator color="#FFFFFF" />
+          ) : (
+            <>
+              <Ionicons name="paper-plane-outline" size={22} color="#FFFFFF" />
+              <Text style={styles.submitButtonText}>{submitLabel}</Text>
+            </>
+          )}
         </TouchableOpacity>
 
         <Text style={styles.responseTimeText}>{responseTimeText}</Text>
@@ -149,16 +163,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingTop: 124,
   },
-  subjectInput: {
-    width: "100%",
-    minHeight: 68,
-    paddingHorizontal: 8,
-    paddingVertical: 10,
-    fontFamily: FONTS.inter,
-    fontSize: 22,
-    lineHeight: 28,
-    color: "#333333",
-  },
   messageInput: {
     width: "100%",
     minHeight: 216,
@@ -184,12 +188,23 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  submitButtonDisabled: {
+    opacity: 0.7,
+  },
   submitButtonText: {
     marginLeft: 8,
     fontFamily: FONTS.interSemiBold,
     fontSize: 18,
     lineHeight: 24,
     color: "#FFFFFF",
+  },
+  errorText: {
+    marginTop: 24,
+    fontFamily: FONTS.inter,
+    fontSize: 18,
+    lineHeight: 24,
+    color: "#D14343",
+    textAlign: "center",
   },
   responseTimeText: {
     marginTop: 40,

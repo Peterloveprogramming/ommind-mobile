@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -18,6 +19,22 @@ import { useToast } from "@/context/useToast";
 import { FONTS } from "@/theme.js";
 
 type JournalType = "dreams" | "awareness";
+
+const MAGIC_BULB_IMAGE = require("@/assets/images/journal/magic_bulb.png");
+
+const DREAM_INSTRUCTIONS = [
+  "What happened in the dream?",
+  "What felt unusual or meaningful?",
+  "What emotions were present?",
+  "What image, symbol, or moment stayed with you?",
+];
+
+const AWARENESS_INSTRUCTIONS = [
+  "When did you feel most present today?",
+  "What thoughts or emotions stood out today?",
+  "What did you notice in your body or breathing today?",
+  "What did you learn or notice about your mind today?",
+];
 
 const formatEntryDate = () =>
   new Intl.DateTimeFormat("en-GB", {
@@ -47,6 +64,7 @@ export default function JournalWriteScreen() {
     isUpdating: isUpdatingAwarenessLog,
   } = useAwarenessLogs();
   const [entryText, setEntryText] = useState(typeof content === "string" ? content : "");
+  const [areInstructionsVisible, setAreInstructionsVisible] = useState(false);
 
   const normalizedType: JournalType = type === "dreams" ? "dreams" : "awareness";
   const isEditMode = typeof logId === "string" && logId.trim().length > 0;
@@ -66,6 +84,8 @@ export default function JournalWriteScreen() {
     normalizedType === "dreams"
       ? "Describe your dream as you remember it..."
       : "Write down whatever came up for you...";
+  const journalInstructions =
+    normalizedType === "dreams" ? DREAM_INSTRUCTIONS : AWARENESS_INSTRUCTIONS;
 
   const isSaving =
     isCreating || isCreatingAwarenessLog || isUpdating || isUpdatingAwarenessLog;
@@ -152,7 +172,38 @@ export default function JournalWriteScreen() {
             </Pressable>
           </View>
 
+          <View style={styles.instructionsActionRow}>
+            <Pressable
+              onPress={() => setAreInstructionsVisible((isVisible) => !isVisible)}
+              hitSlop={10}
+              accessibilityRole="button"
+              accessibilityLabel="Show journal writing instructions"
+              accessibilityState={{ expanded: areInstructionsVisible }}
+            >
+              {({ pressed }) => (
+                <View
+                  style={[
+                    styles.instructionsButton,
+                    pressed && styles.instructionsButtonPressed,
+                  ]}
+                >
+                  <Image source={MAGIC_BULB_IMAGE} style={styles.instructionsIcon} />
+                </View>
+              )}
+            </Pressable>
+          </View>
+
           <Text style={styles.title}>{screenTitle}</Text>
+
+          {areInstructionsVisible && (
+            <View style={styles.instructionsPanel}>
+              {journalInstructions.map((instruction) => (
+                <Text key={instruction} style={styles.instructionsText}>
+                  {instruction}
+                </Text>
+              ))}
+            </View>
+          )}
 
           <TextInput
             autoFocus
@@ -193,6 +244,30 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
   },
+  instructionsActionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-end",
+    marginTop: 10,
+    marginRight:15
+  },
+  instructionsButton: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(23, 23, 23, 0.04)",
+  },
+  instructionsButtonPressed: {
+    opacity: 0.65,
+  },
+  instructionsIcon: {
+    width: 20,
+    height: 20,
+    resizeMode: "contain",
+    opacity: 0.72,
+  },
   saveText: {
     fontFamily: FONTS.figtreeSemiBold,
     fontSize: 19,
@@ -215,6 +290,19 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.figtreeSemiBold,
     fontSize: 18,
     color: "#171717",
+  },
+  instructionsPanel: {
+    marginTop: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderRadius: 8,
+    backgroundColor: "#F2F2EF",
+  },
+  instructionsText: {
+    fontFamily: FONTS.figtreeMedium,
+    fontSize: 14,
+    lineHeight: 22,
+    color: "#6F6F6B",
   },
   input: {
     flex: 1,
