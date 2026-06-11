@@ -27,6 +27,11 @@ type JournalEntry = {
   title: string;
   preview: string;
   content: string;
+  dreamTime?: string | null;
+  wakingFeeling?: string | null;
+  recurrence?: string | null;
+  recentLifeConnection?: string | null;
+  stressLevel?: string | null;
 };
 
 const FALLBACK_EMPTY_DATE = {
@@ -93,6 +98,11 @@ const mapDreamLogToJournalEntry = (
     title,
     preview: logText || "No dream text saved yet.",
     content: logText,
+    dreamTime: dreamLog.dream_time ?? null,
+    wakingFeeling: dreamLog.waking_feeling ?? null,
+    recurrence: dreamLog.recurrence ?? null,
+    recentLifeConnection: dreamLog.recent_life_connection ?? null,
+    stressLevel: dreamLog.stress_level ?? null,
   };
 };
 
@@ -230,6 +240,15 @@ const Journal = () => {
         title: entry.title,
         logId: entry.id,
         content: entry.content,
+        ...(activeTab === "dreams"
+          ? {
+              dreamTime: entry.dreamTime ?? "",
+              wakingFeeling: entry.wakingFeeling ?? "",
+              recurrence: entry.recurrence ?? "",
+              recentLifeConnection: entry.recentLifeConnection ?? "",
+              stressLevel: entry.stressLevel ?? "",
+            }
+          : {}),
       },
     });
   };

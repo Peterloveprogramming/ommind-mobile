@@ -35,12 +35,24 @@ type DreamDetailSection = {
   options: string[];
 };
 
+type DreamDetailValues = Record<DreamDetailKey, string | null>;
+
+type DreamLogContextInput = {
+  dream_time: string | null;
+  waking_feeling: string | null;
+  recurrence: string | null;
+  recent_life_connection: string | null;
+  stress_level: string | null;
+};
+
 const MAGIC_BULB_IMAGE = require("@/assets/images/journal/magic_bulb.png");
 const DREAM_TIME_IMAGE = require("@/assets/images/journal/dream_time.png");
 const WAKING_FEELING_IMAGE = require("@/assets/images/journal/waking_feeling.png");
 const RECURRING_DREAM_IMAGE = require("@/assets/images/journal/recurring_dream.png");
 const RECENT_LIFE_CONNECTION_IMAGE = require("@/assets/images/journal/recent_life_connection.png");
 const STRESS_LEVEL_IMAGE = require("@/assets/images/journal/stress_level.png");
+const DREAM_DETAIL_OTHER_OPTION = "Other";
+const DREAM_DETAIL_OTHER_CHARACTER_LIMIT = 50;
 
 const DREAM_INSTRUCTIONS = [
   "What happened in the dream?",
@@ -103,13 +115,74 @@ const DREAM_DETAIL_SECTIONS: DreamDetailSection[] = [
   },
 ];
 
-const INITIAL_DREAM_DETAILS: Record<DreamDetailKey, string | null> = {
-  dreamTime: null,
-  wakingFeeling: null,
-  recurringDream: null,
-  recentLifeConnection: null,
-  stressLevel: null,
+const DREAM_DETAIL_BACKEND_FIELD_BY_KEY: Record<DreamDetailKey, keyof DreamLogContextInput> = {
+  dreamTime: "dream_time",
+  wakingFeeling: "waking_feeling",
+  recurringDream: "recurrence",
+  recentLifeConnection: "recent_life_connection",
+  stressLevel: "stress_level",
 };
+
+const cleanDreamDetailValue = (value?: string | null) => {
+  const trimmedValue = value?.trim() ?? "";
+  return trimmedValue.length > 0 ? trimmedValue : null;
+};
+
+const getDreamDetailSectionByKey = (detailKey: DreamDetailKey) =>
+  DREAM_DETAIL_SECTIONS.find((section) => section.key === detailKey);
+
+const getInitialDreamDetailSelection = (
+  detailKey: DreamDetailKey,
+  value?: string | null
+) => {
+  const cleanedValue = cleanDreamDetailValue(value);
+  if (!cleanedValue) {
+    return null;
+  }
+
+  const section = getDreamDetailSectionByKey(detailKey);
+  if (section?.options.includes(cleanedValue)) {
+    return cleanedValue;
+  }
+
+  return DREAM_DETAIL_OTHER_OPTION;
+};
+
+const getInitialDreamDetailOtherText = (detailKey: DreamDetailKey, value?: string | null) => {
+  const cleanedValue = cleanDreamDetailValue(value);
+  if (!cleanedValue || cleanedValue === DREAM_DETAIL_OTHER_OPTION) {
+    return "";
+  }
+
+  const section = getDreamDetailSectionByKey(detailKey);
+  return section?.options.includes(cleanedValue)
+    ? ""
+    : cleanedValue.slice(0, DREAM_DETAIL_OTHER_CHARACTER_LIMIT);
+};
+
+const getInitialDreamDetails = (values: DreamDetailValues): DreamDetailValues => ({
+  dreamTime: getInitialDreamDetailSelection("dreamTime", values.dreamTime),
+  wakingFeeling: getInitialDreamDetailSelection("wakingFeeling", values.wakingFeeling),
+  recurringDream: getInitialDreamDetailSelection("recurringDream", values.recurringDream),
+  recentLifeConnection: getInitialDreamDetailSelection(
+    "recentLifeConnection",
+    values.recentLifeConnection
+  ),
+  stressLevel: getInitialDreamDetailSelection("stressLevel", values.stressLevel),
+});
+
+const getInitialDreamDetailOtherTexts = (
+  values: DreamDetailValues
+): Record<DreamDetailKey, string> => ({
+  dreamTime: getInitialDreamDetailOtherText("dreamTime", values.dreamTime),
+  wakingFeeling: getInitialDreamDetailOtherText("wakingFeeling", values.wakingFeeling),
+  recurringDream: getInitialDreamDetailOtherText("recurringDream", values.recurringDream),
+  recentLifeConnection: getInitialDreamDetailOtherText(
+    "recentLifeConnection",
+    values.recentLifeConnection
+  ),
+  stressLevel: getInitialDreamDetailOtherText("stressLevel", values.stressLevel),
+});
 
 const formatEntryDate = () =>
   new Intl.DateTimeFormat("en-GB", {
@@ -119,11 +192,26 @@ const formatEntryDate = () =>
   }).format(new Date());
 
 export default function JournalWriteScreen() {
-  const { type, title, logId, content } = useLocalSearchParams<{
+  const {
+    type,
+    title,
+    logId,
+    content,
+    dreamTime,
+    wakingFeeling,
+    recurrence,
+    recentLifeConnection,
+    stressLevel,
+  } = useLocalSearchParams<{
     type?: JournalType;
     title?: string;
     logId?: string;
     content?: string;
+    dreamTime?: string;
+    wakingFeeling?: string;
+    recurrence?: string;
+    recentLifeConnection?: string;
+    stressLevel?: string;
   }>();
   const { showToastMessage } = useToast();
   const {
@@ -138,10 +226,22 @@ export default function JournalWriteScreen() {
     isCreating: isCreatingAwarenessLog,
     isUpdating: isUpdatingAwarenessLog,
   } = useAwarenessLogs();
+  const dreamDetailParamValues = {
+    dreamTime: cleanDreamDetailValue(dreamTime),
+    wakingFeeling: cleanDreamDetailValue(wakingFeeling),
+    recurringDream: cleanDreamDetailValue(recurrence),
+    recentLifeConnection: cleanDreamDetailValue(recentLifeConnection),
+    stressLevel: cleanDreamDetailValue(stressLevel),
+  };
   const [entryText, setEntryText] = useState(typeof content === "string" ? content : "");
   const [areInstructionsVisible, setAreInstructionsVisible] = useState(false);
   const [areDreamDetailsExpanded, setAreDreamDetailsExpanded] = useState(true);
-  const [selectedDreamDetails, setSelectedDreamDetails] = useState(INITIAL_DREAM_DETAILS);
+  const [selectedDreamDetails, setSelectedDreamDetails] = useState(() =>
+    getInitialDreamDetails(dreamDetailParamValues)
+  );
+  const [otherDreamDetails, setOtherDreamDetails] = useState(() =>
+    getInitialDreamDetailOtherTexts(dreamDetailParamValues)
+  );
 
   const normalizedType: JournalType = type === "dreams" ? "dreams" : "awareness";
   const isDreamJournal = normalizedType === "dreams";
@@ -202,13 +302,16 @@ export default function JournalWriteScreen() {
       return;
     }
 
+    const dreamLogContext = getDreamLogContextForSave();
     const savedDreamLog = isEditMode
       ? await updateDreamLog({
           dream_log_id: logId,
           log: trimmedEntryText,
+          ...dreamLogContext,
         })
       : await createDreamLog({
           log: trimmedEntryText,
+          ...dreamLogContext,
         });
 
     if (!savedDreamLog) {
@@ -220,11 +323,56 @@ export default function JournalWriteScreen() {
   };
 
   const handleDreamDetailPress = (detailKey: DreamDetailKey, option: string) => {
+    const shouldClearOtherText =
+      option !== DREAM_DETAIL_OTHER_OPTION || selectedDreamDetails[detailKey] === option;
+
     setSelectedDreamDetails((currentDetails) => ({
       ...currentDetails,
       [detailKey]: currentDetails[detailKey] === option ? null : option,
     }));
+
+    if (shouldClearOtherText) {
+      setOtherDreamDetails((currentOtherDetails) => ({
+        ...currentOtherDetails,
+        [detailKey]: "",
+      }));
+    }
   };
+
+  const handleDreamDetailOtherTextChange = (detailKey: DreamDetailKey, text: string) => {
+    setOtherDreamDetails((currentOtherDetails) => ({
+      ...currentOtherDetails,
+      [detailKey]: text.slice(0, DREAM_DETAIL_OTHER_CHARACTER_LIMIT),
+    }));
+  };
+
+  const getDreamDetailValueForSave = (detailKey: DreamDetailKey) => {
+    const selectedDetail = selectedDreamDetails[detailKey];
+    if (!selectedDetail) {
+      return null;
+    }
+
+    if (selectedDetail === DREAM_DETAIL_OTHER_OPTION) {
+      return cleanDreamDetailValue(otherDreamDetails[detailKey]);
+    }
+
+    return selectedDetail;
+  };
+
+  const getDreamLogContextForSave = (): DreamLogContextInput =>
+    (Object.keys(DREAM_DETAIL_BACKEND_FIELD_BY_KEY) as DreamDetailKey[]).reduce(
+      (context, detailKey) => ({
+        ...context,
+        [DREAM_DETAIL_BACKEND_FIELD_BY_KEY[detailKey]]: getDreamDetailValueForSave(detailKey),
+      }),
+      {
+        dream_time: null,
+        waking_feeling: null,
+        recurrence: null,
+        recent_life_connection: null,
+        stress_level: null,
+      }
+    );
 
   const renderDreamDetailsPanel = () => {
     if (!isDreamJournal) {
@@ -260,7 +408,7 @@ export default function JournalWriteScreen() {
                   <Text style={styles.dreamDetailsSectionTitle}>{section.title}</Text>
                 </View>
                 <View style={styles.dreamDetailsOptions}>
-                  {section.options.map((option) => {
+                  {section.options.concat(DREAM_DETAIL_OTHER_OPTION).map((option) => {
                     const isSelected = selectedDreamDetails[section.key] === option;
 
                     return (
@@ -286,6 +434,26 @@ export default function JournalWriteScreen() {
                     );
                   })}
                 </View>
+                {selectedDreamDetails[section.key] === DREAM_DETAIL_OTHER_OPTION && (
+                  <View style={styles.dreamDetailsOtherWrap}>
+                    <TextInput
+                      multiline
+                      value={otherDreamDetails[section.key]}
+                      onChangeText={(text) =>
+                        handleDreamDetailOtherTextChange(section.key, text)
+                      }
+                      placeholder="Add your own detail..."
+                      placeholderTextColor="#9A9AA0"
+                      textAlignVertical="top"
+                      maxLength={DREAM_DETAIL_OTHER_CHARACTER_LIMIT}
+                      style={styles.dreamDetailsOtherInput}
+                    />
+                    <Text style={styles.dreamDetailsOtherLimit}>
+                      {otherDreamDetails[section.key].length}/
+                      {DREAM_DETAIL_OTHER_CHARACTER_LIMIT} characters
+                    </Text>
+                  </View>
+                )}
               </View>
             ))}
 
@@ -588,6 +756,30 @@ const styles = StyleSheet.create({
   },
   dreamDetailsOptionTextSelected: {
     color: "#111111",
+  },
+  dreamDetailsOtherWrap: {
+    marginTop: 10,
+  },
+  dreamDetailsOtherInput: {
+    minHeight: 86,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#EEE2DC",
+    backgroundColor: "#FFFFFF",
+    fontFamily: FONTS.figtreeMedium,
+    fontSize: 15,
+    lineHeight: 22,
+    color: "#111111",
+  },
+  dreamDetailsOtherLimit: {
+    marginTop: 6,
+    textAlign: "right",
+    fontFamily: FONTS.figtreeMedium,
+    fontSize: 12,
+    lineHeight: 16,
+    color: "#8C8C8A",
   },
   dreamDetailsCollapseButton: {
     minHeight: 32,

@@ -67,6 +67,22 @@ export type GetIntentionAndAffirmationResult = LambdaResult<{
   affirmation: string;
 } | null>;
 
+export type AddMoodCheckInInput = {
+  mood: string;
+  timezone: string;
+};
+
+export type MoodCheckIn = {
+  id: number;
+  mood: string;
+  user_id: number;
+  created_at: string | null;
+  check_in_date: string | null;
+  timezone: string;
+};
+
+export type AddMoodCheckInResult = LambdaResult<MoodCheckIn | null>;
+
 export type GetMeditationCourseDetailsInput = {
   type: MeditationCourse["type"];
   uuid: string;

@@ -208,7 +208,11 @@ export default function useDreamLogs() {
         }
 
         const deletedDreamLogId =
-          input.dream_log_id !== undefined ? input.dream_log_id : input.id;
+          input.log_id !== undefined
+            ? input.log_id
+            : input.dream_log_id !== undefined
+              ? input.dream_log_id
+              : input.id;
         setDreamLogs((currentDreamLogs) =>
           currentDreamLogs.filter(
             (currentDreamLog) => getDreamLogId(currentDreamLog) !== deletedDreamLogId

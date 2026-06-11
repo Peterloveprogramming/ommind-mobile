@@ -53,6 +53,7 @@ export type LambdaRequest = {
             "get_recommended_courses" |
             "get_home_page_text" |
             "get_intention_and_affirmation" |
+            "add_mood_check_in" |
             "get_meditation_course_details" |
             "add_recently_accessed_course" |
             "add_recently_accessed_session" |
@@ -175,6 +176,11 @@ export namespace LambdaResult {
     title?: string | null;
     content?: string | null;
     interpretation?: string | null;
+    dream_time?: string | null;
+    waking_feeling?: string | null;
+    recurrence?: string | null;
+    recent_life_connection?: string | null;
+    stress_level?: string | null;
     created_at?: string | null;
     updated_at?: string | null;
     [key: string]: unknown;

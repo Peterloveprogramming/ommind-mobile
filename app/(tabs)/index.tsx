@@ -81,6 +81,14 @@ const capitalizeName = (name: string) => {
   return trimmedName.charAt(0).toUpperCase() + trimmedName.slice(1);
 };
 
+const getUserTimezone = () => {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+  } catch {
+    return "UTC";
+  }
+};
+
 const Home = () => {
   const router = useRouter();
   const pathname = usePathname();
@@ -89,6 +97,10 @@ const Home = () => {
   const [homePageText, setHomePageText] = useState(DEFAULT_HOME_PAGE_TEXT);
   const [intention, setIntention] = useState(DEFAULT_INTENTION);
   const [affirmation, setAffirmation] = useState(DEFAULT_AFFIRMATION);
+  const [pendingMoodCheckIn, setPendingMoodCheckIn] = useState<string | null>(null);
+  const [moodCheckInMessage, setMoodCheckInMessage] = useState("");
+  const [hasMoodCheckedInToday, setHasMoodCheckedInToday] = useState(false);
+  const [isMoodCheckInLoading, setIsMoodCheckInLoading] = useState(false);
   const [isGuidanceLoading, setIsGuidanceLoading] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
   const [isProfileModalVisible, setIsProfileModalVisible] = useState(false);
@@ -98,10 +110,11 @@ const Home = () => {
   const [profilePhotoError, setProfilePhotoError] = useState("");
   const [isUploadingProfilePhoto, setIsUploadingProfilePhoto] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const { getHomePageText, getIntentionAndAffirmation } = useMeditationApi();
+  const { getHomePageText, getIntentionAndAffirmation, addMoodCheckIn } = useMeditationApi();
   const getHomePageTextRef = useRef(getHomePageText);
   const getIntentionAndAffirmationRef = useRef(getIntentionAndAffirmation);
   const intentionRequestIdRef = useRef(0);
+  const moodCheckInConfirmationRef = useRef(false);
   getHomePageTextRef.current = getHomePageText;
   getIntentionAndAffirmationRef.current = getIntentionAndAffirmation;
   const {
@@ -199,9 +212,90 @@ const Home = () => {
     }
   };
 
+  const submitMoodCheckIn = async (mood: string) => {
+    setIsMoodCheckInLoading(true);
+    setPendingMoodCheckIn(mood);
+    setMoodCheckInMessage(
+      `Saving your ${mood.toLowerCase()} check-in. Please wait before choosing another mood.`
+    );
+
+    try {
+      const response = await addMoodCheckIn({
+        mood,
+        timezone: getUserTimezone(),
+      });
+
+      if (!checkIfLambdaResultIsSuccess(response)) {
+        const message = getLambdaErrorMessage(response);
+        if (message.toLowerCase().includes("already checked in")) {
+          setHasMoodCheckedInToday(true);
+        }
+        setMoodCheckInMessage(message);
+        Alert.alert("Mood check-in", message);
+        return;
+      }
+
+      setSelectedMood(mood);
+      setHasMoodCheckedInToday(true);
+      setMoodCheckInMessage("Your mood check-in has been saved for today.");
+      void loadIntentionAndAffirmation(mood);
+    } catch (error) {
+      console.error("Failed to save mood check-in", error);
+      const message = "Unable to save your mood check-in right now. Please try again.";
+      setMoodCheckInMessage(message);
+      Alert.alert("Unable to check in", message);
+    } finally {
+      setIsMoodCheckInLoading(false);
+      setPendingMoodCheckIn(null);
+    }
+  };
+
   const handleMoodPress = (mood: string) => {
-    setSelectedMood(mood);
-    void loadIntentionAndAffirmation(mood);
+    if (isMoodCheckInLoading) {
+      setMoodCheckInMessage(
+        "Your mood check-in is saving. Please wait before choosing another mood."
+      );
+      return;
+    }
+
+    if (hasMoodCheckedInToday) {
+      setMoodCheckInMessage(
+        "Your mood check-in is set for today. You can check in again tomorrow."
+      );
+      return;
+    }
+
+    if (moodCheckInConfirmationRef.current) {
+      return;
+    }
+
+    moodCheckInConfirmationRef.current = true;
+    Alert.alert(
+      "Confirm mood check-in",
+      `Would you like to check in as ${mood} for today?`,
+      [
+        {
+          text: "Not now",
+          style: "cancel",
+          onPress: () => {
+            moodCheckInConfirmationRef.current = false;
+          },
+        },
+        {
+          text: "Confirm",
+          onPress: () => {
+            moodCheckInConfirmationRef.current = false;
+            void submitMoodCheckIn(mood);
+          },
+        },
+      ],
+      {
+        cancelable: true,
+        onDismiss: () => {
+          moodCheckInConfirmationRef.current = false;
+        },
+      }
+    );
   };
 
   const handleNotificationPress = () => {
@@ -394,6 +488,12 @@ const Home = () => {
       },
     ]);
   };
+  
+  const moodCheckInStatusText = isMoodCheckInLoading
+    ? `Saving your ${
+        pendingMoodCheckIn?.toLowerCase() ?? "mood"
+      } check-in. Please wait before choosing another mood.`
+    : moodCheckInMessage;
 
   return (
     <>
@@ -485,31 +585,55 @@ const Home = () => {
         <View style={styles.bottomDivider} />
 
         <View style={styles.feelingsSection}>
-          <Text style={styles.feelingsTitle}>🍃 How are you feeling right now?</Text>
-          <Text style={styles.feelingsSubtitle}>Choose what feels closest</Text>
+          <Text style={styles.feelingsTitle}>🍃 How are you feeling today?</Text>
+          <Text style={styles.feelingsSubtitle}>
+            Choose what feels closest - this will be your check-in for today
+          </Text>
+
+          {moodCheckInStatusText ? (
+            <View style={styles.moodCheckInStatusRow}>
+              {isMoodCheckInLoading ? (
+                <ActivityIndicator size="small" color="#7A756E" />
+              ) : null}
+              <Text style={styles.moodCheckInStatusText}>{moodCheckInStatusText}</Text>
+            </View>
+          ) : null}
 
           <View style={styles.feelingsGrid}>
-            {MOOD_OPTIONS.map((feeling) => (
-              <TouchableOpacity
-                key={feeling.label}
-                activeOpacity={0.85}
-                style={[
-                  styles.feelingPill,
-                  selectedMood === feeling.label && styles.feelingPillSelected,
-                ]}
-                onPress={() => handleMoodPress(feeling.label)}
-              >
-                <Image source={feeling.icon} style={styles.feelingIcon} />
-                <Text
+            {MOOD_OPTIONS.map((feeling) => {
+              const isSelectedMood = selectedMood === feeling.label;
+              const isPendingMood = pendingMoodCheckIn === feeling.label;
+              const shouldMuteMood =
+                isMoodCheckInLoading && pendingMoodCheckIn !== feeling.label;
+
+              return (
+                <TouchableOpacity
+                  key={feeling.label}
+                  activeOpacity={0.85}
                   style={[
-                    styles.feelingLabel,
-                    selectedMood === feeling.label && styles.feelingLabelSelected,
+                    styles.feelingPill,
+                    (isSelectedMood || isPendingMood) && styles.feelingPillSelected,
+                    shouldMuteMood && styles.feelingPillMuted,
                   ]}
+                  accessibilityState={{
+                    busy: isPendingMood,
+                    disabled: isMoodCheckInLoading || hasMoodCheckedInToday,
+                    selected: isSelectedMood,
+                  }}
+                  onPress={() => handleMoodPress(feeling.label)}
                 >
-                  {feeling.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
+                  <Image source={feeling.icon} style={styles.feelingIcon} />
+                  <Text
+                    style={[
+                      styles.feelingLabel,
+                      (isSelectedMood || isPendingMood) && styles.feelingLabelSelected,
+                    ]}
+                  >
+                    {feeling.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
         </View>
 
@@ -764,6 +888,23 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     color: "#9A9593",
   },
+  moodCheckInStatusRow: {
+    marginTop: 10,
+    minHeight: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 12,
+    gap: 8,
+  },
+  moodCheckInStatusText: {
+    flexShrink: 1,
+    textAlign: "center",
+    fontFamily: FONTS.inter,
+    fontSize: 12,
+    lineHeight: 17,
+    color: "#7A756E",
+  },
   feelingsGrid: {
     marginTop: 24,
     flexDirection: "row",
@@ -786,6 +927,9 @@ const styles = StyleSheet.create({
   feelingPillSelected: {
     backgroundColor: "#F7C648",
     borderColor: "#F7C648",
+  },
+  feelingPillMuted: {
+    opacity: 0.55,
   },
   feelingIcon: {
     width: 28,

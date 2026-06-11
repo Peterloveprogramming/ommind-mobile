@@ -2,6 +2,8 @@ import { useFetch } from "@/api/useFetch";
 import { LAMBDA_SERVICE_URL } from "@/constant";
 import { LambdaRequest } from "@/api/types";
 import {
+  AddMoodCheckInInput,
+  AddMoodCheckInResult,
   GetMeditationAudioInput,
   GetMeditationAudioUrlResult,
   GetHomePageTextResult,
@@ -19,6 +21,7 @@ export const useMeditationApi = () => {
     | GetRecommendedMeditationCoursesResult
     | GetHomePageTextResult
     | GetIntentionAndAffirmationResult
+    | AddMoodCheckInResult
     | GetMeditationCourseDetailsResult
     | GetMeditationAudioUrlResult
   >({
@@ -103,11 +106,25 @@ export const useMeditationApi = () => {
     }) as Promise<GetIntentionAndAffirmationResult>;
   };
 
+  const addMoodCheckIn = (input: AddMoodCheckInInput) => {
+    const lambdaConfig: LambdaRequest = {
+      route: "add_mood_check_in",
+    };
+
+    return commonFetch({
+      input: {
+        ...lambdaConfig,
+        ...input,
+      },
+    }) as Promise<AddMoodCheckInResult>;
+  };
+
   return {
     getMeditationCourses,
     getRecommendedMeditationCourses,
     getHomePageText,
     getIntentionAndAffirmation,
+    addMoodCheckIn,
     getMeditationCourseDetails,
     getMeditationAudioUrl,
   };

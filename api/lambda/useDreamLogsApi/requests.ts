@@ -4,6 +4,14 @@ import { LambdaRequest, LambdaResult } from "@/api/types";
 
 export type DreamLogIdentifier = string | number;
 
+export type DreamLogContextInput = {
+  dream_time?: string | null;
+  waking_feeling?: string | null;
+  recurrence?: string | null;
+  recent_life_connection?: string | null;
+  stress_level?: string | null;
+};
+
 export type GetDreamLogsInput = {
   user_id?: string | number;
   offset?: number;
@@ -11,6 +19,7 @@ export type GetDreamLogsInput = {
 };
 
 export type GetDreamLogInput = {
+  log_id?: DreamLogIdentifier;
   dream_log_id?: DreamLogIdentifier;
   id?: DreamLogIdentifier;
 };
@@ -18,15 +27,17 @@ export type GetDreamLogInput = {
 export type AddDreamLogInput = {
   user_id?: string | number;
   log: string;
-};
+} & DreamLogContextInput;
 
 export type UpdateDreamLogInput = {
+  log_id?: DreamLogIdentifier;
   dream_log_id?: DreamLogIdentifier;
   id?: DreamLogIdentifier;
   log: string;
-};
+} & DreamLogContextInput;
 
 export type DeleteDreamLogInput = {
+  log_id?: DreamLogIdentifier;
   dream_log_id?: DreamLogIdentifier;
   id?: DreamLogIdentifier;
 };
@@ -49,12 +60,18 @@ const useDreamLogsLambdaFetch = <T,>() =>
   });
 
 const getDreamLogIdentifierInput = (input: {
+  log_id?: DreamLogIdentifier;
   dream_log_id?: DreamLogIdentifier;
   id?: DreamLogIdentifier;
-}) => ({
-  ...(input.dream_log_id !== undefined ? { dream_log_id: input.dream_log_id } : {}),
-  ...(input.id !== undefined ? { id: input.id } : {}),
-});
+}) => {
+  const logId = input.log_id ?? input.dream_log_id ?? input.id;
+
+  return {
+    ...(logId !== undefined ? { log_id: logId } : {}),
+    ...(input.dream_log_id !== undefined ? { dream_log_id: input.dream_log_id } : {}),
+    ...(input.id !== undefined ? { id: input.id } : {}),
+  };
+};
 
 export const useGetDreamLogs = () => {
   const { commonFetch } = useDreamLogsLambdaFetch<LambdaResult.GetDreamLogsResult>();
@@ -83,11 +100,11 @@ export const useGetDreamLog = () => {
     route: "get_dream_log",
   };
 
-  const getDreamLog = ({ dream_log_id, id }: GetDreamLogInput) =>
+  const getDreamLog = ({ log_id, dream_log_id, id }: GetDreamLogInput) =>
     commonFetch({
       input: {
         ...lambdaConfig,
-        ...getDreamLogIdentifierInput({ dream_log_id, id }),
+        ...getDreamLogIdentifierInput({ log_id, dream_log_id, id }),
       },
     });
 
@@ -101,12 +118,13 @@ export const useAddDreamLog = () => {
     route: "add_dream_log",
   };
 
-  const addDreamLog = ({ user_id, log }: AddDreamLogInput) =>
+  const addDreamLog = ({ user_id, log, ...dreamContext }: AddDreamLogInput) =>
     commonFetch({
       input: {
         ...lambdaConfig,
         ...(user_id !== undefined ? { user_id } : {}),
         log,
+        ...dreamContext,
       },
     });
 
@@ -120,12 +138,13 @@ export const useUpdateDreamLog = () => {
     route: "update_dream_log",
   };
 
-  const updateDreamLog = ({ dream_log_id, id, log }: UpdateDreamLogInput) =>
+  const updateDreamLog = ({ log_id, dream_log_id, id, log, ...dreamContext }: UpdateDreamLogInput) =>
     commonFetch({
       input: {
         ...lambdaConfig,
-        ...getDreamLogIdentifierInput({ dream_log_id, id }),
+        ...getDreamLogIdentifierInput({ log_id, dream_log_id, id }),
         log,
+        ...dreamContext,
       },
     });
 
@@ -139,11 +158,11 @@ export const useDeleteDreamLog = () => {
     route: "delete_dream_log",
   };
 
-  const deleteDreamLog = ({ dream_log_id, id }: DeleteDreamLogInput) =>
+  const deleteDreamLog = ({ log_id, dream_log_id, id }: DeleteDreamLogInput) =>
     commonFetch({
       input: {
         ...lambdaConfig,
-        ...getDreamLogIdentifierInput({ dream_log_id, id }),
+        ...getDreamLogIdentifierInput({ log_id, dream_log_id, id }),
       },
     });
 
