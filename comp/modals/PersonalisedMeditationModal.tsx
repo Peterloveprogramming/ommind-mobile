@@ -227,7 +227,8 @@ const styles = StyleSheet.create({
   sectionHeaderRow: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
+    gap:15,
+    // justifyContent: "space-between",
     marginBottom: 10,
   },
   sectionLabelNoMargin: {
