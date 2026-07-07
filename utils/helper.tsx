@@ -151,7 +151,7 @@ export const navigateToNewChat = (
   navigationMethod: "push" | "replace" = "push"
 ) => {
   router[navigationMethod]({
-    pathname: "/chat",
+    pathname: "/chat/new_index",
     params: { session_id: generateUniqueId() },
   });
 };

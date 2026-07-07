@@ -319,7 +319,7 @@ const Journal = () => {
 
     handleExitSelectionMode();
     router.push({
-      pathname: "/chat",
+      pathname: "/chat/new_index",
       params: {
         session_id: sessionId,
         existing_chat: "true",

@@ -83,8 +83,8 @@ export default function Lhamo() {
                 pathname: '/chat/new_index',
                 params: { session_id: "abcdd" }
               })} />
-            <LhamoComponent title="Dream with Lhamo" message="Share your dreams and explore their deeper meaning through a Tibetan-inspired lens of awareness." componentNumber={2} onPress={() => router.push({ pathname: '/chat', params: { session_id: "dream-session" } })} />
-            <LhamoComponent title="Meditate with Lhamo" message="Let Lhamo create the perfect meditation for your mind, body, and spirit—anytime you need it." componentNumber={3} onPress={() => router.push({ pathname: '/chat', params: { session_id: "meditate-session" } })} />
+            <LhamoComponent title="Dream with Lhamo" message="Share your dreams and explore their deeper meaning through a Tibetan-inspired lens of awareness." componentNumber={2} onPress={() => router.push({ pathname: '/chat/new_index', params: { session_id: "dream-session" } })} />
+            <LhamoComponent title="Meditate with Lhamo" message="Let Lhamo create the perfect meditation for your mind, body, and spirit—anytime you need it." componentNumber={3} onPress={() => router.push({ pathname: '/chat/new_index', params: { session_id: "meditate-session" } })} />
           <View />
 
         </View>

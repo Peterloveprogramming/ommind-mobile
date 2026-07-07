@@ -5,7 +5,6 @@ import { Platform } from "react-native";
 import { useEffect, useState } from "react";
 import BackButton from "@/comp/headers/BackButton";
 import MoreButton from "@/comp/headers/MoreButton";
-import LhamoHeader from "@/comp/headers/LhamoHeader";
 import * as SplashScreen from "expo-splash-screen";
 import { useFonts as useFigtree, Figtree_400Regular,Figtree_600SemiBold, Figtree_700Bold } from "@expo-google-fonts/figtree";
 import { useFonts as useInter, Inter_400Regular, Inter_600SemiBold, Inter_500Medium } from "@expo-google-fonts/inter";
@@ -151,13 +150,9 @@ export default function RootLayout() {
 
         
         <Stack.Screen
-          name="chat/index"
+          name="chat/new_index"
           options={{
-            title: "",
-            headerTitle: () => <LhamoHeader />,
-            headerShown: true,
-            headerBackTitleVisible: false,
-            headerLeft:()=> <BackButton onTouch={() => router.back()} />,
+            headerShown: false,
             }}
           />
 

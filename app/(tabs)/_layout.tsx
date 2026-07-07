@@ -1,4 +1,4 @@
-import { Tabs, usePathname, useRouter } from 'expo-router';
+import { Tabs, usePathname } from 'expo-router';
 import BottomNavigationBar from '@/assets/svg/BottomNavigationBar';
 import { View, Text, StyleSheet } from 'react-native';
 import Home from '@/assets/svg/Home';
@@ -43,7 +43,6 @@ const icon = (focused: boolean, iconName: IconName) => {
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
   const pathname = usePathname();
-  const router = useRouter();
   const isRecentlyPlayedRoute = pathname === "/recently-played";
   const isSavedRoute = pathname === "/saved";
 
@@ -133,13 +132,6 @@ export default function TabLayout() {
         />
         <Tabs.Screen
           name="profile"
-          listeners={{
-            tabPress: (e) => {
-              // TEMP: profile tab points to new_index.tsx for testing
-              e.preventDefault();
-              router.push('/chat/new_index');
-            },
-          }}
           options={{
             title: 'Search',
             tabBarIcon: ({focused}) =>  icon(focused || isRecentlyPlayedRoute || isSavedRoute,"profile"),
