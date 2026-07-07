@@ -529,7 +529,7 @@ const SpiritualMentorChat = () => {
       <KeyboardAvoidingView
         style={styles.parentView}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
-        keyboardVerticalOffset={Platform.OS === "ios" ? headerHeight : 0}
+        keyboardVerticalOffset={headerHeight}
       >
           <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
           <View style={styles.chatViewParent}>
@@ -711,8 +711,8 @@ const styles = StyleSheet.create({
         flexDirection:"row",
         alignItems: "center",
         // borderWidth:2,
-        borderRadius:20,
-        backgroundColor:"white",
+        borderRadius:30,
+        backgroundColor:"#F7F2E9",
         width:"90%",
         height:"auto"
       },
@@ -723,11 +723,11 @@ const styles = StyleSheet.create({
         maxHeight:80,
         minHeight:70,
         // borderColor: '#ccc',
-        borderRadius: 20, // Slightly smaller radius might look better with multiline
+        borderRadius: 30, // Slightly smaller radius might look better with multiline
         paddingHorizontal: 15,
         paddingTop: Platform.OS === 'ios' ? 10 : 8, // Adjust vertical padding inside
         paddingBottom: Platform.OS === 'ios' ? 10 : 8,
-        backgroundColor: "white",
+        backgroundColor: "#F7F2E9",
         fontSize: 16,
         textAlignVertical: "center",
         // borderWidth:3,
