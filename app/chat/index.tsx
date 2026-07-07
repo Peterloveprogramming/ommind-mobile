@@ -1,6 +1,6 @@
-import { StyleSheet,Text,View,TextInput, Platform, TouchableOpacity,FlatList,KeyboardAvoidingView, Keyboard, ActivityIndicator} from 'react-native'
-import React, { useEffect, useLayoutEffect } from 'react'
-import { useState,useRef } from 'react'
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { StyleSheet,Text,View,TextInput, Platform, TouchableOpacity,FlatList, Keyboard, TouchableWithoutFeedback, ActivityIndicator} from 'react-native'
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller'
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router'
 import SendButton from '@/assets/svg/chat/SendButton'
 import MicButton from '@/assets/svg/chat/MicButton' 
@@ -27,8 +27,8 @@ import {
   updateFavourite,
 } from '@/utils/helper';
 
-const COMPOSER_BOTTOM_SPACE = 96;
-const ANDROID_KEYBOARD_CLEARANCE = 36;
+const CHAT_LIST_BOTTOM_PADDING = 16;
+const COMPOSER_MIN_BOTTOM_PADDING = 8;
 
 type ChatMessage = {
   id?: number;
@@ -52,7 +52,6 @@ const SpiritualMentorChat = () => {
     const { session_id, existing_chat } = useLocalSearchParams<{ session_id?: string | string[]; existing_chat?: string | string[] }>()
     const router = useRouter();
     const navigation = useNavigation();
-    const [keyboardHeight, setKeyboardHeight] = useState(0);
     const [isMicPressed, setIsMicPressed] = useState(false);
     const [inputText, setInputText] = useState("");
     const normalizedSessionId = Array.isArray(session_id) ? session_id[0] : session_id;
@@ -86,12 +85,7 @@ const SpiritualMentorChat = () => {
     const flatListRef = useRef<FlatList<ChatMessage> | null>(null);
     const insets = useSafeAreaInsets();
     const headerHeight = useHeaderHeight();
-    const Container = Platform.OS === "ios" ? KeyboardAvoidingView : View;
-    const androidKeyboardInset = Platform.OS === "android" ? Math.max(0, keyboardHeight - insets.bottom) : 0;
-    const androidComposerLift = Platform.OS === "android" && androidKeyboardInset > 0
-      ? androidKeyboardInset + ANDROID_KEYBOARD_CLEARANCE
-      : 0;
-    const composerBottomInset = COMPOSER_BOTTOM_SPACE + insets.bottom + androidComposerLift;
+    const composerBottomPadding = Math.max(insets.bottom, COMPOSER_MIN_BOTTOM_PADDING);
     const isGuidedMeditationInProgress =
       playbackStatus === "buffering" ||
       playbackStatus === "playing" ||
@@ -143,7 +137,7 @@ const SpiritualMentorChat = () => {
             id: message.id,
             role: message.role === "human" ? "human" : "ai",
             chatMessage:
-              message.classification === GUIDED_MEDITATION && message.role == "ai"
+              message.classification === GUIDED_MEDITATION && message.role === "ai"
                 ? { ...message, content: "Guided meditation ended" }
                 : message,
             status: "ready",
@@ -293,25 +287,6 @@ const SpiritualMentorChat = () => {
 
       updateLatestGuidedMeditationMessage(playbackStatus);
     }, [playbackStatus]);
-
-    useEffect(() => {
-      if (Platform.OS !== "android") {
-        return;
-      }
-
-      const showSubscription = Keyboard.addListener("keyboardDidShow", (event) => {
-        setKeyboardHeight(event.endCoordinates.height);
-      });
-
-      const hideSubscription = Keyboard.addListener("keyboardDidHide", () => {
-        setKeyboardHeight(0);
-      });
-
-      return () => {
-        showSubscription.remove();
-        hideSubscription.remove();
-      };
-    }, []);
 
     useEffect(() => {
       return () => {
@@ -551,15 +526,12 @@ const SpiritualMentorChat = () => {
 
     return (
       <View style={styles.Parent}>
-      <Container
+      <KeyboardAvoidingView
         style={styles.parentView}
-        {...(Platform.OS === "ios"
-          ? {
-              behavior: "padding" as const,
-              keyboardVerticalOffset: headerHeight,
-            }
-          : {})}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? headerHeight : 0}
       >
+          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
           <View style={styles.chatViewParent}>
             <View style={styles.chatviewChild}>
               <View style={styles.precautionViewStyle}>
@@ -567,15 +539,15 @@ const SpiritualMentorChat = () => {
                 <PrecautionButton />
               </View>
 
-              <FlatList 
+              <FlatList
                 data={messages}
                 ref={flatListRef}
-                contentContainerStyle={{ paddingBottom: composerBottomInset }}
+                contentContainerStyle={styles.chatListContent}
                 keyboardShouldPersistTaps="handled"
                 keyboardDismissMode={Platform.OS === "ios" ? "interactive" : "on-drag"}
                 onContentSizeChange={() => scrollToLatestMessage(0)}
-                keyExtractor={(item) => String(item.chatMessage?.id ?? item.id)} 
-                renderItem={({ item }) => { 
+                keyExtractor={(item) => String(item.chatMessage?.id ?? item.id)}
+                renderItem={({ item }) => {
                   if (item.status === "loading") {
                       return (
                         <Ai
@@ -626,8 +598,9 @@ const SpiritualMentorChat = () => {
               />
             </View>
           </View>
-          
-          <View style={[styles.inputView,{paddingBottom:insets.bottom, marginBottom: androidComposerLift}]}>
+          </TouchableWithoutFeedback>
+
+          <View style={[styles.inputView, { paddingBottom: composerBottomPadding }]}>
             <View style={styles.inputChild}>
             
               {/* message box  */}
@@ -673,7 +646,7 @@ const SpiritualMentorChat = () => {
             </View>
 
           </View>
-          </Container>
+          </KeyboardAvoidingView>
       </View>
     )
 }
@@ -719,8 +692,10 @@ const styles = StyleSheet.create({
         paddingVertical:10,
         paddingHorizontal: 10, // Add this line
       },
+      chatListContent: {
+        paddingBottom: CHAT_LIST_BOTTOM_PADDING,
+      },
       inputView:{
-        height:"20%",
         gap:5,
         // borderWidth:1,
         // Remove fixed height, let it grow

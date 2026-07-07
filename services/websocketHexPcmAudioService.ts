@@ -14,6 +14,7 @@ export type WebsocketHexPcmAudioServiceOptions = {
   wsUrl?: string;
   authorization?: string;
   fileFormat?: string;
+  logRawData?: boolean;
   audioPlayer?: HexPcmAudioPlayer;
   onStatusChange?: (status: ConnectionStatus) => void;
   onPlaybackStatusChange?: (status: PlaybackStatus) => void;
@@ -24,6 +25,7 @@ export class WebsocketHexPcmAudioService {
   private readonly wsUrl: string;
   private readonly authorization?: string;
   private readonly fileFormat: string;
+  private readonly logRawData: boolean;
   private readonly onStatusChange?: (status: ConnectionStatus) => void;
   private readonly onPlaybackStatusChange?: (status: PlaybackStatus) => void;
   private readonly onError?: (error: unknown) => void;
@@ -38,6 +40,7 @@ export class WebsocketHexPcmAudioService {
     this.wsUrl = options.wsUrl ?? TEXT_TO_AUDIO_URL;
     this.authorization = options.authorization ?? SECRET_TOKEN;
     this.fileFormat = options.fileFormat ?? "pcm";
+    this.logRawData = options.logRawData ?? false;
     this.onPlaybackStatusChange = options.onPlaybackStatusChange;
     this.audioPlayer =
       options.audioPlayer ??
@@ -157,6 +160,9 @@ export class WebsocketHexPcmAudioService {
       const msg = JSON.parse(rawData);
       if (msg?.event === "task_continue" && typeof msg.audio === "string") {
         console.log(`[ws-audio] audio chunk received (${msg.audio.length} hex chars)`);
+        if (this.logRawData) {
+          console.log("[ws-audio] raw pcm data", msg.audio);
+        }
         await this.audioPlayer.playHexChunk(msg.audio);
       }
     } catch (error) {

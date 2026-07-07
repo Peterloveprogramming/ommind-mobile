@@ -2,9 +2,13 @@ import React, { useState } from "react";
 import { Alert, Button, Text, TextInput, View } from "react-native";
 import { useWebsocketHexPcmAudio } from "@/services/useWebsocketHexPcmAudio";
 
-export default function AudioTest() {
+type AudioTestProps = {
+  logRawData?: boolean;
+};
+
+export default function AudioTest({ logRawData = false }: AudioTestProps) {
   const [input, setInput] = useState("hello world");
-  const { status, playAudio, disconnect } = useWebsocketHexPcmAudio();
+  const { status, playAudio, disconnect } = useWebsocketHexPcmAudio({ logRawData });
 
   const handlePlayAudio = async () => {
     try {

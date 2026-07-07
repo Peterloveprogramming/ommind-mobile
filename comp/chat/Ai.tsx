@@ -107,7 +107,7 @@ const Ai = ({
                         <Text style={{fontSize:16, color:"#FFFFFF",flexShrink:1}}>{message}</Text>
                         {showPlaybackControl ? (
                             <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
-                                <TouchableOpacity
+                                {/* <TouchableOpacity
                                     onPress={onPlaybackControlPress}
                                     hitSlop={6}
                                     style={{
@@ -126,8 +126,8 @@ const Ai = ({
                                         style={{ width: 30, height: 30 }}
                                         resizeMode="contain"
                                     />
-                                </TouchableOpacity>
-                                <TouchableOpacity
+                                </TouchableOpacity> */}
+                                {/* <TouchableOpacity
                                     onPress={onReplayPress}
                                     hitSlop={6}
                                     style={{
@@ -142,7 +142,7 @@ const Ai = ({
                                         style={{ width: 30, height: 30 }}
                                         resizeMode="contain"
                                     />
-                                </TouchableOpacity>
+                                </TouchableOpacity> */}
                                 <TouchableOpacity
                                     onPress={onFavouritePress}
                                     disabled={isFavouriteUpdating}

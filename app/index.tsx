@@ -8,12 +8,13 @@ export default function Index() {
   useEffect(() => {
     const checkAuth = async () => {
       console.log("checking authentication")
-      const authInfo = await getAuthInfo(); // Retrieve auth information
-      if (authInfo) {
-        setInitialRoute("(tabs)"); // Redirect to dashboard if authenticated
-      } else {
-        setInitialRoute("welcome"); // Redirect to welcome if not authenticated
-      }
+      setInitialRoute("(tabs)"); // TEMP: bypass welcome page for testing
+      // const authInfo = await getAuthInfo(); // Retrieve auth information
+      // if (authInfo) {
+      //   setInitialRoute("(tabs)"); // Redirect to dashboard if authenticated
+      // } else {
+      //   setInitialRoute("welcome"); // Redirect to welcome if not authenticated
+      // }
     };
 
     checkAuth(); // Check auth status when component mounts

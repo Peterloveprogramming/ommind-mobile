@@ -80,7 +80,7 @@ export default function Lhamo() {
               title="Speak with Lhamo" message="Receive gentle guidance on your spiritual journey — from meditation to self-inquiry and awakening." 
               componentNumber={1} 
               onPress={() => router.push({
-                pathname: '/chat',
+                pathname: '/chat/new_index',
                 params: { session_id: "abcdd" }
               })} />
             <LhamoComponent title="Dream with Lhamo" message="Share your dreams and explore their deeper meaning through a Tibetan-inspired lens of awareness." componentNumber={2} onPress={() => router.push({ pathname: '/chat', params: { session_id: "dream-session" } })} />

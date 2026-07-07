@@ -13,12 +13,13 @@ const formatSectionTitle = (value: keyof MeditationCoursesByType) => {
   return value.charAt(0).toUpperCase() + value.slice(1);
 };
 
-const testing = false
+const testing = true
+const logRawData = true
 
 const Explore = () => {
     if (testing)
     {
-      return <AudioTest />
+      return <AudioTest logRawData={logRawData} />
     }
 
   const router = useRouter();

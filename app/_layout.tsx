@@ -11,6 +11,7 @@ import { useFonts as useFigtree, Figtree_400Regular,Figtree_600SemiBold, Figtree
 import { useFonts as useInter, Inter_400Regular, Inter_600SemiBold, Inter_500Medium } from "@expo-google-fonts/inter";
 import GlobalProviders from "@/context/GlobalProviders";
 import { getAuthInfo } from "@/utils/helper";
+import { KeyboardProvider } from "react-native-keyboard-controller";
 SplashScreen.preventAutoHideAsync();
 
 
@@ -57,6 +58,7 @@ export default function RootLayout() {
   };
   console.log("initial route is",initialRoute)
   return (
+    <KeyboardProvider>
     <GlobalProviders>
       <Stack>
          <Stack.Screen
@@ -179,6 +181,7 @@ export default function RootLayout() {
         />
         </Stack>
       </GlobalProviders>
+    </KeyboardProvider>
   );
 }
 
