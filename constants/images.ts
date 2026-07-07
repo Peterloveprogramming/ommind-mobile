@@ -33,6 +33,7 @@ import favourite_button from "@/assets/images/ai_chat/favourite_button.png";
 import star_unfilled from "@/assets/images/ai_chat/star_unfilled.png";
 import star_filled from "@/assets/images/ai_chat/star_filled.png";
 import report from "@/assets/images/ai_chat/report.png";
+import rinpoche_sparkle from "@/assets/images/ai_chat/sparkle_rinpoche.png";
 
 import open_chat_history from "@/assets/images/header/open_chat_history.png";
 
@@ -43,6 +44,7 @@ export const images = {
   next_button_icon,
   apple_icon,
   lhamo_background_one,
+  rinpoche_sparkle,
   lhamo_background_two,
   lhamo_background_three,
   lhamo_mini,

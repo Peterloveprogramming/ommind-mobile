@@ -607,7 +607,7 @@ const SpiritualMentorChat = () => {
               activeOpacity={0.85}
               onPress={() => {}}
             >
-              <Image source={images.lhamo_mini} style={styles.createMeditationIcon} />
+              <Image source={images.rinpoche_sparkle} style={styles.createMeditationIcon} />
               <Text style={styles.createMeditationText}>Create My Meditation</Text>
               <Ionicons name="chevron-forward" size={18} color="#D89B4A" />
             </TouchableOpacity>
