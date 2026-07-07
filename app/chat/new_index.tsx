@@ -10,6 +10,7 @@ import PrecautionButton from '@/assets/svg/chat/PrecautionButton'
 import Ai from '@/comp/chat/Ai'
 import Human from '@/comp/chat/Human'
 import OpenChatHistoryButton from '@/comp/headers/OpenChatHistoryButton'
+import PersonalisedMeditationModal from '@/comp/modals/PersonalisedMeditationModal'
 import { Ionicons } from '@expo/vector-icons'
 import { images } from '@/constants/images'
 import useFetchAiMessage from '@/services/useFetchAiMessage'
@@ -56,6 +57,7 @@ const SpiritualMentorChat = () => {
     const insets = useSafeAreaInsets();
     const [isMicPressed, setIsMicPressed] = useState(false);
     const [inputText, setInputText] = useState("");
+    const [showMeditationModal, setShowMeditationModal] = useState(false);
     const normalizedSessionId = Array.isArray(session_id) ? session_id[0] : session_id;
     const isExistingChat = (Array.isArray(existing_chat) ? existing_chat[0] : existing_chat) === "true";
     const {showToastMessage} = useToast()
@@ -605,7 +607,7 @@ const SpiritualMentorChat = () => {
             <TouchableOpacity
               style={styles.createMeditationButton}
               activeOpacity={0.85}
-              onPress={() => {}}
+              onPress={() => setShowMeditationModal(true)}
             >
               <Image source={images.rinpoche_sparkle} style={styles.createMeditationIcon} />
               <Text style={styles.createMeditationText}>Create My Meditation</Text>
@@ -658,6 +660,14 @@ const SpiritualMentorChat = () => {
             </View>
 
           </View>
+
+          <PersonalisedMeditationModal
+            visible={showMeditationModal}
+            onClose={() => setShowMeditationModal(false)}
+            onBegin={(selection) => {
+              console.log("Personalised meditation selection", selection);
+            }}
+          />
       </KeyboardAvoidingView>
     )
 }
