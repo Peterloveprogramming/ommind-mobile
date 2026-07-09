@@ -58,6 +58,7 @@ const SpiritualMentorChat = () => {
     const [isMicPressed, setIsMicPressed] = useState(false);
     const [inputText, setInputText] = useState("");
     const [showMeditationModal, setShowMeditationModal] = useState(false);
+    const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
     const normalizedSessionId = Array.isArray(session_id) ? session_id[0] : session_id;
     const isExistingChat = (Array.isArray(existing_chat) ? existing_chat[0] : existing_chat) === "true";
     const {showToastMessage} = useToast()
@@ -98,6 +99,17 @@ const SpiritualMentorChat = () => {
         showToastMessage("session_id is not present", false);
       }
     }, [normalizedSessionId, showToastMessage]);
+    useEffect(() => {
+      const showEvent = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
+      const hideEvent = Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
+      const showSubscription = Keyboard.addListener(showEvent, () => setIsKeyboardVisible(true));
+      const hideSubscription = Keyboard.addListener(hideEvent, () => setIsKeyboardVisible(false));
+
+      return () => {
+        showSubscription.remove();
+        hideSubscription.remove();
+      };
+    }, []);
     useEffect(() => {
       let isCancelled = false;
 
@@ -603,17 +615,19 @@ const SpiritualMentorChat = () => {
           </View>
           </TouchableWithoutFeedback>
 
-          <View style={styles.createMeditationRow}>
-            <TouchableOpacity
-              style={styles.createMeditationButton}
-              activeOpacity={0.85}
-              onPress={() => setShowMeditationModal(true)}
-            >
-              <Image source={images.rinpoche_sparkle} style={styles.createMeditationIcon} />
-              <Text style={styles.createMeditationText}>Create My Meditation</Text>
-              <Ionicons name="chevron-forward" size={18} color="#D89B4A" />
-            </TouchableOpacity>
-          </View>
+          {!isKeyboardVisible && (
+            <View style={styles.createMeditationRow}>
+              <TouchableOpacity
+                style={styles.createMeditationButton}
+                activeOpacity={0.85}
+                onPress={() => setShowMeditationModal(true)}
+              >
+                <Image source={images.rinpoche_sparkle} style={styles.createMeditationIcon} />
+                <Text style={styles.createMeditationText}>Create My Meditation</Text>
+                <Ionicons name="chevron-forward" size={18} color="#D89B4A" />
+              </TouchableOpacity>
+            </View>
+          )}
 
           <View style={[styles.inputView, { paddingBottom: composerBottomPadding }]}>
             <View style={styles.inputChild}>
