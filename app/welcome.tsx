@@ -8,8 +8,7 @@ import {SafeAreaView, SafeAreaProvider} from 'react-native-safe-area-context';
 import { Dimensions } from "react-native";
 //import button from base 
 import BaseButton from "@/comp/base/BaseButton"
-import { useTodoApi } from "@/api/api";
- 
+
 
 const Welcome = () => {
   const router = useRouter();
@@ -18,11 +17,6 @@ const Welcome = () => {
   const handleLoginPress =() => {
     setShowLoginOptions(true);
   }
-
-
-  const {
-    getDodo:{getTodo,getTodoLoading,getTodoData},
-  } = useTodoApi({id:"1"})
 
   return (
     <SafeAreaProvider>

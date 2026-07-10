@@ -5,13 +5,13 @@ import type {
   MeditationCourse,
   MeditationCourseDescriptionSection,
   MeditationCourseSession,
-} from "@/api/lambda/meditation/types";
+} from "@/api/meditation/types";
 import { images } from "@/constants/images";
 import { FONTS } from "@/theme";
 import BookmarkButton from "@/comp/buttons/BookmarkButton";
 import BaseButton from "../base/BaseButton";
 import { colors } from "@/constants/colors";
-import { useMeditationCourses } from "@/services/meditation/useMeditationCourses";
+import { useMeditationCourses } from "@/api/meditation/useMeditationCourses";
 
 type SessionCardProps = {
   title: string;

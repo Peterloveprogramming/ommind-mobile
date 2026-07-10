@@ -14,7 +14,7 @@ import {
 import { useFocusEffect, usePathname, useRouter } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import { useUserApi } from "@/api/api";
-import { useMeditationApi } from "@/api/lambda/meditation/requests";
+import { useMeditationApi } from "@/api/meditation/requests";
 import {
   DEFAULT_AFFIRMATION,
   DEFAULT_HOME_PAGE_TEXT,

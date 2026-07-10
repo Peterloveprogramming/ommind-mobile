@@ -6,7 +6,7 @@ import { buildLambdaRequestPayload } from "@/utils/requestContext";
 import {
   UpdateSessionProgressInput,
   UpdateSessionProgressResult,
-} from "@/api/lambda/meditation/types";
+} from "@/api/meditation/types";
 
 const PROFILE_PHOTO_URI_KEY = "profilePhotoUri";
 

@@ -1,0 +1,116 @@
+import { useCallback, useRef, useState } from "react";
+import { useMeditationApi } from "@/api/meditation/requests";
+import {
+  GetMeditationCourseDetailsInput,
+  GetMeditationCourseDetailsResult,
+  GetMeditationCoursesResult,
+  GetRecommendedMeditationCoursesResult,
+} from "@/api/meditation/types";
+import {
+  MeditationCourseDetailsService,
+  MeditationCourseDetailsStatus,
+  MeditationCoursesService,
+  MeditationCoursesServiceOptions,
+  MeditationCoursesStatus,
+} from "@/api/meditation/meditationService";
+
+type UseMeditationCoursesOptions = MeditationCoursesServiceOptions;
+
+export function useMeditationCourses(options: UseMeditationCoursesOptions = {}) {
+  const [status, setStatus] = useState<MeditationCoursesStatus>("idle");
+  const [result, setResult] = useState<GetMeditationCoursesResult | null>(null);
+  const [error, setError] = useState<unknown>(null);
+  const [detailsStatus, setDetailsStatus] = useState<MeditationCourseDetailsStatus>("idle");
+  const [detailsResult, setDetailsResult] = useState<GetMeditationCourseDetailsResult | null>(null);
+  const [detailsError, setDetailsError] = useState<unknown>(null);
+  const {
+    getMeditationCourses,
+    getRecommendedMeditationCourses,
+    getMeditationCourseDetails,
+  } =
+    useMeditationApi();
+
+  const serviceRef = useRef<MeditationCoursesService | null>(null);
+  const detailsServiceRef = useRef<MeditationCourseDetailsService | null>(null);
+  const recommendedRequestRef = useRef(getRecommendedMeditationCourses);
+
+  recommendedRequestRef.current = getRecommendedMeditationCourses;
+
+  if (!serviceRef.current) {
+    serviceRef.current = new MeditationCoursesService(getMeditationCourses, {
+      ...options,
+      onStatusChange: (nextStatus) => {
+        setStatus(nextStatus);
+        options.onStatusChange?.(nextStatus);
+      },
+      onResult: (nextResult) => {
+        setResult(nextResult);
+        options.onResult?.(nextResult);
+      },
+      onError: (nextError) => {
+        setError(nextError);
+        options.onError?.(nextError);
+      },
+    });
+  }
+
+  if (!detailsServiceRef.current) {
+    detailsServiceRef.current = new MeditationCourseDetailsService(getMeditationCourseDetails, {
+      onStatusChange: (nextStatus) => {
+        setDetailsStatus(nextStatus);
+      },
+      onResult: (nextResult) => {
+        setDetailsResult(nextResult);
+      },
+      onError: (nextError) => {
+        setDetailsError(nextError);
+      },
+    });
+  }
+
+  const fetchMeditationCourses = useCallback(async () => {
+    setError(null);
+    const courses =  await serviceRef.current!.getAllCourses();
+    console.log("all meditation courses are",courses)
+    console.log("calm are",courses["data"]["courses"]["calm"])
+    return courses;
+  }, []);
+
+  const fetchRecommendedMeditationCourses = useCallback(async () => {
+    return (await recommendedRequestRef.current()) as GetRecommendedMeditationCoursesResult;
+  }, []);
+
+  const fetchMeditationCourseDetails = useCallback(
+    async (input: GetMeditationCourseDetailsInput) => {
+      setDetailsError(null);
+      return await detailsServiceRef.current!.getCourseDetails(input);
+    },
+    []
+  );
+
+  const reset = useCallback(() => {
+    setResult(null);
+    setError(null);
+    serviceRef.current?.reset();
+    setDetailsResult(null);
+    setDetailsError(null);
+    detailsServiceRef.current?.reset();
+  }, []);
+
+  return {
+    status,
+    isLoading: status === "loading",
+    result,
+    error,
+    detailsStatus,
+    isDetailsLoading: detailsStatus === "loading",
+    detailsResult,
+    detailsError,
+    fetchMeditationCourses,
+    fetchRecommendedMeditationCourses,
+    fetchMeditationCourseDetails,
+    reset,
+    service: serviceRef.current,
+    detailsService: detailsServiceRef.current,
+  };
+}

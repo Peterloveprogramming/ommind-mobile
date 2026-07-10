@@ -6,7 +6,7 @@ import {
   useAudioRecorder,
   useAudioRecorderState,
 } from "expo-audio";
-import { useSpeechToTextService } from "@/services/useSpeechToTextService";
+import { useSpeechToText as useSpeechToTextService } from "@/api/speechToText/useSpeechToText";
 
 type VoiceToTextStatus = "idle" | "recording" | "converting" | "error";
 

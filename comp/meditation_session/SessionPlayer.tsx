@@ -25,8 +25,8 @@ import {
 } from "expo-audio";
 import { images } from "@/constants/images";
 import { FONTS } from "@/theme";
-import { useMeditationAudioService } from "@/services/useMeditationAudioService";
-import useChatMessageContentById from "@/services/useChatMessageContentById";
+import { useMeditationAudio as useMeditationAudioService } from "@/api/meditation/useMeditationAudio";
+import useChatMessageContentById from "@/api/chatMessages/useChatMessageContentById";
 import { useWebsocketHexPcmAudio } from "@/services/useWebsocketHexPcmAudio";
 import BookmarkButtonWhite from "../buttons/BookmarkButtonWhite";
 import {

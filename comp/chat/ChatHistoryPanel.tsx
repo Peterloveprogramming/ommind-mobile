@@ -1,6 +1,6 @@
-import { LambdaResult } from "@/api/types";
+import { ChatHistoryItem } from "@/api/chatHistory/types";
 import BaseButton from "@/comp/base/BaseButton";
-import useChatHistory from "@/services/useChatHistory";
+import useChatHistory from "@/api/chatHistory/useChatHistory";
 import { navigateToNewChat } from "@/utils/helper";
 import { useRouter } from "expo-router";
 import React, { useEffect, useMemo } from "react";
@@ -60,13 +60,13 @@ const ChatHistoryPanel = ({ onClose }: ChatHistoryPanelProps) => {
         return groups;
       },
       {
-        withinSevenDays: [] as LambdaResult.ChatHistoryItem[],
-        earlier: [] as LambdaResult.ChatHistoryItem[],
+        withinSevenDays: [] as ChatHistoryItem[],
+        earlier: [] as ChatHistoryItem[],
       }
     );
   }, [chatHistories]);
 
-  const handleHistoryPress = (historyItem: LambdaResult.ChatHistoryItem) => {
+  const handleHistoryPress = (historyItem: ChatHistoryItem) => {
     onClose();
     router.replace({
       pathname: "/chat/new_index",
@@ -84,7 +84,7 @@ const ChatHistoryPanel = ({ onClose }: ChatHistoryPanelProps) => {
 
   const renderHistorySection = (
     title: string,
-    historyItems: LambdaResult.ChatHistoryItem[]
+    historyItems: ChatHistoryItem[]
   ) => (
     <View style={styles.section} key={title}>
       <Text style={styles.sectionTitle}>{title}</Text>

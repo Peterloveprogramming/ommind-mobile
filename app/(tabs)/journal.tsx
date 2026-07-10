@@ -12,9 +12,10 @@ import {
 } from "react-native";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import useAwarenessLogs from "@/services/useAwarenessLogs";
-import useDreamLogs from "@/services/useDreamLogs";
-import { LambdaResult } from "@/api/types";
+import useAwarenessLogs from "@/api/awarenessLogs/useAwarenessLogs";
+import useDreamLogs from "@/api/dreamLogs/useDreamLogs";
+import { AwarenessLogItem } from "@/api/awarenessLogs/types";
+import { DreamLogItem } from "@/api/dreamLogs/types";
 import { COLORS, FONTS } from "@/theme.js";
 
 type JournalTab = "dreams" | "awareness";
@@ -84,7 +85,7 @@ const createAwarenessTitle = (log?: string | null) => {
 };
 
 const mapDreamLogToJournalEntry = (
-  dreamLog: LambdaResult.DreamLogItem
+  dreamLog: DreamLogItem
 ): JournalEntry => {
   const { day, month, time } = getJournalEntryDateParts(dreamLog.created_at);
   const logText = typeof dreamLog.log === "string" ? dreamLog.log : "";
@@ -107,7 +108,7 @@ const mapDreamLogToJournalEntry = (
 };
 
 const mapAwarenessLogToJournalEntry = (
-  awarenessLog: LambdaResult.AwarenessLogItem
+  awarenessLog: AwarenessLogItem
 ): JournalEntry => {
   const { day, month, time } = getJournalEntryDateParts(awarenessLog.created_at);
   const logText = typeof awarenessLog.log === "string" ? awarenessLog.log : "";

@@ -9,7 +9,7 @@ import {
   setAudioModeAsync,
   useAudioRecorderState,
 } from 'expo-audio';
-import { useSpeechToTextService } from '@/services/useSpeechToTextService';
+import { useSpeechToText as useSpeechToTextService } from '@/api/speechToText/useSpeechToText';
 
 export default function MicTest() {
   const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);

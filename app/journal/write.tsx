@@ -15,8 +15,8 @@ import {
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import BackButton from "@/comp/headers/BackButton";
-import useAwarenessLogs from "@/services/useAwarenessLogs";
-import useDreamLogs from "@/services/useDreamLogs";
+import useAwarenessLogs from "@/api/awarenessLogs/useAwarenessLogs";
+import useDreamLogs from "@/api/dreamLogs/useDreamLogs";
 import { useToast } from "@/context/useToast";
 import { FONTS } from "@/theme.js";
 

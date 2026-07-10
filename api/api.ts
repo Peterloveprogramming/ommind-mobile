@@ -1,5 +1,3 @@
-import { useGetSupplier,useCreateSupplier } from "./useSupplierApi/requests";
-import {useGetTodo} from './useTodoApi/requests'
 import {
     useCreateUser,
     useGetAccountDetails,
@@ -12,13 +10,13 @@ import {
     useUpdateUserCurrentFocus,
     useUpdateUserNameAndEmail,
     useUploadProfilePic
-} from './lambda/useUserApi/requests'
-import {useSaveAnswersForRegistrationQuestions} from './lambda/useRegistrationQuestionApi/requests'
-import { useChatAi } from "./lambda/useAiChatApi/requests";
-import { useGetChatHistory } from "./lambda/useChatHistoryApi/requests";
-import { useGetChatMessageContentById, useGetChatMessagesBySessionId } from "./lambda/useChatMessagesApi/requests";
-import { useAddMessageRating } from "./lambda/useMessageRatingApi/requests";
-import { useAddMessageReport } from "./lambda/useMessageReportApi/requests";
+} from './user/requests'
+import {useSaveAnswersForRegistrationQuestions} from './registrationQuestion/requests'
+import { useChatAi } from "./chatAi/requests";
+import { useGetChatHistory } from "./chatHistory/requests";
+import { useGetChatMessageContentById, useGetChatMessagesBySessionId } from "./chatMessages/requests";
+import { useAddMessageRating } from "./messageRating/requests";
+import { useAddMessageReport } from "./messageReport/requests";
 import {
     useAddAwarenessLog,
     useAnalyzeAwareness,
@@ -27,7 +25,7 @@ import {
     useGetAwarenessLog,
     useGetAwarenessLogs,
     useUpdateAwarenessLog,
-} from "./lambda/useAwarenessLogsApi/requests";
+} from "./awarenessLogs/requests";
 import {
     useAddDreamLog,
     useAnalyzeDream,
@@ -36,59 +34,12 @@ import {
     useGetDreamLog,
     useGetDreamLogs,
     useUpdateDreamLog,
-} from "./lambda/useDreamLogsApi/requests";
-//Supplier
-export const useSupplierApi = () => {
-    const {
-        getSupplier,
-        isLoading: getSupplierLoading,
-        data: getSupplierData
-    } = useGetSupplier()
-
-    const {
-        createSupplier,
-        isLoading: createSupplierLoading,
-        data: createSupplierData
-    } = useCreateSupplier()
-
-    return {
-        getSupplier:{
-            query:getSupplier,
-            isLoading:getSupplierLoading,
-            data:getSupplierData
-        },
-        createSupplier:{
-            mutation:createSupplier,
-            isLoading: createSupplierLoading,
-            data: createSupplierData
-        },
-    }
-}
-
-//Todo 
-type useTodoApiProps = {
-    id:string
-}
-export const useTodoApi =({id}:useTodoApiProps) => {
-    const {
-        getTodo, 
-        isLoading, 
-        data 
-    } = useGetTodo({id})
-
-    return {
-        getDodo:{
-            getTodo:getTodo,
-            getTodoLoading:isLoading,
-            getTodoData:data
-        }
-    }
-}
+} from "./dreamLogs/requests";
 
 //User
 export const useUserApi =() => {
     const {
-        createUser, 
+        createUser,
     } = useCreateUser()
     const {
         loginUser,
@@ -162,7 +113,7 @@ export const useUserApi =() => {
 
 export const useRegistrationQuestionApi =() => {
     const {
-        saveAnswersForRegistrationQuestions, 
+        saveAnswersForRegistrationQuestions,
     } = useSaveAnswersForRegistrationQuestions()
 
     return {

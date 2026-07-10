@@ -1,5 +1,5 @@
 import { images } from "@/constants/images";
-import { MeditationCourse } from "@/api/lambda/meditation/types";
+import { MeditationCourse } from "@/api/meditation/types";
 import { FONTS } from "@/theme";
 import React from "react";
 import { ImageBackground, StyleSheet, Text, TouchableOpacity, View } from "react-native";

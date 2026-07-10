@@ -13,7 +13,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import useMessageReport from "@/services/useMessageReport";
+import useMessageReport from "@/api/messageReport/useMessageReport";
 
 const REPORT_OPTIONS = [
   "audio not playing",

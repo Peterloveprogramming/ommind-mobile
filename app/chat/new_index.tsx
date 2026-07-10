@@ -13,15 +13,15 @@ import OpenChatHistoryButton from '@/comp/headers/OpenChatHistoryButton'
 import PersonalisedMeditationModal from '@/comp/modals/PersonalisedMeditationModal'
 import { Ionicons } from '@expo/vector-icons'
 import { images } from '@/constants/images'
-import useFetchAiMessage from '@/services/useFetchAiMessage'
+import useFetchAiMessage from '@/api/chatAi/useFetchAiMessage'
 import { useToast } from '@/context/useToast'
 import { useWebsocketHexPcmAudio } from "@/services/useWebsocketHexPcmAudio"
 import { GUIDED_MEDITATION } from "@/constant"
 import { PlaybackStatus } from '@/services/hexPcmAudioPlayer'
 import { useVoiceToText } from '@/services/useVoiceToText'
-import useChatMessagesBySessionId from '@/services/useChatMessagesBySessionId'
-import useMessageRating from '@/services/useMessageRating'
-import { LambdaResult } from '@/api/types'
+import useChatMessagesBySessionId from '@/api/chatMessages/useChatMessagesBySessionId'
+import useMessageRating from '@/api/messageRating/useMessageRating'
+import { ChatMessageItem } from '@/api/chatMessages/types'
 import { FeedBackPayload } from '@/comp/chat/FeedBackModal'
 import {
   checkIfLambdaResultIsSuccess,
@@ -36,7 +36,7 @@ const COMPOSER_MIN_BOTTOM_PADDING = 8;
 type ChatMessage = {
   id?: number;
   role: "human" | "ai";
-  chatMessage?: LambdaResult.ChatMessageItem | null;
+  chatMessage?: ChatMessageItem | null;
   status?: "loading" | "ready";
   mode?: string | null;
   showPlayBackControl?: boolean;
@@ -45,7 +45,7 @@ type ChatMessage = {
   isFavourite?: boolean;
 };
 
-const getGeneratedMeditationMessageId = (message?: LambdaResult.ChatMessageItem | null) =>
+const getGeneratedMeditationMessageId = (message?: ChatMessageItem | null) =>
   message?.message_id ?? message?.id;
 
 const normalizeMessageId = (messageId?: string | number | null) =>

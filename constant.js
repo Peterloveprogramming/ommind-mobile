@@ -1,5 +1,6 @@
 // const URL = "https://api.hulolo.xyz";
-const URL = "http://192.168.5.29:8000"
+// const URL = "http://192.168.5.29:8000"
+const URL = "https://6751-95-40-255-78.ngrok-free.app"
 //export constants 
 export const LAMBDA_SERVICE_URL = URL + "/2015-03-31/functions/function/invocations"
 export const DEFAULT_HOME_PAGE_TEXT = "How are you feeling today?"
