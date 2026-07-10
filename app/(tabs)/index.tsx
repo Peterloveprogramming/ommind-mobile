@@ -34,6 +34,7 @@ import {
 import BaseButton from "@/comp/base/BaseButton";
 import { FONTS } from "@/theme";
 import ProfilePhotoUploadModal from "@/comp/modals/ProfilePhotoUploadModal";
+import PersonalisedMeditationModal from "@/comp/modals/PersonalisedMeditationModal";
 
 const MEDITATION_ICON = require("@/assets/images/home/meditation_icon.png");
 const NOTIFICATION_ICON = require("@/assets/images/home/notification.png");
@@ -104,6 +105,7 @@ const Home = () => {
   const [isGuidanceLoading, setIsGuidanceLoading] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
   const [isProfileModalVisible, setIsProfileModalVisible] = useState(false);
+  const [showMeditationModal, setShowMeditationModal] = useState(false);
   const [profileImageSource, setProfileImageSource] = useState<ImageSourcePropType>(MEDITATION_ICON);
   const [pendingProfilePhotoUri, setPendingProfilePhotoUri] = useState<string | null>(null);
   const [pendingProfilePhotoBase64, setPendingProfilePhotoBase64] = useState<string | null>(null);
@@ -425,11 +427,7 @@ const Home = () => {
       return;
     }
 
-    setIsNavigating(true);
-    setTimeout(() => {
-      setIsNavigating(false);
-    }, 1500);
-    navigateToNewChat(router);
+    setShowMeditationModal(true);
   };
 
   const handleChatWithLhamoPress = () => {
@@ -708,6 +706,14 @@ const Home = () => {
           pendingProfilePhotoUri ? handleConfirmProfilePhotoPress : handleChooseProfilePhotoPress
         }
         onSecondaryPress={pendingProfilePhotoUri ? handleChooseProfilePhotoPress : undefined}
+      />
+
+      <PersonalisedMeditationModal
+        visible={showMeditationModal}
+        onClose={() => setShowMeditationModal(false)}
+        onBegin={(selection) => {
+          console.log("Personalised meditation selection", selection);
+        }}
       />
     </>
   );
