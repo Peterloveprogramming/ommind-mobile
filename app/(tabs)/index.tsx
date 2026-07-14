@@ -35,6 +35,15 @@ import BaseButton from "@/comp/base/BaseButton";
 import { FONTS } from "@/theme";
 import ProfilePhotoUploadModal from "@/comp/modals/ProfilePhotoUploadModal";
 import PersonalisedMeditationModal from "@/comp/modals/PersonalisedMeditationModal";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import {
+  clearDailyCheckInInfo,
+  clearsetDailyAffirmationIntention,
+  getDailyAffirmationIntention,
+  getDailyMood,
+  setDailyAffirmationIntention,
+  setDailyMood,
+} from "@/store/slices/DailyCheckInInfoSlice";
 
 const MEDITATION_ICON = require("@/assets/images/home/meditation_icon.png");
 const NOTIFICATION_ICON = require("@/assets/images/home/notification.png");
@@ -90,17 +99,49 @@ const getUserTimezone = () => {
   }
 };
 
+const isTimestampBeforeToday = (timestamp: number | null) => {
+  if (!timestamp) return false;
+
+  const timestampDate = new Date(timestamp);
+  const today = new Date();
+  const startOfToday = new Date(
+    today.getFullYear(),
+    today.getMonth(),
+    today.getDate()
+  );
+
+  return timestampDate.getTime() < startOfToday.getTime();
+};
+
+const isCachedDailyMoodFresh = (timestamp: number | null) =>
+  Boolean(timestamp && !isTimestampBeforeToday(timestamp));
+
+const getInitialSelectedMood = (mood: string | null, lastFetchedAt: number | null) =>
+  mood && isCachedDailyMoodFresh(lastFetchedAt) ? mood : DEFAULT_MOOD;
+
 const Home = () => {
   const router = useRouter();
   const pathname = usePathname();
+  const dispatch = useAppDispatch();
+  const { mood: cachedDailyMood, lastFetchedAt: dailyMoodLastFetchedAt } =
+    useAppSelector(getDailyMood);
+  const {
+    user_intention,
+    user_affirmation,
+  } = useAppSelector(getDailyAffirmationIntention);
   const [firstName, setFirstName] = useState("");
-  const [selectedMood, setSelectedMood] = useState(DEFAULT_MOOD);
+  const hasFreshCachedMood = Boolean(
+    cachedDailyMood && isCachedDailyMoodFresh(dailyMoodLastFetchedAt)
+  );
+  const [selectedMood, setSelectedMood] = useState(
+    getInitialSelectedMood(cachedDailyMood, dailyMoodLastFetchedAt)
+  );
   const [homePageText, setHomePageText] = useState(DEFAULT_HOME_PAGE_TEXT);
-  const [intention, setIntention] = useState(DEFAULT_INTENTION);
-  const [affirmation, setAffirmation] = useState(DEFAULT_AFFIRMATION);
+  const [intention, setIntention] = useState(user_intention || DEFAULT_INTENTION);
+  const [affirmation, setAffirmation] = useState(user_affirmation || DEFAULT_AFFIRMATION);
   const [pendingMoodCheckIn, setPendingMoodCheckIn] = useState<string | null>(null);
   const [moodCheckInMessage, setMoodCheckInMessage] = useState("");
-  const [hasMoodCheckedInToday, setHasMoodCheckedInToday] = useState(false);
+  const [hasMoodCheckedInToday, setHasMoodCheckedInToday] = useState(hasFreshCachedMood);
   const [isMoodCheckInLoading, setIsMoodCheckInLoading] = useState(false);
   const [isGuidanceLoading, setIsGuidanceLoading] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
@@ -115,10 +156,18 @@ const Home = () => {
   const { getHomePageText, getIntentionAndAffirmation, addMoodCheckIn } = useMeditationApi();
   const getHomePageTextRef = useRef(getHomePageText);
   const getIntentionAndAffirmationRef = useRef(getIntentionAndAffirmation);
+  const cachedDailyMoodRef = useRef(cachedDailyMood);
+  const dailyMoodLastFetchedAtRef = useRef(dailyMoodLastFetchedAt);
+  const cachedIntentionRef = useRef(user_intention);
+  const cachedAffirmationRef = useRef(user_affirmation);
   const intentionRequestIdRef = useRef(0);
   const moodCheckInConfirmationRef = useRef(false);
   getHomePageTextRef.current = getHomePageText;
   getIntentionAndAffirmationRef.current = getIntentionAndAffirmation;
+  cachedDailyMoodRef.current = cachedDailyMood;
+  dailyMoodLastFetchedAtRef.current = dailyMoodLastFetchedAt;
+  cachedIntentionRef.current = user_intention;
+  cachedAffirmationRef.current = user_affirmation;
   const {
     uploadProfilePic: { uploadProfilePic },
     getAccountDetails: { getAccountDetails },
@@ -127,6 +176,11 @@ const Home = () => {
   useEffect(() => {
     setIsNavigating(false);
   }, [pathname]);
+
+  useEffect(() => {
+    setIntention(user_intention || DEFAULT_INTENTION);
+    setAffirmation(user_affirmation || DEFAULT_AFFIRMATION);
+  }, [user_affirmation, user_intention]);
 
   useEffect(() => {
     const loadUserName = async () => {
@@ -140,6 +194,40 @@ const Home = () => {
   useFocusEffect(
     React.useCallback(() => {
       let isActive = true;
+
+      const syncCachedMood = () => {
+        const storedMood = cachedDailyMoodRef.current;
+        const storedMoodFetchedAt = dailyMoodLastFetchedAtRef.current;
+
+        if (!storedMood) {
+          dispatch(clearDailyCheckInInfo());
+          if (isActive) {
+            setSelectedMood(DEFAULT_MOOD);
+            setHasMoodCheckedInToday(false);
+            setIntention(DEFAULT_INTENTION);
+            setAffirmation(DEFAULT_AFFIRMATION);
+          }
+          return;
+        }
+
+        if (!isCachedDailyMoodFresh(storedMoodFetchedAt)) {
+          dispatch(clearDailyCheckInInfo());
+          if (isActive) {
+            setSelectedMood(DEFAULT_MOOD);
+            setHasMoodCheckedInToday(false);
+            setIntention(DEFAULT_INTENTION);
+            setAffirmation(DEFAULT_AFFIRMATION);
+          }
+          return;
+        }
+
+        if (isActive) {
+          setSelectedMood(storedMood);
+          setHasMoodCheckedInToday(true);
+          setIntention(cachedIntentionRef.current || DEFAULT_INTENTION);
+          setAffirmation(cachedAffirmationRef.current || DEFAULT_AFFIRMATION);
+        }
+      };
 
       const loadStoredProfilePhoto = async () => {
         const storedUri = await getProfilePhotoUri();
@@ -166,42 +254,71 @@ const Home = () => {
         }
       };
 
+      syncCachedMood();
       void loadStoredProfilePhoto();
       void loadHomePageText();
 
       return () => {
         isActive = false;
       };
-    }, [])
+    }, [dispatch])
   );
 
   const resetIntentionAndAffirmation = () => {
     setIsGuidanceLoading(false);
     setIntention(DEFAULT_INTENTION);
     setAffirmation(DEFAULT_AFFIRMATION);
+    dispatch(clearsetDailyAffirmationIntention());
   };
 
-  const loadIntentionAndAffirmation = async (mood: string) => {
+  const loadIntentionAndAffirmation = async (
+    mood: string,
+    options: { forceRefresh?: boolean } = {}
+  ) => {
+    const normalizedMood = mood.trim();
+
+    if (
+      !options.forceRefresh &&
+      normalizedMood &&
+      cachedDailyMood === normalizedMood &&
+      user_intention
+    ) {
+      setIntention(user_intention);
+      setAffirmation(user_affirmation || DEFAULT_AFFIRMATION);
+      return;
+    }
+
     const requestId = intentionRequestIdRef.current + 1;
     intentionRequestIdRef.current = requestId;
     setIsGuidanceLoading(true);
 
     try {
-      const response = await getIntentionAndAffirmationRef.current({ mood });
+      const response = await getIntentionAndAffirmationRef.current({ mood: normalizedMood });
 
       if (requestId !== intentionRequestIdRef.current) {
         return;
       }
 
-      const nextIntention = checkIfLambdaResultIsSuccess(response)
-        ? response.data?.intention?.trim()
-        : "";
-      const nextAffirmation = checkIfLambdaResultIsSuccess(response)
+      const isSuccessfulResponse = checkIfLambdaResultIsSuccess(response);
+      const nextIntention = isSuccessfulResponse ? response.data?.intention?.trim() : "";
+      const nextAffirmation = isSuccessfulResponse
         ? response.data?.affirmation?.trim()
         : "";
+      const resolvedIntention = nextIntention || DEFAULT_INTENTION;
+      const resolvedAffirmation = nextAffirmation || DEFAULT_AFFIRMATION;
 
-      setIntention(nextIntention || DEFAULT_INTENTION);
-      setAffirmation(nextAffirmation || DEFAULT_AFFIRMATION);
+      setIntention(resolvedIntention);
+      setAffirmation(resolvedAffirmation);
+      if (nextIntention) {
+        dispatch(
+          setDailyAffirmationIntention({
+            user_intention: resolvedIntention,
+            user_affirmation: resolvedAffirmation,
+          })
+        );
+      } else {
+        dispatch(clearsetDailyAffirmationIntention());
+      }
     } catch (error) {
       console.error("Failed to load intention and affirmation", error);
       if (requestId === intentionRequestIdRef.current) {
@@ -238,6 +355,7 @@ const Home = () => {
       }
 
       setSelectedMood(mood);
+      dispatch(setDailyMood({ mood }));
       setHasMoodCheckedInToday(true);
       setMoodCheckInMessage("Your mood check-in has been saved for today.");
       void loadIntentionAndAffirmation(mood);
@@ -448,7 +566,7 @@ const Home = () => {
       return;
     }
 
-    void loadIntentionAndAffirmation(selectedMood);
+    void loadIntentionAndAffirmation(selectedMood, { forceRefresh: true });
   };
 
   const handleLogoutPress = () => {
@@ -470,6 +588,7 @@ const Home = () => {
           try {
             await deleteFromCache("authInfo");
             await deleteProfilePhotoUri();
+            dispatch(clearDailyCheckInInfo());
             setProfileImageSource(MEDITATION_ICON);
             setPendingProfilePhotoUri(null);
             setPendingProfilePhotoBase64(null);
