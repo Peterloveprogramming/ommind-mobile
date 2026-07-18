@@ -6,22 +6,26 @@ import {
   AddMoodCheckInResult,
   GetMeditationAudioInput,
   GetMeditationAudioUrlResult,
+  GetHomepageInfoInput,
+  GetHomepageInfoResult,
   GetHomePageTextResult,
-  GetIntentionAndAffirmationInput,
   GetIntentionAndAffirmationResult,
   GetMeditationCourseDetailsInput,
   GetMeditationCourseDetailsResult,
   GetMeditationCoursesResult,
-  GetRecommendedMeditationCoursesResult,
+  GetRecommendedSessionResult,
+  ResetDailyMoodResult,
 } from "./types";
 
 export const useMeditationApi = () => {
   const { commonFetch } = useFetch<
     | GetMeditationCoursesResult
-    | GetRecommendedMeditationCoursesResult
+    | GetRecommendedSessionResult
+    | GetHomepageInfoResult
     | GetHomePageTextResult
     | GetIntentionAndAffirmationResult
     | AddMoodCheckInResult
+    | ResetDailyMoodResult
     | GetMeditationCourseDetailsResult
     | GetMeditationAudioUrlResult
   >({
@@ -69,16 +73,16 @@ export const useMeditationApi = () => {
     }) as Promise<GetMeditationCourseDetailsResult>;
   };
 
-  const getRecommendedMeditationCourses = () => {
+  const getRecommendedSession = () => {
     const lambdaConfig: LambdaRequest = {
-      route: "get_recommended_courses",
+      route: "get_recommended_session",
     };
 
     return commonFetch({
       input: {
         ...lambdaConfig,
       },
-    }) as Promise<GetRecommendedMeditationCoursesResult>;
+    }) as Promise<GetRecommendedSessionResult>;
   };
 
   const getHomePageText = () => {
@@ -93,7 +97,20 @@ export const useMeditationApi = () => {
     }) as Promise<GetHomePageTextResult>;
   };
 
-  const getIntentionAndAffirmation = (input: GetIntentionAndAffirmationInput) => {
+  const getHomepageInfo = (input: GetHomepageInfoInput = {}) => {
+    const lambdaConfig: LambdaRequest = {
+      route: "get_homepage_info",
+    };
+
+    return commonFetch({
+      input: {
+        ...lambdaConfig,
+        ...input,
+      },
+    }) as Promise<GetHomepageInfoResult>;
+  };
+
+  const getIntentionAndAffirmation = () => {
     const lambdaConfig: LambdaRequest = {
       route: "get_intention_and_affirmation",
     };
@@ -101,7 +118,6 @@ export const useMeditationApi = () => {
     return commonFetch({
       input: {
         ...lambdaConfig,
-        ...input,
       },
     }) as Promise<GetIntentionAndAffirmationResult>;
   };
@@ -119,12 +135,26 @@ export const useMeditationApi = () => {
     }) as Promise<AddMoodCheckInResult>;
   };
 
+  const resetDailyMood = () => {
+    const lambdaConfig: LambdaRequest = {
+      route: "reset_daily_mood",
+    };
+
+    return commonFetch({
+      input: {
+        ...lambdaConfig,
+      },
+    }) as Promise<ResetDailyMoodResult>;
+  };
+
   return {
     getMeditationCourses,
-    getRecommendedMeditationCourses,
+    getHomepageInfo,
+    getRecommendedSession,
     getHomePageText,
     getIntentionAndAffirmation,
     addMoodCheckIn,
+    resetDailyMood,
     getMeditationCourseDetails,
     getMeditationAudioUrl,
   };

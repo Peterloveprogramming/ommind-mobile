@@ -1,10 +1,10 @@
 import { configureStore } from "@reduxjs/toolkit";
 
-import dailyCheckInInfoReducer from "@/store/slices/DailyCheckInInfoSlice";
+import homePageInfoReducer from "@/store/slices/HomePageInfoSlice";
 
 export const store = configureStore({
   reducer: {
-    dailyCheckInInfo: dailyCheckInInfoReducer,
+    homePageInfo: homePageInfoReducer,
   },
 });
 

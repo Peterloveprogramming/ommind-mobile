@@ -4,7 +4,7 @@ import {
   GetMeditationCourseDetailsInput,
   GetMeditationCourseDetailsResult,
   GetMeditationCoursesResult,
-  GetRecommendedMeditationCoursesResult,
+  GetRecommendedSessionResult,
 } from "@/api/meditation/types";
 import {
   MeditationCourseDetailsService,
@@ -25,16 +25,16 @@ export function useMeditationCourses(options: UseMeditationCoursesOptions = {}) 
   const [detailsError, setDetailsError] = useState<unknown>(null);
   const {
     getMeditationCourses,
-    getRecommendedMeditationCourses,
+    getRecommendedSession,
     getMeditationCourseDetails,
   } =
     useMeditationApi();
 
   const serviceRef = useRef<MeditationCoursesService | null>(null);
   const detailsServiceRef = useRef<MeditationCourseDetailsService | null>(null);
-  const recommendedRequestRef = useRef(getRecommendedMeditationCourses);
+  const recommendedRequestRef = useRef(getRecommendedSession);
 
-  recommendedRequestRef.current = getRecommendedMeditationCourses;
+  recommendedRequestRef.current = getRecommendedSession;
 
   if (!serviceRef.current) {
     serviceRef.current = new MeditationCoursesService(getMeditationCourses, {
@@ -72,12 +72,12 @@ export function useMeditationCourses(options: UseMeditationCoursesOptions = {}) 
     setError(null);
     const courses =  await serviceRef.current!.getAllCourses();
     console.log("all meditation courses are",courses)
-    console.log("calm are",courses["data"]["courses"]["calm"])
+    console.log("calm are", courses.data?.courses?.calm)
     return courses;
   }, []);
 
-  const fetchRecommendedMeditationCourses = useCallback(async () => {
-    return (await recommendedRequestRef.current()) as GetRecommendedMeditationCoursesResult;
+  const fetchRecommendedSession = useCallback(async () => {
+    return (await recommendedRequestRef.current()) as GetRecommendedSessionResult;
   }, []);
 
   const fetchMeditationCourseDetails = useCallback(
@@ -107,7 +107,7 @@ export function useMeditationCourses(options: UseMeditationCoursesOptions = {}) 
     detailsResult,
     detailsError,
     fetchMeditationCourses,
-    fetchRecommendedMeditationCourses,
+    fetchRecommendedSession,
     fetchMeditationCourseDetails,
     reset,
     service: serviceRef.current,

@@ -37,6 +37,11 @@ import {
   updateSessionProgress,
 } from "@/utils/helper";
 import { useToast } from "@/context/useToast";
+import { useAppDispatch } from "@/store/hooks";
+import {
+  clearRecommendedSession,
+  setHomePageTextFromSessionTitle,
+} from "@/store/slices/HomePageInfoSlice";
 
 const SEEK_STEP_SECONDS = 10;
 const TRACKER_SIZE = 24;
@@ -124,6 +129,7 @@ const parseSessionMetadata = (value?: string): Record<string, SessionMetadata> =
 const SessionPlayer = () => {
   const router = useRouter();
   const navigation = useNavigation();
+  const dispatch = useAppDispatch();
   const params = useLocalSearchParams<{
     image_url?: string | string[];
     backgroundUrl?: string | string[];
@@ -165,6 +171,9 @@ const SessionPlayer = () => {
     () => Object.keys(sessionTitles).map(Number).filter((value) => !Number.isNaN(value)).sort((a, b) => a - b),
     [sessionTitles],
   );
+  const hasPlaylistNavigation = sessionNumbers.length > 0;
+  const canSkipBackward = hasPlaylistNavigation && Boolean(sessionTitles[String(sessionNumber - 1)]);
+  const canSkipForward = hasPlaylistNavigation && Boolean(sessionTitles[String(sessionNumber + 1)]);
   const sessionKey = `${meditationType ?? ""}-${courseNumber}-${sessionNumber}`;
   const hasInitialProgress = Number.isFinite(initialProgress) && initialProgress > 0;
   const initialProgressPromptTime = useMemo(
@@ -526,6 +535,11 @@ const SessionPlayer = () => {
       if (!checkIfLambdaResultIsSuccess(result)) {
         console.error("Failed to update session progress", result);
         lastSavedProgressKeyRef.current = null;
+        return;
+      }
+
+      if (completed || accumulatedMinutes > 0) {
+        dispatch(clearRecommendedSession());
       }
     } catch (error) {
       console.error("Failed to update session progress", error);
@@ -533,7 +547,7 @@ const SessionPlayer = () => {
     } finally {
       accumulatedPlaybackSecondsRef.current = 0;
     }
-  }, [flushAccumulatedPlaybackTime, getCurrentProgressSecond, isGenerated]);
+  }, [dispatch, flushAccumulatedPlaybackTime, getCurrentProgressSecond, isGenerated]);
 
   useEffect(() => {
     if (isGenerated) {
@@ -580,8 +594,13 @@ const SessionPlayer = () => {
       return;
     }
 
+    if (!hasPlaylistNavigation && !isPlaybackEnabled) {
+      void saveSessionProgress(Math.ceil(durationRef.current || currentTimeRef.current), true);
+      return;
+    }
+
     const nextSessionNumber = isPlaybackEnabled ? sessionNumber : sessionNumber + 1;
-    if (sessionNumbers.length > 0 && !sessionTitles[String(nextSessionNumber)]) {
+    if (hasPlaylistNavigation && !sessionTitles[String(nextSessionNumber)]) {
       void saveSessionProgress(Math.ceil(durationRef.current || currentTimeRef.current), true);
       return;
     }
@@ -609,7 +628,7 @@ const SessionPlayer = () => {
         },
       });
     })();
-  }, [backgroundUrl, bgmPlayer, courseNumber, image_url, isPlaybackEnabled, meditationType, router, saveSessionProgress, sessionMetadata, sessionMetadataParam, sessionNumber, sessionNumbers.length, sessionTitles, sessionTitlesParam, title, voicePlayer, voiceStatus.didJustFinish]);
+  }, [backgroundUrl, bgmPlayer, courseNumber, hasPlaylistNavigation, image_url, isPlaybackEnabled, meditationType, router, saveSessionProgress, sessionMetadata, sessionMetadataParam, sessionNumber, sessionTitles, sessionTitlesParam, title, voicePlayer, voiceStatus.didJustFinish]);
 
   const duration = voiceStatus.duration || 0;
   const currentTime = voiceStatus.currentTime || 0;
@@ -648,7 +667,10 @@ const SessionPlayer = () => {
       if (!checkIfLambdaResultIsSuccess(result)) {
         console.error("Failed to add recently accessed session", result);
         recentlyAccessedSessionKeyRef.current = null;
+        return;
       }
+      dispatch(setHomePageTextFromSessionTitle({ sessionTitle: title }));
+      dispatch(clearRecommendedSession());
     }).catch((error) => {
       console.error("Failed to add recently accessed session", error);
       recentlyAccessedSessionKeyRef.current = null;
@@ -662,6 +684,7 @@ const SessionPlayer = () => {
     sessionNumber,
     title,
     voiceStatus.isLoaded,
+    dispatch,
   ]);
 
   const progress = duration > 0 ? Math.min(currentTime / duration, 1) : 0;
@@ -778,7 +801,7 @@ const SessionPlayer = () => {
       return;
     }
 
-    if (sessionNumbers.length > 0 && !sessionTitles[String(nextSessionNumber)]) {
+    if (!hasPlaylistNavigation || !sessionTitles[String(nextSessionNumber)]) {
       return;
     }
 
@@ -805,10 +828,18 @@ const SessionPlayer = () => {
   };
 
   const handleSkipBackward = () => {
+    if (!canSkipBackward) {
+      return;
+    }
+
     void navigateToSession(sessionNumber - 1);
   };
 
   const handleSkipForward = () => {
+    if (!canSkipForward) {
+      return;
+    }
+
     void navigateToSession(sessionNumber + 1);
   };
 

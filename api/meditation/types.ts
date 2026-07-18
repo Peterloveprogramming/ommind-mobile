@@ -50,26 +50,53 @@ export type GetMeditationCoursesResult = LambdaResult<{
   courses: MeditationCoursesByType;
 } | null>;
 
-export type GetRecommendedMeditationCoursesResult = LambdaResult<{
-  courses: MeditationCourse[];
+export type RecommendedSession = {
+  type: MeditationCourse["type"];
+  course_number: number;
+  session_number: number;
+  title: string;
+  durationMinutes: number;
+  imageUrl: string;
+  backgroundUrl: string;
+  favourite: 0 | 1;
+  progress?: number | null;
+};
+
+export type GetRecommendedSessionResult = LambdaResult<{
+  recommended_session: RecommendedSession;
 } | null>;
 
 export type GetHomePageTextResult = LambdaResult<{
   home_page_text: string;
 } | null>;
 
-export type GetIntentionAndAffirmationInput = {
-  mood: string;
+export type GetHomepageInfoInput = {
+  mood?: string;
+  force_intention_refresh?: boolean;
+  force_recommendation_refresh?: boolean;
 };
 
 export type GetIntentionAndAffirmationResult = LambdaResult<{
+  mood: string;
   intention: string;
   affirmation: string;
 } | null>;
 
+export type HomepageInfoData = {
+  home_page_text: string;
+  mood_check_in: MoodCheckIn | null;
+  intention_and_affirmation: {
+    mood: string;
+    intention: string;
+    affirmation: string;
+  } | null;
+  recommended_session: RecommendedSession | null;
+};
+
+export type GetHomepageInfoResult = LambdaResult<HomepageInfoData | null>;
+
 export type AddMoodCheckInInput = {
   mood: string;
-  timezone: string;
 };
 
 export type MoodCheckIn = {
@@ -78,10 +105,16 @@ export type MoodCheckIn = {
   user_id: number;
   created_at: string | null;
   check_in_date: string | null;
-  timezone: string;
+  intention: string | null;
+  affirmation: string | null;
+  recommend_session_id: number | null;
+  recommend_course_id: number | null;
+  recommendation_reasoning: string | null;
 };
 
 export type AddMoodCheckInResult = LambdaResult<MoodCheckIn | null>;
+
+export type ResetDailyMoodResult = LambdaResult<MoodCheckIn | null>;
 
 export type GetMeditationCourseDetailsInput = {
   type: MeditationCourse["type"];

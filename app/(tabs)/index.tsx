@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  FlatList,
   Image,
   ImageBackground,
   ImageSourcePropType,
@@ -15,6 +16,11 @@ import { useFocusEffect, usePathname, useRouter } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import { useUserApi } from "@/api/api";
 import { useMeditationApi } from "@/api/meditation/requests";
+import type {
+  GetHomepageInfoInput,
+  HomepageInfoData,
+  RecommendedSession,
+} from "@/api/meditation/types";
 import {
   DEFAULT_AFFIRMATION,
   DEFAULT_HOME_PAGE_TEXT,
@@ -35,15 +41,15 @@ import BaseButton from "@/comp/base/BaseButton";
 import { FONTS } from "@/theme";
 import ProfilePhotoUploadModal from "@/comp/modals/ProfilePhotoUploadModal";
 import PersonalisedMeditationModal from "@/comp/modals/PersonalisedMeditationModal";
+import MeditationSessionCard from "@/comp/meditation_session/MeditationSessionCard";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
-  clearDailyCheckInInfo,
-  clearsetDailyAffirmationIntention,
+  clearHomePageInfo,
   getDailyAffirmationIntention,
   getDailyMood,
-  setDailyAffirmationIntention,
-  setDailyMood,
-} from "@/store/slices/DailyCheckInInfoSlice";
+  getHomePageInfoState,
+  setHomePageInfo,
+} from "@/store/slices/HomePageInfoSlice";
 
 const MEDITATION_ICON = require("@/assets/images/home/meditation_icon.png");
 const NOTIFICATION_ICON = require("@/assets/images/home/notification.png");
@@ -91,14 +97,6 @@ const capitalizeName = (name: string) => {
   return trimmedName.charAt(0).toUpperCase() + trimmedName.slice(1);
 };
 
-const getUserTimezone = () => {
-  try {
-    return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
-  } catch {
-    return "UTC";
-  }
-};
-
 const isTimestampBeforeToday = (timestamp: number | null) => {
   if (!timestamp) return false;
 
@@ -119,16 +117,28 @@ const isCachedDailyMoodFresh = (timestamp: number | null) =>
 const getInitialSelectedMood = (mood: string | null, lastFetchedAt: number | null) =>
   mood && isCachedDailyMoodFresh(lastFetchedAt) ? mood : DEFAULT_MOOD;
 
+const hasFreshHomepageInfo = (lastFetchedAt: number | null) =>
+  Boolean(lastFetchedAt && !isTimestampBeforeToday(lastFetchedAt));
+
+type HomepageInfoLoadOptions = {
+  queueAfterCurrent?: boolean;
+  guidanceLoading?: boolean;
+  recommendationLoading?: boolean;
+};
+
 const Home = () => {
   const router = useRouter();
   const pathname = usePathname();
   const dispatch = useAppDispatch();
+  const cachedHomePageInfo = useAppSelector(getHomePageInfoState);
   const { mood: cachedDailyMood, lastFetchedAt: dailyMoodLastFetchedAt } =
     useAppSelector(getDailyMood);
   const {
     user_intention,
     user_affirmation,
   } = useAppSelector(getDailyAffirmationIntention);
+  const cachedHomePageText = cachedHomePageInfo.homePageText.text;
+  const cachedRecommendedSession = cachedHomePageInfo.recommendedSession.session;
   const [firstName, setFirstName] = useState("");
   const hasFreshCachedMood = Boolean(
     cachedDailyMood && isCachedDailyMoodFresh(dailyMoodLastFetchedAt)
@@ -136,7 +146,9 @@ const Home = () => {
   const [selectedMood, setSelectedMood] = useState(
     getInitialSelectedMood(cachedDailyMood, dailyMoodLastFetchedAt)
   );
-  const [homePageText, setHomePageText] = useState(DEFAULT_HOME_PAGE_TEXT);
+  const [homePageText, setHomePageText] = useState(
+    cachedHomePageText || DEFAULT_HOME_PAGE_TEXT
+  );
   const [intention, setIntention] = useState(user_intention || DEFAULT_INTENTION);
   const [affirmation, setAffirmation] = useState(user_affirmation || DEFAULT_AFFIRMATION);
   const [pendingMoodCheckIn, setPendingMoodCheckIn] = useState<string | null>(null);
@@ -144,6 +156,11 @@ const Home = () => {
   const [hasMoodCheckedInToday, setHasMoodCheckedInToday] = useState(hasFreshCachedMood);
   const [isMoodCheckInLoading, setIsMoodCheckInLoading] = useState(false);
   const [isGuidanceLoading, setIsGuidanceLoading] = useState(false);
+  const [recommendedSession, setRecommendedSession] = useState<RecommendedSession | null>(
+    cachedRecommendedSession
+  );
+  const [isRecommendationLoading, setIsRecommendationLoading] = useState(false);
+  const [recommendationMessage, setRecommendationMessage] = useState("");
   const [isNavigating, setIsNavigating] = useState(false);
   const [isProfileModalVisible, setIsProfileModalVisible] = useState(false);
   const [showMeditationModal, setShowMeditationModal] = useState(false);
@@ -153,21 +170,24 @@ const Home = () => {
   const [profilePhotoError, setProfilePhotoError] = useState("");
   const [isUploadingProfilePhoto, setIsUploadingProfilePhoto] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const { getHomePageText, getIntentionAndAffirmation, addMoodCheckIn } = useMeditationApi();
-  const getHomePageTextRef = useRef(getHomePageText);
-  const getIntentionAndAffirmationRef = useRef(getIntentionAndAffirmation);
-  const cachedDailyMoodRef = useRef(cachedDailyMood);
-  const dailyMoodLastFetchedAtRef = useRef(dailyMoodLastFetchedAt);
-  const cachedIntentionRef = useRef(user_intention);
-  const cachedAffirmationRef = useRef(user_affirmation);
+  const [isResettingMood, setIsResettingMood] = useState(false);
+  const {
+    getHomepageInfo,
+    resetDailyMood,
+  } = useMeditationApi();
+  const getHomepageInfoRef = useRef(getHomepageInfo);
+  const homePageInfoRef = useRef(cachedHomePageInfo);
   const intentionRequestIdRef = useRef(0);
+  const homepageInfoRequestRef = useRef<Promise<unknown> | null>(null);
+  const loadHomepageInfoRef = useRef<
+    ((
+      input?: GetHomepageInfoInput,
+      options?: HomepageInfoLoadOptions
+    ) => Promise<unknown>) | null
+  >(null);
   const moodCheckInConfirmationRef = useRef(false);
-  getHomePageTextRef.current = getHomePageText;
-  getIntentionAndAffirmationRef.current = getIntentionAndAffirmation;
-  cachedDailyMoodRef.current = cachedDailyMood;
-  dailyMoodLastFetchedAtRef.current = dailyMoodLastFetchedAt;
-  cachedIntentionRef.current = user_intention;
-  cachedAffirmationRef.current = user_affirmation;
+  getHomepageInfoRef.current = getHomepageInfo;
+  homePageInfoRef.current = cachedHomePageInfo;
   const {
     uploadProfilePic: { uploadProfilePic },
     getAccountDetails: { getAccountDetails },
@@ -191,42 +211,156 @@ const Home = () => {
     void loadUserName();
   }, []);
 
+  const resetHomepageLocalState = () => {
+    setSelectedMood(DEFAULT_MOOD);
+    setHasMoodCheckedInToday(false);
+    setIntention(DEFAULT_INTENTION);
+    setAffirmation(DEFAULT_AFFIRMATION);
+    setHomePageText(DEFAULT_HOME_PAGE_TEXT);
+    setRecommendedSession(null);
+    setRecommendationMessage("");
+  };
+
+  const applyHomepageInfoData = (data: HomepageInfoData | null) => {
+    if (!data) {
+      resetHomepageLocalState();
+      return;
+    }
+
+    dispatch(setHomePageInfo(data));
+    setHomePageText(data.home_page_text?.trim() || DEFAULT_HOME_PAGE_TEXT);
+
+    const nextMood = data.mood_check_in?.mood?.trim() || "";
+    setSelectedMood(nextMood || DEFAULT_MOOD);
+    setHasMoodCheckedInToday(Boolean(nextMood));
+
+    const nextIntention = data.intention_and_affirmation?.intention?.trim() || "";
+    const nextAffirmation = data.intention_and_affirmation?.affirmation?.trim() || "";
+    setIntention(nextIntention || DEFAULT_INTENTION);
+    setAffirmation(nextAffirmation || DEFAULT_AFFIRMATION);
+    setRecommendedSession(data.recommended_session);
+    setRecommendationMessage("");
+  };
+
+  const applyCachedHomepageInfo = () => {
+    const info = homePageInfoRef.current;
+    setHomePageText(info.homePageText.text || DEFAULT_HOME_PAGE_TEXT);
+    setSelectedMood(info.dailyMood.mood || DEFAULT_MOOD);
+    setHasMoodCheckedInToday(Boolean(info.dailyMood.mood));
+    setIntention(
+      info.dailyAffirmationIntention.user_intention || DEFAULT_INTENTION
+    );
+    setAffirmation(
+      info.dailyAffirmationIntention.user_affirmation || DEFAULT_AFFIRMATION
+    );
+    setRecommendedSession(info.recommendedSession.session);
+    setRecommendationMessage("");
+  };
+
+  const isHomepageCacheComplete = () => {
+    const info = homePageInfoRef.current;
+    if (!hasFreshHomepageInfo(info.lastFetchedAt) || !info.homePageText.text) {
+      return false;
+    }
+
+    if (!info.moodCheckIn.value) {
+      return true;
+    }
+
+    return Boolean(
+      info.dailyAffirmationIntention.user_intention &&
+        info.dailyAffirmationIntention.user_affirmation &&
+        info.recommendedSession.session
+    );
+  };
+
+  const loadHomepageInfo = async (
+    input: GetHomepageInfoInput = {},
+    options: HomepageInfoLoadOptions = {}
+  ) => {
+    if (homepageInfoRequestRef.current) {
+      if (!options.queueAfterCurrent) {
+        return null;
+      }
+      await homepageInfoRequestRef.current.catch(() => null);
+    }
+
+    if (options.guidanceLoading) {
+      setIsGuidanceLoading(true);
+    }
+    if (options.recommendationLoading) {
+      setIsRecommendationLoading(true);
+      setRecommendationMessage("");
+    }
+
+    const request = (async () => {
+      const response = await getHomepageInfoRef.current(input);
+
+      if (!checkIfLambdaResultIsSuccess(response) || !response.data) {
+        const message = getLambdaErrorMessage(response);
+        if (options.recommendationLoading) {
+          setRecommendedSession(null);
+          setRecommendationMessage(message);
+        }
+        return response;
+      }
+
+      applyHomepageInfoData(response.data);
+      return response;
+    })();
+
+    homepageInfoRequestRef.current = request;
+
+    try {
+      return await request;
+    } catch (error) {
+      console.error("Failed to load homepage info", error);
+      if (options.recommendationLoading) {
+        setRecommendedSession(null);
+        setRecommendationMessage("Unable to load your homepage info right now.");
+      }
+      throw error;
+    } finally {
+      if (homepageInfoRequestRef.current === request) {
+        homepageInfoRequestRef.current = null;
+      }
+      if (options.guidanceLoading) {
+        setIsGuidanceLoading(false);
+      }
+      if (options.recommendationLoading) {
+        setIsRecommendationLoading(false);
+      }
+    }
+  };
+  loadHomepageInfoRef.current = loadHomepageInfo;
+
   useFocusEffect(
     React.useCallback(() => {
       let isActive = true;
 
-      const syncCachedMood = () => {
-        const storedMood = cachedDailyMoodRef.current;
-        const storedMoodFetchedAt = dailyMoodLastFetchedAtRef.current;
+      const syncCachedHomepageInfo = () => {
+        const cachedInfo = homePageInfoRef.current;
+        const storedMoodFetchedAt = cachedInfo.dailyMood.lastFetchedAt;
 
-        if (!storedMood) {
-          dispatch(clearDailyCheckInInfo());
+        if (
+          (storedMoodFetchedAt && !isCachedDailyMoodFresh(storedMoodFetchedAt)) ||
+          (cachedInfo.lastFetchedAt && !hasFreshHomepageInfo(cachedInfo.lastFetchedAt))
+        ) {
+          dispatch(clearHomePageInfo());
           if (isActive) {
-            setSelectedMood(DEFAULT_MOOD);
-            setHasMoodCheckedInToday(false);
-            setIntention(DEFAULT_INTENTION);
-            setAffirmation(DEFAULT_AFFIRMATION);
+            resetHomepageLocalState();
           }
-          return;
+          return false;
         }
 
-        if (!isCachedDailyMoodFresh(storedMoodFetchedAt)) {
-          dispatch(clearDailyCheckInInfo());
-          if (isActive) {
-            setSelectedMood(DEFAULT_MOOD);
-            setHasMoodCheckedInToday(false);
-            setIntention(DEFAULT_INTENTION);
-            setAffirmation(DEFAULT_AFFIRMATION);
-          }
-          return;
+        if (!isHomepageCacheComplete()) {
+          return false;
         }
 
         if (isActive) {
-          setSelectedMood(storedMood);
-          setHasMoodCheckedInToday(true);
-          setIntention(cachedIntentionRef.current || DEFAULT_INTENTION);
-          setAffirmation(cachedAffirmationRef.current || DEFAULT_AFFIRMATION);
+          applyCachedHomepageInfo();
         }
+        return true;
       };
 
       const loadStoredProfilePhoto = async () => {
@@ -236,27 +370,11 @@ const Home = () => {
         }
       };
 
-      const loadHomePageText = async () => {
-        try {
-          const response = await getHomePageTextRef.current();
-          const nextHomePageText = checkIfLambdaResultIsSuccess(response)
-            ? response.data?.home_page_text?.trim()
-            : "";
-
-          if (isActive) {
-            setHomePageText(nextHomePageText || DEFAULT_HOME_PAGE_TEXT);
-          }
-        } catch (error) {
-          console.error("Failed to load home page text", error);
-          if (isActive) {
-            setHomePageText(DEFAULT_HOME_PAGE_TEXT);
-          }
-        }
-      };
-
-      syncCachedMood();
+      const didUseCache = syncCachedHomepageInfo();
       void loadStoredProfilePhoto();
-      void loadHomePageText();
+      if (!didUseCache) {
+        void loadHomepageInfoRef.current?.({}, { recommendationLoading: true });
+      }
 
       return () => {
         isActive = false;
@@ -268,65 +386,54 @@ const Home = () => {
     setIsGuidanceLoading(false);
     setIntention(DEFAULT_INTENTION);
     setAffirmation(DEFAULT_AFFIRMATION);
-    dispatch(clearsetDailyAffirmationIntention());
+    setRecommendedSession(null);
+    setRecommendationMessage("");
   };
 
   const loadIntentionAndAffirmation = async (
-    mood: string,
+    mood?: string,
     options: { forceRefresh?: boolean } = {}
   ) => {
-    const normalizedMood = mood.trim();
+    const normalizedMood = mood?.trim() ?? "";
 
     if (
       !options.forceRefresh &&
       normalizedMood &&
       cachedDailyMood === normalizedMood &&
-      user_intention
+      isHomepageCacheComplete()
     ) {
-      setIntention(user_intention);
-      setAffirmation(user_affirmation || DEFAULT_AFFIRMATION);
+      applyCachedHomepageInfo();
       return;
     }
 
     const requestId = intentionRequestIdRef.current + 1;
     intentionRequestIdRef.current = requestId;
-    setIsGuidanceLoading(true);
 
     try {
-      const response = await getIntentionAndAffirmationRef.current({ mood: normalizedMood });
+      const response = await loadHomepageInfo(
+        {
+          mood: normalizedMood || undefined,
+          force_intention_refresh: options.forceRefresh,
+          force_recommendation_refresh: options.forceRefresh,
+        },
+        {
+          queueAfterCurrent: true,
+          guidanceLoading: true,
+          recommendationLoading: true,
+        }
+      );
 
       if (requestId !== intentionRequestIdRef.current) {
         return;
       }
 
-      const isSuccessfulResponse = checkIfLambdaResultIsSuccess(response);
-      const nextIntention = isSuccessfulResponse ? response.data?.intention?.trim() : "";
-      const nextAffirmation = isSuccessfulResponse
-        ? response.data?.affirmation?.trim()
-        : "";
-      const resolvedIntention = nextIntention || DEFAULT_INTENTION;
-      const resolvedAffirmation = nextAffirmation || DEFAULT_AFFIRMATION;
-
-      setIntention(resolvedIntention);
-      setAffirmation(resolvedAffirmation);
-      if (nextIntention) {
-        dispatch(
-          setDailyAffirmationIntention({
-            user_intention: resolvedIntention,
-            user_affirmation: resolvedAffirmation,
-          })
-        );
-      } else {
-        dispatch(clearsetDailyAffirmationIntention());
+      if (response && !checkIfLambdaResultIsSuccess(response)) {
+        resetIntentionAndAffirmation();
       }
     } catch (error) {
       console.error("Failed to load intention and affirmation", error);
       if (requestId === intentionRequestIdRef.current) {
         resetIntentionAndAffirmation();
-      }
-    } finally {
-      if (requestId === intentionRequestIdRef.current) {
-        setIsGuidanceLoading(false);
       }
     }
   };
@@ -339,10 +446,14 @@ const Home = () => {
     );
 
     try {
-      const response = await addMoodCheckIn({
-        mood,
-        timezone: getUserTimezone(),
-      });
+      const response = await loadHomepageInfo(
+        { mood },
+        {
+          queueAfterCurrent: true,
+          guidanceLoading: true,
+          recommendationLoading: true,
+        }
+      );
 
       if (!checkIfLambdaResultIsSuccess(response)) {
         const message = getLambdaErrorMessage(response);
@@ -354,11 +465,8 @@ const Home = () => {
         return;
       }
 
-      setSelectedMood(mood);
-      dispatch(setDailyMood({ mood }));
       setHasMoodCheckedInToday(true);
       setMoodCheckInMessage("Your mood check-in has been saved for today.");
-      void loadIntentionAndAffirmation(mood);
     } catch (error) {
       console.error("Failed to save mood check-in", error);
       const message = "Unable to save your mood check-in right now. Please try again.";
@@ -367,6 +475,46 @@ const Home = () => {
     } finally {
       setIsMoodCheckInLoading(false);
       setPendingMoodCheckIn(null);
+    }
+  };
+
+  const handleResetMoodPress = async () => {
+    if (isResettingMood) {
+      return;
+    }
+
+    setIsResettingMood(true);
+    setMoodCheckInMessage("Resetting your mood check-in...");
+
+    try {
+      const response = await resetDailyMood();
+
+      if (!checkIfLambdaResultIsSuccess(response)) {
+        const message = getLambdaErrorMessage(response);
+        setMoodCheckInMessage(message);
+        Alert.alert("Reset mood", message);
+        return;
+      }
+
+      intentionRequestIdRef.current += 1;
+      dispatch(clearHomePageInfo());
+      setSelectedMood(DEFAULT_MOOD);
+      setPendingMoodCheckIn(null);
+      setHasMoodCheckedInToday(false);
+      setIsGuidanceLoading(false);
+      setIsRecommendationLoading(false);
+      setIntention(DEFAULT_INTENTION);
+      setAffirmation(DEFAULT_AFFIRMATION);
+      setRecommendedSession(null);
+      setRecommendationMessage("");
+      setMoodCheckInMessage("Mood check-in reset.");
+    } catch (error) {
+      console.error("Failed to reset daily mood", error);
+      const message = "Unable to reset your mood check-in right now.";
+      setMoodCheckInMessage(message);
+      Alert.alert("Reset mood", message);
+    } finally {
+      setIsResettingMood(false);
     }
   };
 
@@ -569,6 +717,34 @@ const Home = () => {
     void loadIntentionAndAffirmation(selectedMood, { forceRefresh: true });
   };
 
+  const handleRecommendedSessionPress = () => {
+    if (!recommendedSession || isNavigating) {
+      return;
+    }
+
+    setIsNavigating(true);
+    setTimeout(() => {
+      setIsNavigating(false);
+    }, 1500);
+
+    const sessionTitle = `Session ${recommendedSession.session_number}: ${recommendedSession.title}`;
+
+    router.push({
+      pathname: "/meditation_session/player",
+      params: {
+        title: sessionTitle,
+        favourite: String(recommendedSession.favourite ?? 0),
+        course_number: String(recommendedSession.course_number),
+        session_number: String(recommendedSession.session_number),
+        type: recommendedSession.type,
+        image_url: recommendedSession.imageUrl,
+        backgroundUrl: recommendedSession.backgroundUrl,
+        progress:
+          recommendedSession.progress == null ? "" : String(recommendedSession.progress),
+      },
+    });
+  };
+
   const handleLogoutPress = () => {
     if (isLoggingOut) {
       return;
@@ -588,12 +764,14 @@ const Home = () => {
           try {
             await deleteFromCache("authInfo");
             await deleteProfilePhotoUri();
-            dispatch(clearDailyCheckInInfo());
+            dispatch(clearHomePageInfo());
             setProfileImageSource(MEDITATION_ICON);
             setPendingProfilePhotoUri(null);
             setPendingProfilePhotoBase64(null);
             setProfilePhotoError("");
             setIsProfileModalVisible(false);
+            setRecommendedSession(null);
+            setRecommendationMessage("");
             router.replace("/welcome");
           } catch (error) {
             console.error("Failed to log out", error);
@@ -611,6 +789,7 @@ const Home = () => {
         pendingMoodCheckIn?.toLowerCase() ?? "mood"
       } check-in. Please wait before choosing another mood.`
     : moodCheckInMessage;
+  const recommendedSessions = recommendedSession ? [recommendedSession] : [];
 
   return (
     <>
@@ -641,18 +820,24 @@ const Home = () => {
           </View>
         </View>
 
-        <View style={{
-          width:"25%",
-          marginTop:10,
-        }}>
+        <View style={styles.tempActionsRow}>
           <TouchableOpacity
-              activeOpacity={0.85}
-              onPress={handleLogoutPress}
-              style={[styles.logoutButton, isLoggingOut && styles.logoutButtonDisabled]}
-              disabled={isLoggingOut}
-            >
-              <Text style={styles.logoutButtonText}>Log out</Text>
-            </TouchableOpacity>
+            activeOpacity={0.85}
+            onPress={handleLogoutPress}
+            style={[styles.logoutButton, isLoggingOut && styles.logoutButtonDisabled]}
+            disabled={isLoggingOut}
+          >
+            <Text style={styles.logoutButtonText}>Log out</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            activeOpacity={0.85}
+            onPress={handleResetMoodPress}
+            style={[styles.resetButton, isResettingMood && styles.logoutButtonDisabled]}
+            disabled={isResettingMood}
+          >
+            <Text style={styles.resetButtonText}>reset</Text>
+          </TouchableOpacity>
         </View>
 
         <ImageBackground
@@ -799,6 +984,52 @@ const Home = () => {
           </ImageBackground>
         </View>
 
+        <View style={styles.recommendationSection}>
+          <View style={styles.recommendationHeader}>
+            <Text style={styles.recommendationTitle}>Your Practice Today</Text>
+            <TouchableOpacity
+              activeOpacity={0.75}
+              accessibilityRole="button"
+              accessibilityLabel="Open today's practice"
+              hitSlop={10}
+              onPress={handleRecommendedSessionPress}
+              disabled={!recommendedSession || isRecommendationLoading}
+            >
+              <Text style={styles.recommendationArrow}>→</Text>
+            </TouchableOpacity>
+          </View>
+
+          {isRecommendationLoading ? (
+            <View style={styles.recommendationLoadingRow}>
+              <ActivityIndicator size="small" color="#7A756E" />
+              <Text style={styles.recommendationLoadingText}>Finding today&apos;s session...</Text>
+            </View>
+          ) : (
+            <FlatList
+              horizontal
+              data={recommendedSessions}
+              keyExtractor={(item) => `${item.type}-${item.course_number}-${item.session_number}`}
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.recommendationRow}
+              renderItem={({ item }) => (
+                <MeditationSessionCard
+                  session_length={item.durationMinutes}
+                  session_title={`Session ${item.session_number}: ${item.title}`}
+                  image_url={item.imageUrl || undefined}
+                  session_progress={item.progress}
+                  onPress={handleRecommendedSessionPress}
+                  generated_meditation={0}
+                />
+              )}
+              ListEmptyComponent={
+                recommendationMessage ? (
+                  <Text style={styles.recommendationMessage}>{recommendationMessage}</Text>
+                ) : null
+              }
+            />
+          )}
+        </View>
+
         <View style={styles.bottomDivider} />
       </ScrollView>
 
@@ -893,6 +1124,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
   },
+  tempActionsRow: {
+    marginTop: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
   logoutButton: {
     minHeight: 34,
     borderRadius: 999,
@@ -911,6 +1148,22 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 16,
     color: "#4B4748",
+  },
+  resetButton: {
+    minHeight: 34,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: "#C76767",
+    backgroundColor: "#FFF8F8",
+    paddingHorizontal: 14,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  resetButtonText: {
+    fontFamily: FONTS.figtreeSemiBold,
+    fontSize: 12,
+    lineHeight: 16,
+    color: "#9E3F3F",
   },
   heroCard: {
     marginTop: 28,
@@ -1163,5 +1416,52 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 16,
     color: "#FFFFFF",
+  },
+  recommendationSection: {
+    marginTop: 18,
+    paddingTop: 28,
+    borderTopWidth: 1,
+    borderTopColor: "#E7E0D7",
+  },
+  recommendationHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  recommendationTitle: {
+    fontFamily: FONTS.figtreeSemiBold,
+    fontSize: 18,
+    lineHeight: 24,
+    color: "#111111",
+  },
+  recommendationArrow: {
+    fontFamily: FONTS.interSemiBold,
+    fontSize: 28,
+    lineHeight: 28,
+    color: "#6D6965",
+  },
+  recommendationRow: {
+    gap: 12,
+    paddingTop: 16,
+    paddingRight: 12,
+  },
+  recommendationLoadingRow: {
+    paddingTop: 16,
+    minHeight: 36,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  recommendationLoadingText: {
+    fontFamily: FONTS.inter,
+    fontSize: 14,
+    lineHeight: 20,
+    color: "#8B8B8B",
+  },
+  recommendationMessage: {
+    fontFamily: FONTS.inter,
+    fontSize: 14,
+    lineHeight: 20,
+    color: "#8B8B8B",
   },
 });
