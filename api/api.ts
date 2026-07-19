@@ -19,7 +19,8 @@ import { useAddMessageRating } from "./messageRating/requests";
 import { useAddMessageReport } from "./messageReport/requests";
 import {
     useAddAwarenessLog,
-    useAnalyzeAwareness,
+    // Reflection is disabled for now.
+    // useAnalyzeAwareness,
     useBulkDeleteAwarenessLogs,
     useDeleteAwarenessLog,
     useGetAwarenessLog,
@@ -28,7 +29,8 @@ import {
 } from "./awarenessLogs/requests";
 import {
     useAddDreamLog,
-    useAnalyzeDream,
+    // Reflection is disabled for now.
+    // useAnalyzeDream,
     useBulkDeleteDreamLogs,
     useDeleteDreamLog,
     useGetDreamLog,
@@ -209,9 +211,10 @@ export const useDreamLogsApi = () => {
     const {
         bulkDeleteDreamLogs
     } = useBulkDeleteDreamLogs()
-    const {
-        analyzeDream
-    } = useAnalyzeDream()
+    // Reflection is disabled for now.
+    // const {
+    //     analyzeDream
+    // } = useAnalyzeDream()
 
     return {
         getDreamLogs: {
@@ -232,9 +235,10 @@ export const useDreamLogsApi = () => {
         bulkDeleteDreamLogs: {
             bulkDeleteDreamLogs
         },
-        analyzeDream: {
-            analyzeDream
-        }
+        // Reflection is disabled for now.
+        // analyzeDream: {
+        //     analyzeDream
+        // }
     }
 }
 
@@ -257,9 +261,10 @@ export const useAwarenessLogsApi = () => {
     const {
         bulkDeleteAwarenessLogs
     } = useBulkDeleteAwarenessLogs()
-    const {
-        analyzeAwareness
-    } = useAnalyzeAwareness()
+    // Reflection is disabled for now.
+    // const {
+    //     analyzeAwareness
+    // } = useAnalyzeAwareness()
 
     return {
         getAwarenessLogs: {
@@ -280,8 +285,9 @@ export const useAwarenessLogsApi = () => {
         bulkDeleteAwarenessLogs: {
             bulkDeleteAwarenessLogs
         },
-        analyzeAwareness: {
-            analyzeAwareness
-        }
+        // Reflection is disabled for now.
+        // analyzeAwareness: {
+        //     analyzeAwareness
+        // }
     }
 }

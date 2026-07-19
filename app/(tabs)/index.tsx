@@ -34,13 +34,14 @@ import {
   getLambdaErrorMessage,
   getAuthInfo,
   getProfilePhotoUri,
+  generateUniqueId,
   navigateToNewChat,
   storeProfilePhotoUri,
 } from "@/utils/helper";
 import BaseButton from "@/comp/base/BaseButton";
 import { FONTS } from "@/theme";
 import ProfilePhotoUploadModal from "@/comp/modals/ProfilePhotoUploadModal";
-import PersonalisedMeditationModal from "@/comp/modals/PersonalisedMeditationModal";
+import PersonalisedMeditationModal, { PersonalisedMeditationSelection } from "@/comp/modals/PersonalisedMeditationModal";
 import MeditationSessionCard from "@/comp/meditation_session/MeditationSessionCard";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
@@ -708,6 +709,27 @@ const Home = () => {
     navigateToNewChat(router);
   };
 
+  const handlePersonalisedMeditationBegin = (
+    selection: PersonalisedMeditationSelection
+  ) => {
+    if (isNavigating) {
+      return;
+    }
+
+    setIsNavigating(true);
+    setTimeout(() => {
+      setIsNavigating(false);
+    }, 1500);
+
+    router.push({
+      pathname: "/chat/new_index",
+      params: {
+        session_id: generateUniqueId(),
+        guided_meditation_selection: JSON.stringify(selection),
+      },
+    });
+  };
+
   const handleRefreshGuidancePress = () => {
     if (!selectedMood) {
       resetIntentionAndAffirmation();
@@ -1061,9 +1083,7 @@ const Home = () => {
       <PersonalisedMeditationModal
         visible={showMeditationModal}
         onClose={() => setShowMeditationModal(false)}
-        onBegin={(selection) => {
-          console.log("Personalised meditation selection", selection);
-        }}
+        onBegin={handlePersonalisedMeditationBegin}
       />
     </>
   );

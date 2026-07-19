@@ -151,19 +151,21 @@ const Journal = () => {
     dreamLogs,
     isLoading,
     isDeleting: isDeletingDreamLogs,
-    isAnalyzing: isAnalyzingDreamLogs,
+    // Reflection is disabled for now.
+    // isAnalyzing: isAnalyzingDreamLogs,
     fetchDreamLogs,
     bulkDeleteDreamLogs,
-    analyzeDreamLogs,
+    // analyzeDreamLogs,
   } = useDreamLogs();
   const {
     awarenessLogs,
     isLoading: isLoadingAwarenessLogs,
     isDeleting: isDeletingAwarenessLogs,
-    isAnalyzing: isAnalyzingAwarenessLogs,
+    // Reflection is disabled for now.
+    // isAnalyzing: isAnalyzingAwarenessLogs,
     fetchAwarenessLogs,
     bulkDeleteAwarenessLogs,
-    analyzeAwarenessLogs,
+    // analyzeAwarenessLogs,
   } = useAwarenessLogs();
 
   const dreamEntries = useMemo(
@@ -300,33 +302,34 @@ const Journal = () => {
     handleExitSelectionMode();
   };
 
-  const handleReflectPress = async () => {
-    if (isAnalyzingDreamLogs || isAnalyzingAwarenessLogs || selectedEntryIds.length === 0) {
-      return;
-    }
-
-    const response =
-      activeTab === "dreams"
-        ? await analyzeDreamLogs({ logs_id: selectedEntryIds })
-        : await analyzeAwarenessLogs({ logs_id: selectedEntryIds });
-    console.log(`analyze ${activeTab} response:`, response);
-
-    const sessionId =
-      typeof response?.data?.session_id === "string" ? response.data.session_id : null;
-
-    if (!sessionId) {
-      return;
-    }
-
-    handleExitSelectionMode();
-    router.push({
-      pathname: "/chat/new_index",
-      params: {
-        session_id: sessionId,
-        existing_chat: "true",
-      },
-    });
-  };
+  // Reflection is disabled for now.
+  // const handleReflectPress = async () => {
+  //   if (isAnalyzingDreamLogs || isAnalyzingAwarenessLogs || selectedEntryIds.length === 0) {
+  //     return;
+  //   }
+  //
+  //   const response =
+  //     activeTab === "dreams"
+  //       ? await analyzeDreamLogs({ logs_id: selectedEntryIds })
+  //       : await analyzeAwarenessLogs({ logs_id: selectedEntryIds });
+  //   console.log(`analyze ${activeTab} response:`, response);
+  //
+  //   const sessionId =
+  //     typeof response?.data?.session_id === "string" ? response.data.session_id : null;
+  //
+  //   if (!sessionId) {
+  //     return;
+  //   }
+  //
+  //   handleExitSelectionMode();
+  //   router.push({
+  //     pathname: "/chat/new_index",
+  //     params: {
+  //       session_id: sessionId,
+  //       existing_chat: "true",
+  //     },
+  //   });
+  // };
 
   const handleStartWritingPress = () => {
     setIsJournalPickerVisible(true);
@@ -342,8 +345,9 @@ const Journal = () => {
 
   const isDeleteDisabled =
     selectedEntryIds.length === 0 || isDeletingDreamLogs || isDeletingAwarenessLogs;
-  const isReflectDisabled =
-    selectedEntryIds.length === 0 || isAnalyzingDreamLogs || isAnalyzingAwarenessLogs;
+  // Reflection is disabled for now.
+  // const isReflectDisabled =
+  //   selectedEntryIds.length === 0 || isAnalyzingDreamLogs || isAnalyzingAwarenessLogs;
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -452,6 +456,7 @@ const Journal = () => {
               {selectedEntryIds.length}/{MAX_SELECTED_ENTRIES} selected
             </Text>
             <View style={styles.selectionActionsRow}>
+              {/* Reflection is disabled for now.
               <Pressable
                 onPress={() => {
                   void handleReflectPress();
@@ -472,6 +477,7 @@ const Journal = () => {
                   </>
                 )}
               </Pressable>
+              */}
 
               <Pressable
                 onPress={handleDeleteSelectedPress}

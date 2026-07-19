@@ -8,14 +8,16 @@ import {
   UpdateAwarenessLogInput,
   DeleteAwarenessLogInput,
   BulkDeleteAwarenessLogsInput,
-  AnalyzeAwarenessInput,
+  // Reflection is disabled for now.
+  // AnalyzeAwarenessInput,
   GetAwarenessLogsResult,
   GetAwarenessLogResult,
   AddAwarenessLogResult,
   UpdateAwarenessLogResult,
   DeleteAwarenessLogResult,
   BulkDeleteAwarenessLogsResult,
-  AnalyzeAwarenessResult,
+  // Reflection is disabled for now.
+  // AnalyzeAwarenessResult,
 } from "./types";
 
 const useAwarenessLogsLambdaFetch = <T,>() =>
@@ -150,21 +152,22 @@ export const useBulkDeleteAwarenessLogs = () => {
   return { bulkDeleteAwarenessLogs };
 };
 
-export const useAnalyzeAwareness = () => {
-  const { commonFetch } = useAwarenessLogsLambdaFetch<AnalyzeAwarenessResult>();
-
-  const lambdaConfig: LambdaRequest = {
-    route: "analyze_awareness",
-  };
-
-  const analyzeAwareness = ({ logs_id, user_id }: AnalyzeAwarenessInput) =>
-    commonFetch({
-      input: {
-        ...lambdaConfig,
-        logs_id,
-        ...(user_id !== undefined ? { user_id } : {}),
-      },
-    });
-
-  return { analyzeAwareness };
-};
+// Reflection is disabled for now.
+// export const useAnalyzeAwareness = () => {
+//   const { commonFetch } = useAwarenessLogsLambdaFetch<AnalyzeAwarenessResult>();
+//
+//   const lambdaConfig: LambdaRequest = {
+//     route: "analyze_awareness",
+//   };
+//
+//   const analyzeAwareness = ({ logs_id, user_id }: AnalyzeAwarenessInput) =>
+//     commonFetch({
+//       input: {
+//         ...lambdaConfig,
+//         logs_id,
+//         ...(user_id !== undefined ? { user_id } : {}),
+//       },
+//     });
+//
+//   return { analyzeAwareness };
+// };

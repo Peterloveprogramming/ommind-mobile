@@ -1,5 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react'
-import { StyleSheet, Text, View, TextInput, Platform, TouchableOpacity, FlatList, Keyboard, TouchableWithoutFeedback, ActivityIndicator, Image } from 'react-native'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
+import { StyleSheet, Text, View, TextInput, Platform, TouchableOpacity, FlatList, Keyboard, TouchableWithoutFeedback, ActivityIndicator, Image, Animated, Easing } from 'react-native'
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller'
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -10,7 +10,7 @@ import PrecautionButton from '@/assets/svg/chat/PrecautionButton'
 import Ai from '@/comp/chat/Ai'
 import Human from '@/comp/chat/Human'
 import OpenChatHistoryButton from '@/comp/headers/OpenChatHistoryButton'
-import PersonalisedMeditationModal from '@/comp/modals/PersonalisedMeditationModal'
+import PersonalisedMeditationModal, { PersonalisedMeditationSelection } from '@/comp/modals/PersonalisedMeditationModal'
 import { Ionicons } from '@expo/vector-icons'
 import { images } from '@/constants/images'
 import useFetchAiMessage from '@/api/chatAi/useFetchAiMessage'
@@ -22,6 +22,7 @@ import { useVoiceToText } from '@/services/useVoiceToText'
 import useChatMessagesBySessionId from '@/api/chatMessages/useChatMessagesBySessionId'
 import useMessageRating from '@/api/messageRating/useMessageRating'
 import { ChatMessageItem } from '@/api/chatMessages/types'
+import { ChatAiRequest } from '@/api/chatAi/types'
 import { FeedBackPayload } from '@/comp/chat/FeedBackModal'
 import {
   checkIfLambdaResultIsSuccess,
@@ -51,16 +52,71 @@ const getGeneratedMeditationMessageId = (message?: ChatMessageItem | null) =>
 const normalizeMessageId = (messageId?: string | number | null) =>
   messageId == null ? null : String(messageId);
 
+const getSingleParam = (param?: string | string[]) =>
+  Array.isArray(param) ? param[0] : param;
+
+const getGuidedMeditationLengthInMinutes = (length: string) => {
+  const parsedLength = Number.parseInt(length, 10);
+  return Number.isFinite(parsedLength) && parsedLength > 0 ? parsedLength : 5;
+};
+
+const parseGuidedMeditationSelectionParam = (
+  param?: string
+): PersonalisedMeditationSelection | null => {
+  if (!param) {
+    return null;
+  }
+
+  try {
+    const parsedSelection = JSON.parse(param) as Partial<PersonalisedMeditationSelection>;
+    if (
+      typeof parsedSelection.focus !== "string" ||
+      typeof parsedSelection.length !== "string" ||
+      typeof parsedSelection.style !== "string"
+    ) {
+      return null;
+    }
+
+    return {
+      focus: parsedSelection.focus,
+      length: parsedSelection.length,
+      style: parsedSelection.style,
+      personaliseUsingConversation: Boolean(parsedSelection.personaliseUsingConversation),
+    };
+  } catch (error) {
+    console.error("Failed to parse guided meditation selection", error);
+    return null;
+  }
+};
+
+const buildGuidedMeditationChatRequest = (
+  selection: PersonalisedMeditationSelection
+): ChatAiRequest => ({
+  category: GUIDED_MEDITATION,
+  workflowSpecificInput: {
+    focus: selection.focus.trim() || "Calm the mind",
+    meditation_style: selection.style,
+    guided_meditation_length: getGuidedMeditationLengthInMinutes(selection.length),
+    notes_from_user: selection.personaliseUsingConversation ? null : undefined,
+  },
+});
+
 const SpiritualMentorChat = () => {
-    const { session_id, existing_chat } = useLocalSearchParams<{ session_id?: string | string[]; existing_chat?: string | string[] }>()
+    const { session_id, existing_chat, guided_meditation_selection } = useLocalSearchParams<{
+      session_id?: string | string[];
+      existing_chat?: string | string[];
+      guided_meditation_selection?: string | string[];
+    }>()
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const [isMicPressed, setIsMicPressed] = useState(false);
     const [inputText, setInputText] = useState("");
     const [showMeditationModal, setShowMeditationModal] = useState(false);
     const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
-    const normalizedSessionId = Array.isArray(session_id) ? session_id[0] : session_id;
-    const isExistingChat = (Array.isArray(existing_chat) ? existing_chat[0] : existing_chat) === "true";
+    const [isGuidedMeditationGenerating, setIsGuidedMeditationGenerating] = useState(false);
+    const normalizedSessionId = getSingleParam(session_id);
+    const guidedMeditationSelectionParam = getSingleParam(guided_meditation_selection);
+    const isExistingChat = getSingleParam(existing_chat) === "true";
     const {showToastMessage} = useToast()
     const {aiMessage,isAiLoading,aiError,aiMode,fetchMessage} = useFetchAiMessage(false,normalizedSessionId ?? "");
     const { fetchChatMessages } = useChatMessagesBySessionId();
@@ -88,17 +144,102 @@ const SpiritualMentorChat = () => {
     const [messages,setMessages] = useState<ChatMessage[]>([])
     const [updatingFavouriteMessageId, setUpdatingFavouriteMessageId] = useState<string | null>(null);
     const flatListRef = useRef<FlatList<ChatMessage> | null>(null);
+    const fetchChatMessagesRef = useRef(fetchChatMessages);
+    const hasTriggeredInitialGuidedMeditationRef = useRef(false);
+    const guidedMeditationSpinValue = useRef(new Animated.Value(0)).current;
     const composerBottomPadding = Math.max(insets.bottom, COMPOSER_MIN_BOTTOM_PADDING);
     const isGuidedMeditationInProgress =
       playbackStatus === "buffering" ||
       playbackStatus === "playing" ||
       playbackStatus === "paused";
 
+    const scrollToLatestMessage = useCallback((delay = 100) => {
+      setTimeout(() => {
+        flatListRef.current?.scrollToEnd({ animated: true });
+      }, delay);
+    }, []);
+
+    useEffect(() => {
+      if (!isGuidedMeditationGenerating) {
+        guidedMeditationSpinValue.stopAnimation();
+        guidedMeditationSpinValue.setValue(0);
+        return;
+      }
+
+      const animation = Animated.loop(
+        Animated.timing(guidedMeditationSpinValue, {
+          toValue: 1,
+          duration: 1100,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        })
+      );
+
+      animation.start();
+
+      return () => {
+        animation.stop();
+      };
+    }, [guidedMeditationSpinValue, isGuidedMeditationGenerating]);
+
+    const guidedMeditationSpin = guidedMeditationSpinValue.interpolate({
+      inputRange: [0, 1],
+      outputRange: ["0deg", "360deg"],
+    });
+
+    const handleGuidedMeditationBegin = useCallback(
+      (selection: PersonalisedMeditationSelection) => {
+        if (!normalizedSessionId) {
+          showToastMessage("session_id is not present", false);
+          return;
+        }
+
+        if (isGuidedMeditationInProgress) {
+          showToastMessage("Can not create meditation while guided meditation is in progress", false);
+          return;
+        }
+
+        if (isAiLoading) {
+          return;
+        }
+
+        if (isConverting) {
+          showToastMessage("Voice note is currently converting. Please wait a moment.", false);
+          return;
+        }
+
+        Keyboard.dismiss();
+        setIsGuidedMeditationGenerating(true);
+        void (async () => {
+          try {
+            await fetchMessage(buildGuidedMeditationChatRequest(selection));
+          } finally {
+            setIsGuidedMeditationGenerating(false);
+          }
+        })();
+        scrollToLatestMessage(500);
+      },
+      [
+        fetchMessage,
+        isAiLoading,
+        isConverting,
+        isGuidedMeditationInProgress,
+        normalizedSessionId,
+        scrollToLatestMessage,
+        showToastMessage,
+      ]
+    );
+
     useEffect(() => {
       if (!normalizedSessionId) {
         showToastMessage("session_id is not present", false);
       }
     }, [normalizedSessionId, showToastMessage]);
+
+    useEffect(() => {
+      fetchChatMessagesRef.current = fetchChatMessages;
+    }, [fetchChatMessages]);
+
     useEffect(() => {
       const showEvent = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
       const hideEvent = Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
@@ -110,6 +251,29 @@ const SpiritualMentorChat = () => {
         hideSubscription.remove();
       };
     }, []);
+
+    useEffect(() => {
+      if (
+        hasTriggeredInitialGuidedMeditationRef.current ||
+        isExistingChat ||
+        !normalizedSessionId
+      ) {
+        return;
+      }
+
+      const selection = parseGuidedMeditationSelectionParam(guidedMeditationSelectionParam);
+      if (!selection) {
+        return;
+      }
+
+      hasTriggeredInitialGuidedMeditationRef.current = true;
+      handleGuidedMeditationBegin(selection);
+    }, [
+      guidedMeditationSelectionParam,
+      handleGuidedMeditationBegin,
+      isExistingChat,
+      normalizedSessionId,
+    ]);
     useEffect(() => {
       let isCancelled = false;
 
@@ -124,7 +288,7 @@ const SpiritualMentorChat = () => {
       }
 
       void (async () => {
-        const historyMessages = await fetchChatMessages({
+        const historyMessages = await fetchChatMessagesRef.current({
           sessionId: normalizedSessionId,
           offset: 0,
           limit: 50,
@@ -135,29 +299,33 @@ const SpiritualMentorChat = () => {
         }
 
         setMessages(
-          historyMessages.map((message) => ({
-            id: message.id,
-            role: message.role === "human" ? "human" : "ai",
-            chatMessage:
-              message.classification === GUIDED_MEDITATION && message.role === "ai"
-                ? { ...message, content: "Guided meditation ended" }
-                : message,
-            status: "ready",
-            mode: message.classification,
-            showPlayBackControl: false,
-            isPlaybackPaused: true,
-            showRating: false,
-            isFavourite: message.favourite === 1,
-          }))
+          historyMessages.map((message) => {
+            const messageMode = message.workflow_executed ?? message.classification ?? null;
+
+            return {
+              id: message.id,
+              role: message.role === "human" ? "human" : "ai",
+              chatMessage:
+                messageMode === GUIDED_MEDITATION && message.role === "ai"
+                  ? { ...message, content: "Guided meditation ended" }
+                  : message,
+              status: "ready",
+              mode: messageMode,
+              showPlayBackControl: false,
+              isPlaybackPaused: true,
+              showRating: false,
+              isFavourite: message.favourite === 1,
+            };
+          })
         );
       })();
 
       return () => {
         isCancelled = true;
       };
-    }, []);
+    }, [dispose, isExistingChat, normalizedSessionId]);
 
-    const updateLatestGuidedMeditationMessage = (status: PlaybackStatus) => {
+    const updateLatestGuidedMeditationMessage = useCallback((status: PlaybackStatus) => {
       setMessages(prevMessages => {
         const guidedMessageIndex = [...prevMessages]
           .reverse()
@@ -207,7 +375,7 @@ const SpiritualMentorChat = () => {
           return message;
         });
       });
-    };
+    }, []);
 
     const handleGuidedMeditationPlaybackPress = async () => {
       if (playbackStatus === "paused") {
@@ -220,25 +388,22 @@ const SpiritualMentorChat = () => {
       }
     };
 
-    const scrollToLatestMessage = (delay = 100) => {
-      setTimeout(() => {
-        flatListRef.current?.scrollToEnd({ animated: true });
-      }, delay);
-    };
-
     useEffect(() => {
       // Only run this logic if a new aiMessage has arrived
       if (aiMessage) {
         setMessages(prevMessages => {
+          const isGuidedAiMessage = aiMode === GUIDED_MEDITATION;
           const nextAiMessage: ChatMessage =
-            aiMessage.classification === GUIDED_MEDITATION
+            isGuidedAiMessage
               ? {
                   role: "ai",
                   chatMessage: {
                     ...aiMessage,
                     content: "Guided meditation playing",
+                    workflow_executed: GUIDED_MEDITATION,
                   },
                   status: "ready",
+                  mode: GUIDED_MEDITATION,
                   showPlayBackControl: true,
                   isPlaybackPaused: false,
                   showRating: true,
@@ -248,6 +413,7 @@ const SpiritualMentorChat = () => {
                   role: "ai",
                   chatMessage: aiMessage,
                   status: "ready",
+                  mode: aiMode,
                   showRating: true,
                   isFavourite: aiMessage.favourite === 1,
                 };
@@ -280,7 +446,7 @@ const SpiritualMentorChat = () => {
           }
         })();
       }
-    }, [aiMessage, aiMode, playAudio]);
+    }, [aiMessage, aiMode, playAudio, scrollToLatestMessage]);
 
     useEffect(() => {
       if (playbackStatus === "idle") {
@@ -288,7 +454,7 @@ const SpiritualMentorChat = () => {
       }
 
       updateLatestGuidedMeditationMessage(playbackStatus);
-    }, [playbackStatus]);
+    }, [playbackStatus, updateLatestGuidedMeditationMessage]);
 
     useEffect(() => {
       return () => {
@@ -330,7 +496,7 @@ const SpiritualMentorChat = () => {
           clearTimeout(loadingMessageTimeout);
         }
       };
-    },[isAiLoading])
+    },[isAiLoading, scrollToLatestMessage])
 
     const handleMicPressIn = async () => {
       setIsMicPressed(true);
@@ -387,6 +553,7 @@ const SpiritualMentorChat = () => {
         role: "human",
         model: null,
         classification: null,
+        workflow_executed: null,
         needs_stage: null,
         needs_categorization_reasoning: null,
         needs_categorization_confidence: null,
@@ -617,15 +784,31 @@ const SpiritualMentorChat = () => {
 
           {!isKeyboardVisible && (
             <View style={styles.createMeditationRow}>
-              <TouchableOpacity
-                style={styles.createMeditationButton}
-                activeOpacity={0.85}
-                onPress={() => setShowMeditationModal(true)}
-              >
-                <Image source={images.rinpoche_sparkle} style={styles.createMeditationIcon} />
-                <Text style={styles.createMeditationText}>Create My Meditation</Text>
-                <Ionicons name="chevron-forward" size={18} color="#D89B4A" />
-              </TouchableOpacity>
+              {isGuidedMeditationGenerating ? (
+                <View style={styles.guidedMeditationGeneratingPill}>
+                  <Animated.Image
+                    source={images.rinpoche_sparkle}
+                    style={[
+                      styles.createMeditationIcon,
+                      { transform: [{ rotate: guidedMeditationSpin }] },
+                    ]}
+                  />
+                  <Text style={styles.guidedMeditationGeneratingText}>
+                    Guided meditation is being generated
+                  </Text>
+                  <ActivityIndicator size="small" color="#D89B4A" />
+                </View>
+              ) : (
+                <TouchableOpacity
+                  style={styles.createMeditationButton}
+                  activeOpacity={0.85}
+                  onPress={() => setShowMeditationModal(true)}
+                >
+                  <Image source={images.rinpoche_sparkle} style={styles.createMeditationIcon} />
+                  <Text style={styles.createMeditationText}>Create My Meditation</Text>
+                  <Ionicons name="chevron-forward" size={18} color="#D89B4A" />
+                </TouchableOpacity>
+              )}
             </View>
           )}
 
@@ -678,9 +861,7 @@ const SpiritualMentorChat = () => {
           <PersonalisedMeditationModal
             visible={showMeditationModal}
             onClose={() => setShowMeditationModal(false)}
-            onBegin={(selection) => {
-              console.log("Personalised meditation selection", selection);
-            }}
+            onBegin={handleGuidedMeditationBegin}
           />
       </KeyboardAvoidingView>
     )
@@ -756,6 +937,22 @@ const styles = StyleSheet.create({
         borderRadius: 14,
       },
       createMeditationText: {
+        fontSize: 15,
+        fontWeight: "700",
+        color: "#3A3A38",
+      },
+      guidedMeditationGeneratingPill: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 10,
+        alignSelf: "center",
+        backgroundColor: "#F7F2E9",
+        borderRadius: 30,
+        paddingVertical: 10,
+        paddingHorizontal: 18,
+        minHeight: 48,
+      },
+      guidedMeditationGeneratingText: {
         fontSize: 15,
         fontWeight: "700",
         color: "#3A3A38",

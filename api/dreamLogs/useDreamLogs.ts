@@ -1,7 +1,8 @@
 import { useDreamLogsApi } from "@/api/api";
 import {
   AddDreamLogInput,
-  AnalyzeDreamInput,
+  // Reflection is disabled for now.
+  // AnalyzeDreamInput,
   BulkDeleteDreamLogsInput,
   DeleteDreamLogInput,
   GetDreamLogInput,
@@ -31,7 +32,8 @@ export default function useDreamLogs() {
   const [isCreating, setIsCreating] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  // Reflection is disabled for now.
+  // const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const {
     getDreamLogs: { getDreamLogs },
@@ -40,7 +42,8 @@ export default function useDreamLogs() {
     updateDreamLog: { updateDreamLog },
     deleteDreamLog: { deleteDreamLog },
     bulkDeleteDreamLogs: { bulkDeleteDreamLogs },
-    analyzeDream: { analyzeDream },
+    // Reflection is disabled for now.
+    // analyzeDream: { analyzeDream },
   } = useDreamLogsApi();
   const { showToastMessage } = useToast();
 
@@ -279,35 +282,36 @@ export default function useDreamLogs() {
     [bulkDeleteDreamLogs, dreamLog, showToastMessage]
   );
 
-  const analyzeDreamLogs = useCallback(
-    async ({ logs_id, user_id }: AnalyzeDreamInput) => {
-      setIsAnalyzing(true);
-      setError(null);
-
-      try {
-        const response = await analyzeDream({ logs_id, user_id });
-        const isSuccess = checkIfLambdaResultIsSuccess(response);
-
-        if (!isSuccess) {
-          const message = getLambdaErrorMessage(response);
-          setError(message);
-          showToastMessage(message, false);
-          return null;
-        }
-
-        return response;
-      } catch (analyzeError) {
-        console.error("Failed to analyze dream logs:", analyzeError);
-        const message = "Unable to analyze dream logs";
-        setError(message);
-        showToastMessage(message, false);
-        return null;
-      } finally {
-        setIsAnalyzing(false);
-      }
-    },
-    [analyzeDream, showToastMessage]
-  );
+  // Reflection is disabled for now.
+  // const analyzeDreamLogs = useCallback(
+  //   async ({ logs_id, user_id }: AnalyzeDreamInput) => {
+  //     setIsAnalyzing(true);
+  //     setError(null);
+  //
+  //     try {
+  //       const response = await analyzeDream({ logs_id, user_id });
+  //       const isSuccess = checkIfLambdaResultIsSuccess(response);
+  //
+  //       if (!isSuccess) {
+  //         const message = getLambdaErrorMessage(response);
+  //         setError(message);
+  //         showToastMessage(message, false);
+  //         return null;
+  //       }
+  //
+  //       return response;
+  //     } catch (analyzeError) {
+  //       console.error("Failed to analyze dream logs:", analyzeError);
+  //       const message = "Unable to analyze dream logs";
+  //       setError(message);
+  //       showToastMessage(message, false);
+  //       return null;
+  //     } finally {
+  //       setIsAnalyzing(false);
+  //     }
+  //   },
+  //   [analyzeDream, showToastMessage]
+  // );
 
   return {
     dreamLogs,
@@ -317,7 +321,8 @@ export default function useDreamLogs() {
     isCreating,
     isUpdating,
     isDeleting,
-    isAnalyzing,
+    // Reflection is disabled for now.
+    // isAnalyzing,
     error,
     fetchDreamLogs,
     fetchDreamLog,
@@ -325,6 +330,7 @@ export default function useDreamLogs() {
     updateDreamLog: updateDreamLogEntry,
     deleteDreamLog: removeDreamLog,
     bulkDeleteDreamLogs: removeDreamLogs,
-    analyzeDreamLogs,
+    // Reflection is disabled for now.
+    // analyzeDreamLogs,
   };
 }

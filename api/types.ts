@@ -38,14 +38,16 @@ export type LambdaRequest = {
             "update_awareness_log" |
             "delete_awareness_log" |
             "bulk_delete_awareness_logs" |
-            "analyze_awareness" |
+            // Reflection is disabled for now.
+            // "analyze_awareness" |
             "get_dream_logs" |
             "get_dream_log" |
             "add_dream_log" |
             "update_dream_log" |
             "delete_dream_log" |
-            "bulk_delete_dream_logs" |
-            "analyze_dream",
+            "bulk_delete_dream_logs",
+            // Reflection is disabled for now.
+            // "analyze_dream",
     action?: string;
     user_id?: number | string;
     ip_address?: string;
