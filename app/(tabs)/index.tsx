@@ -1082,6 +1082,8 @@ const Home = () => {
 
       <PersonalisedMeditationModal
         visible={showMeditationModal}
+        initialFocus={user_intention}
+        showPersonaliseUsingConversation={false}
         onClose={() => setShowMeditationModal(false)}
         onBegin={handlePersonalisedMeditationBegin}
       />

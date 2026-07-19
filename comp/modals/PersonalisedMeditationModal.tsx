@@ -22,6 +22,8 @@ export type PersonalisedMeditationSelection = {
 
 type PersonalisedMeditationModalProps = {
   visible: boolean;
+  initialFocus?: string;
+  showPersonaliseUsingConversation?: boolean;
   onClose: () => void;
   onBegin?: (selection: PersonalisedMeditationSelection) => void;
 };
@@ -46,9 +48,13 @@ const STYLE_OPTIONS = [
 
 const PersonalisedMeditationModal = ({
   visible,
+  initialFocus,
+  showPersonaliseUsingConversation = true,
   onClose,
   onBegin,
 }: PersonalisedMeditationModalProps) => {
+  const trimmedInitialFocus = initialFocus?.trim() ?? "";
+  const hasInitialFocus = Boolean(trimmedInitialFocus);
   const [focus, setFocus] = React.useState(FOCUS_OPTIONS[0]);
   const [isEditingFocus, setIsEditingFocus] = React.useState(false);
   const [selectedLength, setSelectedLength] = React.useState(LENGTH_OPTIONS[0]);
@@ -57,13 +63,13 @@ const PersonalisedMeditationModal = ({
 
   React.useEffect(() => {
     if (visible) {
-      setFocus(FOCUS_OPTIONS[0]);
+      setFocus(trimmedInitialFocus || FOCUS_OPTIONS[0]);
       setIsEditingFocus(false);
       setSelectedLength(LENGTH_OPTIONS[0]);
       setSelectedStyle(STYLE_OPTIONS[0]);
-      setPersonaliseUsingConversation(true);
+      setPersonaliseUsingConversation(showPersonaliseUsingConversation);
     }
-  }, [visible]);
+  }, [hasInitialFocus, showPersonaliseUsingConversation, trimmedInitialFocus, visible]);
 
   const handleBegin = () => {
     onBegin?.({
@@ -83,27 +89,29 @@ const PersonalisedMeditationModal = ({
 
           <View style={styles.sectionHeaderRow}>
             <Text style={[styles.sectionLabel, styles.sectionLabelNoMargin]}>Focus</Text>
-            <TouchableOpacity
-              activeOpacity={0.85}
-              style={styles.iconButton}
-              onPress={() => setIsEditingFocus((current) => !current)}
-            >
-              {isEditingFocus ? (
-                <Ionicons name="checkmark" size={18} color="#FFFFFF" />
-              ) : (
-                <Image source={images.pencil_icon} style={styles.pencilIcon} />
-              )}
-            </TouchableOpacity>
+            {!hasInitialFocus ? (
+              <TouchableOpacity
+                activeOpacity={0.85}
+                style={styles.iconButton}
+                onPress={() => setIsEditingFocus((current) => !current)}
+              >
+                {isEditingFocus ? (
+                  <Ionicons name="checkmark" size={18} color="#FFFFFF" />
+                ) : (
+                  <Image source={images.pencil_icon} style={styles.pencilIcon} />
+                )}
+              </TouchableOpacity>
+            ) : null}
           </View>
 
-          {isEditingFocus ? (
+          {hasInitialFocus || isEditingFocus ? (
             <TextInput
               style={styles.focusInput}
               value={focus}
               onChangeText={setFocus}
               placeholder="Enter your focus"
               placeholderTextColor="rgba(255,255,255,0.7)"
-              autoFocus
+              autoFocus={isEditingFocus}
               onSubmitEditing={() => setIsEditingFocus(false)}
             />
           ) : (
@@ -164,18 +172,20 @@ const PersonalisedMeditationModal = ({
             })}
           </View>
 
-          <TouchableOpacity
-            activeOpacity={0.85}
-            style={styles.checkboxRow}
-            onPress={() => setPersonaliseUsingConversation((current) => !current)}
-          >
-            <View style={[styles.checkboxBox, personaliseUsingConversation && styles.checkboxBoxChecked]}>
-              {personaliseUsingConversation ? (
-                <Ionicons name="checkmark" size={16} color="#8C8C8A" />
-              ) : null}
-            </View>
-            <Text style={styles.checkboxLabel}>Personalise using this conversation</Text>
-          </TouchableOpacity>
+          {showPersonaliseUsingConversation ? (
+            <TouchableOpacity
+              activeOpacity={0.85}
+              style={styles.checkboxRow}
+              onPress={() => setPersonaliseUsingConversation((current) => !current)}
+            >
+              <View style={[styles.checkboxBox, personaliseUsingConversation && styles.checkboxBoxChecked]}>
+                {personaliseUsingConversation ? (
+                  <Ionicons name="checkmark" size={16} color="#8C8C8A" />
+                ) : null}
+              </View>
+              <Text style={styles.checkboxLabel}>Personalise using this conversation</Text>
+            </TouchableOpacity>
+          ) : null}
 
           <TouchableOpacity activeOpacity={0.85} style={styles.beginButton} onPress={handleBegin}>
             <Image source={images.magic_stick} style={styles.beginIcon} />
