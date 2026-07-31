@@ -1,4 +1,5 @@
 import { deleteFromCache,getAuthInfo } from "@/utils/helper";
+import { getLambdaServiceHeaders } from "@/api/lambdaService";
 import { buildLambdaRequestPayload } from "@/utils/requestContext";
 import { useRouter } from "expo-router"; // Import useRouter for navigation
 const DEFAULT_FETCH_OPTIONS = {}
@@ -44,10 +45,12 @@ export function useFetch <ResultType> ({
 
         const userInfo = useAuthFromCache ? await getAuthInfo() : null;
         const requestBody = await buildLambdaRequestPayload(input ?? {}, userInfo);
+        const headers = getLambdaServiceHeaders(url, fetchOptions?.headers);
         const response = await fetch(url,{
             method,
             ...DEFAULT_FETCH_OPTIONS,//const
             ...fetchOptions, // this allows you to override default fetch options on a case by case basis,
+            headers,
             body:JSON.stringify(requestBody)
         });
 

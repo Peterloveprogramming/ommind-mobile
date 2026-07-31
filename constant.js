@@ -2,7 +2,10 @@
 // const URL = "http://192.168.5.29:8000"
 const URL = "https://a182-192-169-101-100.ngrok-free.app"
 //export constants 
-export const LAMBDA_SERVICE_URL = URL + "/2015-03-31/functions/function/invocations"
+// export const LAMBDA_SERVICE_URL = URL + "/2015-03-31/functions/function/invocations"
+export const LAMBDA_SERVICE_URL="https://dyhmz23j13.execute-api.eu-west-2.amazonaws.com/dev/"
+export const LAMBDA_SERVICE_API_KEY="123"
+
 export const DEFAULT_HOME_PAGE_TEXT = "How are you feeling today?"
 export const DEFAULT_MOOD = ""
 export const DEFAULT_INTENTION = "Compassion"
@@ -12,7 +15,7 @@ export const DEFAULT_AFFIRMATION = "\u201cI am grounded and soft with myself tod
 // if testing locally then use "ipconfig getifaddr en0" to get the actual ip address for testing
 export const TEXT_TO_AUDIO_URL = "ws://192.168.5.29:9001";
 // audio to text url
-export const AUDIO_TO_TEXT_URL = "https://audio-to-text.hulolo.xyz/convert_audio_to_text";
+export const AUDIO_TO_TEXT_URL = "https://dyhmz23j13.execute-api.eu-west-2.amazonaws.com/dev/convert_audio_to_text";
 // secret token for both TEXT_TO_AUDIO_URL and AUDIO_TO_TEXT_URL
 export const SECRET_TOKEN = "Ommind2026"
 const DEBUG = true

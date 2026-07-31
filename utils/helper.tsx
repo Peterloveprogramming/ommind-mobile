@@ -1,4 +1,5 @@
 import { LambdaResult } from "@/api/types";
+import { getLambdaServiceHeaders } from "@/api/lambdaService";
 import { Router } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LAMBDA_SERVICE_URL } from "@/constant";
@@ -175,6 +176,7 @@ export const addRecentlyAccessedSession = async (
 
   const response = await fetch(LAMBDA_SERVICE_URL, {
     method: "POST",
+    headers: getLambdaServiceHeaders(LAMBDA_SERVICE_URL),
     body: JSON.stringify(requestBody),
   });
 
@@ -204,6 +206,7 @@ export const updateSessionProgress = async (
 
   const response = await fetch(LAMBDA_SERVICE_URL, {
     method: "POST",
+    headers: getLambdaServiceHeaders(LAMBDA_SERVICE_URL),
     body: JSON.stringify(requestBody),
   });
 
@@ -233,6 +236,7 @@ export const updateFavourite = async (
 
   const response = await fetch(LAMBDA_SERVICE_URL, {
     method: "POST",
+    headers: getLambdaServiceHeaders(LAMBDA_SERVICE_URL),
     body: JSON.stringify(requestBody),
   });
 

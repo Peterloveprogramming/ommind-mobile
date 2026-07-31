@@ -1,3 +1,4 @@
+import { File } from "expo-file-system";
 import { AUDIO_TO_TEXT_URL, SECRET_TOKEN } from "@/constant";
 
 export type SpeechToTextAudioFile = {
@@ -8,6 +9,8 @@ export type SpeechToTextAudioFile = {
 
 export type SpeechToTextResponse = Record<string, unknown>;
 
+const CONVERT_AUDIO_TO_TEXT_ROUTE = "convert_audio_to_text";
+
 export async function convertAudioFileToTextRequest(
   audioFile: SpeechToTextAudioFile
 ): Promise<SpeechToTextResponse> {
@@ -15,19 +18,20 @@ export async function convertAudioFileToTextRequest(
     throw new Error("audio file uri is required");
   }
 
-  const formData = new FormData();
-  formData.append("audio_file", {
-    uri: audioFile.uri,
-    name: audioFile.name ?? "recording.m4a",
-    type: audioFile.type ?? "audio/m4a",
-  } as unknown as Blob);
+  const filename = audioFile.name ?? "recording.m4a";
+  const audioFileBase64 = await new File(audioFile.uri).base64();
 
   const response = await fetch(AUDIO_TO_TEXT_URL, {
     method: "POST",
     headers: {
       Authorization: SECRET_TOKEN,
+      "Content-Type": "application/json",
     },
-    body: formData,
+    body: JSON.stringify({
+      route: CONVERT_AUDIO_TO_TEXT_ROUTE,
+      filename,
+      audio_file_base64: audioFileBase64,
+    }),
   });
 
   if (!response.ok) {
