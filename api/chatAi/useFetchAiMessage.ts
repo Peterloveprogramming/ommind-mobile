@@ -1,10 +1,12 @@
 import { useChatAiApi } from "@/api/api";
-import { useState,useCallback } from "react"
+import { useCallback, useRef, useState } from "react"
 import { ChatMessageItem } from "@/api/chatMessages/types";
-import { addRecentlyAccessedSession, checkIfLambdaResultIsSuccess } from "@/utils/helper";
+import { addRecentlyAccessedSession, checkIfLambdaResultIsSuccess, generateRequestId } from "@/utils/helper";
 import { useToast } from "@/context/useToast";
 import { GENERAL, GUIDED_MEDITATION } from "@/constant";
 import { ChatAiInput, ChatAiRequest, ChatResponseData } from "./types";
+import { addChatBreadcrumb, captureChatException } from "@/utils/chatTelemetry";
+
 const comfortingQuotes = [
     "Even the darkest night will end and the sun will rise. - Victor Hugo",
     "You are braver than you believe, stronger than you seem, and smarter than you think. - A.A. Milne"
@@ -46,9 +48,34 @@ export default function useFetchAiMessage (testMode:boolean = true,session_id:st
     const [aiMode, setAiMode] = useState<string | null>(null);
     const [isAiLoading,setIsAiLoading] = useState<boolean>(false);
     const [aiError,setIsAiError] = useState<string | null>(null);
+    // requestId that produced the current aiMessage/aiError, used by the chat
+    // screen to correlate a response back to the human message/placeholder
+    // that triggered it, instead of assuming it's always the last item.
+    const [aiRequestId, setAiRequestId] = useState<string | null>(null);
+    // requestId of the currently in-flight request, so a "loading" placeholder
+    // created while this is true can be tagged with the right requestId.
+    const [activeRequestId, setActiveRequestId] = useState<string | null>(null);
     const {chatAi:{chatAi}} = useChatAiApi()
     const {showToastMessage} = useToast()
 
+    // Bumped on every fetchAiMessageLive call; a call only applies its result
+    // to state if this still matches the value it captured when it started.
+    // This is what makes a stale (superseded) response a no-op instead of
+    // silently overwriting a newer one.
+    const requestGenerationRef = useRef(0);
+    const abortControllerRef = useRef<AbortController | null>(null);
+
+    const reset = useCallback(() => {
+        abortControllerRef.current?.abort();
+        abortControllerRef.current = null;
+        requestGenerationRef.current += 1;
+        setAiMessage(null);
+        setAiMode(null);
+        setIsAiLoading(false);
+        setIsAiError(null);
+        setAiRequestId(null);
+        setActiveRequestId(null);
+    }, []);
 
     const fetchAiMessageTest = useCallback(async (input?: FetchAiMessageInput) => {
          console.log("Fetching comforting quote for:", input); // Log intent
@@ -94,26 +121,53 @@ export default function useFetchAiMessage (testMode:boolean = true,session_id:st
     }, [session_id]);
 
 
-    const fetchAiMessageLive = useCallback(async (input:FetchAiMessageInput) => {
+    const fetchAiMessageLive = useCallback(async (input:FetchAiMessageInput, requestId?: string) => {
+        const activeRequest = requestId ?? generateRequestId();
         const chatAiInput: ChatAiInput =
           typeof input === "string"
-            ? { user_message: input, session_id }
-            : { ...input, session_id };
+            ? { user_message: input, session_id, request_id: activeRequest }
+            : { ...input, session_id, request_id: activeRequest };
         const requestedMode =
           chatAiInput.category === GUIDED_MEDITATION ? GUIDED_MEDITATION : GENERAL;
 
+        // Supersede any request from this hook instance that's still in
+        // flight: cancel its network call and make its eventual resolution
+        // a no-op via the generation bump below.
+        // There can only ever be one abortController per 1 hook instance. 
+        abortControllerRef.current?.abort();
+        const abortController = new AbortController();
+        abortControllerRef.current = abortController;
+        const myGeneration = ++requestGenerationRef.current;
+        const isCurrent = () => requestGenerationRef.current === myGeneration;
+
         console.log("human message is", chatAiInput.user_message ?? chatAiInput.category)
+        addChatBreadcrumb("message_sent", { request_id: activeRequest, session_id, mode: requestedMode });
+        setActiveRequestId(activeRequest);
         setIsAiLoading(true);
         setIsAiError(null);
 
         try {
-          const response = await chatAi(chatAiInput)
+          const response = await chatAi(chatAiInput, { signal: abortController.signal })
+          if (!isCurrent()) {
+            addChatBreadcrumb("ai_response_discarded_stale", { request_id: activeRequest, session_id });
+            return;
+          }
           const responseSuccess = checkIfLambdaResultIsSuccess(response)
           if (!responseSuccess){
             console.error("response was not successful",response.response,response.statusCode)
-            showToastMessage("An error occurred while fetching messages",false)
+            if (response.statusCode === 409) {
+              showToastMessage("A response is already being generated for this chat. Please wait a moment.", false);
+            } else {
+              showToastMessage("An error occurred while fetching messages",false)
+            }
+            captureChatException(new Error(`chat request failed: ${response.statusCode}`), {
+              request_id: activeRequest,
+              session_id,
+              statusCode: response.statusCode,
+            });
             setAiMessage(null);
             setAiMode(null);
+            setAiRequestId(activeRequest);
             setIsAiError("error occurred while fetching")
             return;
           }
@@ -123,6 +177,7 @@ export default function useFetchAiMessage (testMode:boolean = true,session_id:st
             showToastMessage("An error occurred while fetching messages", false);
             setAiMessage(null);
             setAiMode(null);
+            setAiRequestId(activeRequest);
             setIsAiError("error occurred while fetching");
             return;
           }
@@ -157,23 +212,45 @@ export default function useFetchAiMessage (testMode:boolean = true,session_id:st
               console.error("Failed to add recently accessed guided meditation", error);
             }
           }
+          if (!isCurrent()) {
+            addChatBreadcrumb("ai_response_discarded_stale", { request_id: activeRequest, session_id });
+            return;
+          }
+          addChatBreadcrumb("ai_response_received", { request_id: activeRequest, session_id, mode: requestedMode });
           setAiMessage(nextAiMessage)
           setAiMode(requestedMode)
-          setIsAiLoading(false)
+          setAiRequestId(activeRequest)
           setIsAiError(null)
         } catch (err) {
+          const isAbort = err instanceof Error && err.name === "AbortError";
+          if (isAbort) {
+            addChatBreadcrumb("ai_request_superseded", { request_id: activeRequest, session_id });
+            return;
+          }
           console.error("Fetch error:", err);
-            setAiMessage(null);
-            setAiMode(null);
-            setIsAiError("error occurred while fetching")
+          captureChatException(err, { request_id: activeRequest, session_id });
+          if (!isCurrent()) {
+            return;
+          }
+          setAiMessage(null);
+          setAiMode(null);
+          setAiRequestId(activeRequest);
+          setIsAiError("error occurred while fetching")
         } finally {
-          setIsAiLoading(false)
+          if (isCurrent()) {
+            setIsAiLoading(false)
+            setActiveRequestId(null)
+          }
+          // reset AbortController 
+          if (abortControllerRef.current === abortController) {
+            abortControllerRef.current = null;
+          }
         }
     }, [chatAi, session_id, showToastMessage]);
-    const fetchMessage: (input: FetchAiMessageInput) => Promise<void> = testMode
+    const fetchMessage: (input: FetchAiMessageInput, requestId?: string) => Promise<void> = testMode
       ? fetchAiMessageTest
       : fetchAiMessageLive;
 
 
-    return {aiMessage,isAiLoading,aiError,aiMode,fetchMessage}
+    return {aiMessage,isAiLoading,aiError,aiMode,aiRequestId,activeRequestId,fetchMessage,reset}
 }

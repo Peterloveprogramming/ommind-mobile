@@ -15,12 +15,13 @@ export const useChatAi = () => {
         route:"chat",
     }
 
-    const chatAi = (chatAiInput:ChatAiInput) => {
+    const chatAi = (chatAiInput:ChatAiInput, fetchOptions?: RequestInit) => {
         return commonFetch({
         input:{
             ...LambdaConfig,
             ...chatAiInput
-        }})
+        },
+        fetchOptions})
     };
     return { chatAi };
 }

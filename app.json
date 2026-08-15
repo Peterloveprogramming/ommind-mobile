@@ -70,6 +70,14 @@
           "enableBackgroundPlayback": true,
           "enableBackgroundRecording": false
         }
+      ],
+      [
+        "@sentry/react-native/expo",
+        {
+          "url": "https://sentry.io/",
+          "organization": "ommind",
+          "project": "react-native"
+        }
       ]
     ],
     "experiments": {

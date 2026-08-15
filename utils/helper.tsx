@@ -43,6 +43,20 @@ export const generateRandomNumber = () => {
   return Math.floor(Math.random() * 10000) + 1;
 };
 
+// Negative, monotonically-increasing client-side ids: real DB message ids are
+// always positive SERIALs, so these can never collide with a persisted message
+// or with each other, which is what FlatList's keyExtractor relies on for
+// optimistic/placeholder chat bubbles.
+let clientMessageIdCounter = 0;
+export const generateClientMessageId = () => {
+  clientMessageIdCounter = (clientMessageIdCounter + 1) % 1000;
+  return -(Date.now() * 1000 + clientMessageIdCounter);
+};
+
+export const generateRequestId = () => {
+  return `req_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+};
+
 export const convertFieldNameToReadableFormat = (fieldName: string): string => {
   return fieldName
     .split("_")

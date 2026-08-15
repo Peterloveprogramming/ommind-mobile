@@ -1,5 +1,5 @@
 import { Stack } from "expo-router";
-import { View, StyleSheet } from "react-native"; 
+import { View, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
 import { Platform } from "react-native";
 import { useEffect, useState } from "react";
@@ -11,10 +11,22 @@ import { useFonts as useInter, Inter_400Regular, Inter_600SemiBold, Inter_500Med
 import GlobalProviders from "@/context/GlobalProviders";
 import { getAuthInfo } from "@/utils/helper";
 import { KeyboardProvider } from "react-native-keyboard-controller";
+import * as Sentry from "@sentry/react-native";
+import { SENTRY_DSN } from "@/constant";
 SplashScreen.preventAutoHideAsync();
 
+// Zero production error/crash reporting existed before this — this is the
+// app-wide baseline (navigation/render errors), independent of the
+// chat-specific breadcrumbs added via utils/chatTelemetry.ts.
+Sentry.init({
+  dsn: SENTRY_DSN,
+  environment: __DEV__ ? "development" : "production",
+  tracesSampleRate: 0.2,
+  enableAutoSessionTracking: true,
+});
 
-export default function RootLayout() {
+
+function RootLayout() {
   const router = useRouter(); // Initialize the router
 
   const [figtreeLoaded] = useFigtree({
@@ -180,6 +192,7 @@ export default function RootLayout() {
   );
 }
 
+export default Sentry.wrap(RootLayout);
 
 const styles = StyleSheet.create({
   headerParent:{

@@ -171,11 +171,7 @@ const Home = () => {
   const [profilePhotoError, setProfilePhotoError] = useState("");
   const [isUploadingProfilePhoto, setIsUploadingProfilePhoto] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const [isResettingMood, setIsResettingMood] = useState(false);
-  const {
-    getHomepageInfo,
-    resetDailyMood,
-  } = useMeditationApi();
+  const { getHomepageInfo } = useMeditationApi();
   const getHomepageInfoRef = useRef(getHomepageInfo);
   const homePageInfoRef = useRef(cachedHomePageInfo);
   const intentionRequestIdRef = useRef(0);
@@ -476,46 +472,6 @@ const Home = () => {
     } finally {
       setIsMoodCheckInLoading(false);
       setPendingMoodCheckIn(null);
-    }
-  };
-
-  const handleResetMoodPress = async () => {
-    if (isResettingMood) {
-      return;
-    }
-
-    setIsResettingMood(true);
-    setMoodCheckInMessage("Resetting your mood check-in...");
-
-    try {
-      const response = await resetDailyMood();
-
-      if (!checkIfLambdaResultIsSuccess(response)) {
-        const message = getLambdaErrorMessage(response);
-        setMoodCheckInMessage(message);
-        Alert.alert("Reset mood", message);
-        return;
-      }
-
-      intentionRequestIdRef.current += 1;
-      dispatch(clearHomePageInfo());
-      setSelectedMood(DEFAULT_MOOD);
-      setPendingMoodCheckIn(null);
-      setHasMoodCheckedInToday(false);
-      setIsGuidanceLoading(false);
-      setIsRecommendationLoading(false);
-      setIntention(DEFAULT_INTENTION);
-      setAffirmation(DEFAULT_AFFIRMATION);
-      setRecommendedSession(null);
-      setRecommendationMessage("");
-      setMoodCheckInMessage("Mood check-in reset.");
-    } catch (error) {
-      console.error("Failed to reset daily mood", error);
-      const message = "Unable to reset your mood check-in right now.";
-      setMoodCheckInMessage(message);
-      Alert.alert("Reset mood", message);
-    } finally {
-      setIsResettingMood(false);
     }
   };
 
@@ -851,15 +807,6 @@ const Home = () => {
           >
             <Text style={styles.logoutButtonText}>Log out</Text>
           </TouchableOpacity>
-
-          <TouchableOpacity
-            activeOpacity={0.85}
-            onPress={handleResetMoodPress}
-            style={[styles.resetButton, isResettingMood && styles.logoutButtonDisabled]}
-            disabled={isResettingMood}
-          >
-            <Text style={styles.resetButtonText}>reset</Text>
-          </TouchableOpacity>
         </View>
 
         <ImageBackground
@@ -1170,22 +1117,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 16,
     color: "#4B4748",
-  },
-  resetButton: {
-    minHeight: 34,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: "#C76767",
-    backgroundColor: "#FFF8F8",
-    paddingHorizontal: 14,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  resetButtonText: {
-    fontFamily: FONTS.figtreeSemiBold,
-    fontSize: 12,
-    lineHeight: 16,
-    color: "#9E3F3F",
   },
   heroCard: {
     marginTop: 28,

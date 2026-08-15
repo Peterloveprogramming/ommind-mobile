@@ -6,7 +6,7 @@ const LhamoHeader = () => {
     return ( 
     <View style={styles.headerParent}>
       <View style={styles.lhamoHeaderContainer}>
-        <Image source={images.lhamo_mini} />
+        <Image source={images.lhamo_mini} style={styles.lhamoIcon} resizeMode="contain" />
         <Text style={{color:"#FFFFFF"}}>Lhamo</Text>
       </View>
     </View>
@@ -31,7 +31,11 @@ const styles = StyleSheet.create({
     alignItems:"center",
     justifyContent:"center",
     borderRadius:50,
-    backgroundColor: 'rgba(71, 71, 71, 0.5)', 
+    backgroundColor: 'rgba(71, 71, 71, 0.5)',
     gap:5,
+  },
+  lhamoIcon: {
+    width: 10,
+    height: 10,
   },
 })

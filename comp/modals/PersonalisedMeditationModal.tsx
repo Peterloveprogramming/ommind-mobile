@@ -85,7 +85,17 @@ const PersonalisedMeditationModal = ({
     <Modal transparent animationType="fade" visible={visible} onRequestClose={onClose}>
       <Pressable style={styles.overlay} onPress={onClose}>
         <Pressable style={styles.card} onPress={() => {}}>
-          <Text style={styles.title}>Your Personalised Meditation</Text>
+          <View style={styles.titleRow}>
+            <Text style={[styles.title, styles.titleWithClose]}>Your Personalised Meditation</Text>
+            <TouchableOpacity
+              activeOpacity={0.85}
+              style={styles.closeButton}
+              onPress={onClose}
+              hitSlop={8}
+            >
+              <Ionicons name="close" size={20} color="#FFFFFF" />
+            </TouchableOpacity>
+          </View>
 
           <View style={styles.sectionHeaderRow}>
             <Text style={[styles.sectionLabel, styles.sectionLabelNoMargin]}>Focus</Text>
@@ -226,6 +236,24 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     color: "#FFFFFF",
     marginBottom: 20,
+  },
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  titleWithClose: {
+    flex: 1,
+    marginBottom: 0,
+  },
+  closeButton: {
+    position: "absolute",
+    right: 0,
+    top: -2,
+    width: 28,
+    height: 28,
+    alignItems: "center",
+    justifyContent: "center",
   },
   sectionLabel: {
     fontFamily: FONTS.figtreeSemiBold,

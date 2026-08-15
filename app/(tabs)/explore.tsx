@@ -5,23 +5,13 @@ import { FlatList, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useFocusEffect, useRouter } from "expo-router";
 import { MeditationCourse, MeditationCoursesByType } from "@/api/meditation/types";
 import { useMeditationCourses } from "@/api/meditation/useMeditationCourses";
-import WebsocketConnectionTest from "@/dummy/tests/WebsocketConnectionTest";
-import AudioTest from "@/dummy/tests/AudioTest";
-const COURSE_TYPES: Array<keyof MeditationCoursesByType> = ["calm", "awareness", "insight"];
+const COURSE_TYPES: (keyof MeditationCoursesByType)[] = ["calm", "awareness", "insight"];
 
 const formatSectionTitle = (value: keyof MeditationCoursesByType) => {
   return value.charAt(0).toUpperCase() + value.slice(1);
 };
 
-const testing = false
-const logRawData = false
-
 const Explore = () => {
-    if (testing)
-    {
-      return <AudioTest logRawData={logRawData} />
-    }
-
   const router = useRouter();
   const { result, error, fetchMeditationCourses } = useMeditationCourses();
   const coursesByType = result?.data?.courses;

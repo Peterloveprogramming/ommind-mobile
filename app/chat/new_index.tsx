@@ -26,10 +26,12 @@ import { ChatAiRequest } from '@/api/chatAi/types'
 import { FeedBackPayload } from '@/comp/chat/FeedBackModal'
 import {
   checkIfLambdaResultIsSuccess,
-  generateRandomNumber,
+  generateClientMessageId,
+  generateRequestId,
   getLambdaErrorMessage,
   updateFavourite,
 } from '@/utils/helper'
+import { addChatBreadcrumb, setChatSessionContext } from '@/utils/chatTelemetry'
 
 const CHAT_LIST_BOTTOM_PADDING = 16;
 const COMPOSER_MIN_BOTTOM_PADDING = 8;
@@ -44,6 +46,10 @@ type ChatMessage = {
   isPlaybackPaused?: boolean;
   showRating?: boolean;
   isFavourite?: boolean;
+  // Correlates a human message / "loading" placeholder to the AI response
+  // that answers it, so reconciliation doesn't have to assume the placeholder
+  // is always the last item in the array (see useFetchAiMessage's aiRequestId).
+  requestId?: string | null;
 };
 
 const getGeneratedMeditationMessageId = (message?: ChatMessageItem | null) =>
@@ -118,7 +124,7 @@ const SpiritualMentorChat = () => {
     const guidedMeditationSelectionParam = getSingleParam(guided_meditation_selection);
     const isExistingChat = getSingleParam(existing_chat) === "true";
     const {showToastMessage} = useToast()
-    const {aiMessage,isAiLoading,aiError,aiMode,fetchMessage} = useFetchAiMessage(false,normalizedSessionId ?? "");
+    const {aiMessage,isAiLoading,aiError,aiMode,aiRequestId,activeRequestId,fetchMessage,reset:resetAiMessageState} = useFetchAiMessage(false,normalizedSessionId ?? "");
     const { fetchChatMessages } = useChatMessagesBySessionId();
     const { submitMessageRating, isLoading: isMessageRatingLoading } = useMessageRating();
     const { playAudio, playbackStatus, pause, resume, dispose } = useWebsocketHexPcmAudio();
@@ -146,6 +152,9 @@ const SpiritualMentorChat = () => {
     const flatListRef = useRef<FlatList<ChatMessage> | null>(null);
     const fetchChatMessagesRef = useRef(fetchChatMessages);
     const hasTriggeredInitialGuidedMeditationRef = useRef(false);
+    // Closes the stale-closure double-send window: `isAiLoading` is only up
+    // to date after the next render, but this ref is up to date immediately.
+    const isSendingRef = useRef(false);
     const guidedMeditationSpinValue = useRef(new Animated.Value(0)).current;
     const composerBottomPadding = Math.max(insets.bottom, COMPOSER_MIN_BOTTOM_PADDING);
     const isGuidedMeditationInProgress =
@@ -199,7 +208,7 @@ const SpiritualMentorChat = () => {
           return;
         }
 
-        if (isAiLoading) {
+        if (isAiLoading || isSendingRef.current) {
           return;
         }
 
@@ -210,11 +219,13 @@ const SpiritualMentorChat = () => {
 
         Keyboard.dismiss();
         setIsGuidedMeditationGenerating(true);
+        isSendingRef.current = true;
         void (async () => {
           try {
-            await fetchMessage(buildGuidedMeditationChatRequest(selection));
+            await fetchMessage(buildGuidedMeditationChatRequest(selection), generateRequestId());
           } finally {
             setIsGuidedMeditationGenerating(false);
+            isSendingRef.current = false;
           }
         })();
         scrollToLatestMessage(500);
@@ -278,8 +289,14 @@ const SpiritualMentorChat = () => {
       let isCancelled = false;
 
       void dispose();
+      // Cancel/discard any in-flight AI request from the previous session so
+      // a late response can never bleed into the newly opened session.
+      resetAiMessageState();
+      isSendingRef.current = false;
       setMessages([]);
       setInputText("");
+      setChatSessionContext(normalizedSessionId ?? null);
+      addChatBreadcrumb("session_opened", { session_id: normalizedSessionId ?? null });
 
       if (!normalizedSessionId || !isExistingChat) {
         return () => {
@@ -323,7 +340,7 @@ const SpiritualMentorChat = () => {
       return () => {
         isCancelled = true;
       };
-    }, [dispose, isExistingChat, normalizedSessionId]);
+    }, [dispose, isExistingChat, normalizedSessionId, resetAiMessageState]);
 
     const updateLatestGuidedMeditationMessage = useCallback((status: PlaybackStatus) => {
       setMessages(prevMessages => {
@@ -408,6 +425,7 @@ const SpiritualMentorChat = () => {
                   isPlaybackPaused: false,
                   showRating: true,
                   isFavourite: aiMessage.favourite === 1,
+                  requestId: aiRequestId,
                 }
               : {
                   role: "ai",
@@ -416,9 +434,28 @@ const SpiritualMentorChat = () => {
                   mode: aiMode,
                   showRating: true,
                   isFavourite: aiMessage.favourite === 1,
+                  requestId: aiRequestId,
                 };
-          const lastMessage = prevMessages[prevMessages.length - 1];
 
+          // Match the response to the placeholder that requested it, rather
+          // than assuming it's always the last item in the array — the array
+          // can have been reordered/appended to by another in-flight request.
+          const matchIndex = aiRequestId
+            ? prevMessages.findIndex(
+                message => message.status === "loading" && message.requestId === aiRequestId
+              )
+            : -1;
+
+          if (matchIndex !== -1) {
+            addChatBreadcrumb("loading_placeholder_replaced", { request_id: aiRequestId });
+            return prevMessages.map((message, index) =>
+              index === matchIndex ? nextAiMessage : message
+            );
+          }
+
+          // Fallback for responses without a requestId (e.g. the test-mode
+          // fetch path): keep the previous positional behaviour.
+          const lastMessage = prevMessages[prevMessages.length - 1];
           if (lastMessage && lastMessage.status === "loading") {
             return [
               ...prevMessages.slice(0, -1),
@@ -446,7 +483,7 @@ const SpiritualMentorChat = () => {
           }
         })();
       }
-    }, [aiMessage, aiMode, playAudio, scrollToLatestMessage]);
+    }, [aiMessage, aiMode, aiRequestId, playAudio, scrollToLatestMessage]);
 
     useEffect(() => {
       if (playbackStatus === "idle") {
@@ -462,12 +499,35 @@ const SpiritualMentorChat = () => {
       };
     }, [dispose]);
 
+    // Mirrors the audio cleanup above: if the screen unmounts entirely (e.g.
+    // the user presses back) while a request is still in flight, abort it
+    // instead of letting it resolve into a hook instance nobody reads
+    // anymore. Session *switches* while staying mounted are already handled
+    // by the resetAiMessageState() call in the session-switch effect above —
+    // this only covers full unmount, which that effect doesn't run for.
+    useEffect(() => {
+      return () => {
+        resetAiMessageState();
+      };
+    }, [resetAiMessageState]);
+
     useEffect(() => {
       if (!aiError) {
         return;
       }
 
       setMessages(prevMessages => {
+        const matchIndex = aiRequestId
+          ? prevMessages.findIndex(
+              message => message.status === "loading" && message.requestId === aiRequestId
+            )
+          : -1;
+
+        if (matchIndex !== -1) {
+          addChatBreadcrumb("loading_placeholder_dropped_error", { request_id: aiRequestId });
+          return prevMessages.filter((_, index) => index !== matchIndex);
+        }
+
         const lastMessage = prevMessages[prevMessages.length - 1];
         if (!lastMessage || lastMessage.status !== "loading") {
           return prevMessages;
@@ -475,7 +535,7 @@ const SpiritualMentorChat = () => {
 
         return prevMessages.slice(0, -1);
       });
-    }, [aiError]);
+    }, [aiError, aiRequestId]);
 
 
     useEffect(()=>{
@@ -485,7 +545,7 @@ const SpiritualMentorChat = () => {
         loadingMessageTimeout = setTimeout(() => {
           setMessages(prevMessages => [
             ...prevMessages,
-            { id: generateRandomNumber(), role: "ai", status: "loading" },
+            { id: generateClientMessageId(), role: "ai", status: "loading", requestId: activeRequestId },
           ]);
         }, 1000);
       }
@@ -496,7 +556,7 @@ const SpiritualMentorChat = () => {
           clearTimeout(loadingMessageTimeout);
         }
       };
-    },[isAiLoading, scrollToLatestMessage])
+    },[activeRequestId, isAiLoading, scrollToLatestMessage])
 
     const handleMicPressIn = async () => {
       setIsMicPressed(true);
@@ -535,14 +595,16 @@ const SpiritualMentorChat = () => {
       showToastMessage("Can not send message while guided meditation is in progress", false);
       return;
     }
-    if (isAiLoading){
+    if (isAiLoading || isSendingRef.current){
       return;
     }
     if (isConverting){
       showToastMessage("Voice note is currently converting. Please wait a moment.", false);
       return;
     }
-    const optimisticMessageId = generateRandomNumber();
+    isSendingRef.current = true;
+    const requestId = generateRequestId();
+    const optimisticMessageId = generateClientMessageId();
     const newMessage: ChatMessage = {
       role: "human",
       chatMessage: {
@@ -564,13 +626,16 @@ const SpiritualMentorChat = () => {
         deleted_at: null,
       },
       status: "ready",
+      requestId,
     };
 
     // 1. Update state
     setMessages(prevMessages => [...prevMessages, newMessage]);
 
     // 2. Call API (can happen concurrently with state update)
-    fetchMessage(inputText);
+    void fetchMessage(inputText, requestId).finally(() => {
+      isSendingRef.current = false;
+    });
 
     // 3. Clear input
     setInputText('');
@@ -706,7 +771,7 @@ const SpiritualMentorChat = () => {
           </TouchableOpacity>
 
           <View style={styles.lhamoPill}>
-            <Image source={images.lhamo_mini} />
+            <Image source={images.lhamo_mini} style={styles.lhamoIcon} resizeMode="contain" />
             <Text style={styles.lhamoText}>Lhamo</Text>
           </View>
 
@@ -894,6 +959,10 @@ const styles = StyleSheet.create({
       },
       lhamoText: {
         color: '#FFFFFF',
+      },
+      lhamoIcon: {
+        width: 24,
+        height: 24,
       },
       chatViewParent:{
         flex: 1, // Let chat view take up remaining space

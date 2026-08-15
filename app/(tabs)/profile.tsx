@@ -6,6 +6,7 @@ import ProfilePhotoUploadModal from "@/comp/modals/ProfilePhotoUploadModal";
 import MeditationSessionCard from "@/comp/meditation_session/MeditationSessionCard";
 import ProfileContactForm from "@/comp/profile/ProfileContactForm";
 import ProfileFeedbackForm from "@/comp/profile/ProfileFeedbackForm";
+import TestButtons from "@/development_testing/comp/TestButtons";
 import { FONTS } from "@/theme";
 import {
   checkIfLambdaResultIsSuccess,
@@ -779,6 +780,8 @@ const Profile = () => {
             </View>
           </TouchableOpacity>
 
+          <TestButtons />
+
           <TouchableOpacity activeOpacity={0.85} onPress={handleProfileDetailsPress} style={styles.nameRow}>
             <Text style={styles.nameText}>{accountDetails.name || "Profile"}</Text>
             <Image source={PENCIL_ICON} style={styles.pencilIcon} />
@@ -978,7 +981,7 @@ const styles = StyleSheet.create({
     resizeMode: "cover",
   },
   nameRow: {
-    marginTop: 24,
+    marginTop: 18,
     flexDirection: "row",
     alignItems: "center",
   },
