@@ -1,5 +1,5 @@
 import { File } from "expo-file-system";
-import { AUDIO_TO_TEXT_URL, SECRET_TOKEN } from "@/constant";
+import { AUDIO_TO_TEXT_URL, LAMBDA_SERVICE_API_KEY } from "@/constant";
 
 export type SpeechToTextAudioFile = {
   uri: string;
@@ -24,7 +24,7 @@ export async function convertAudioFileToTextRequest(
   const response = await fetch(AUDIO_TO_TEXT_URL, {
     method: "POST",
     headers: {
-      Authorization: SECRET_TOKEN,
+      "x-api-key": LAMBDA_SERVICE_API_KEY,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({

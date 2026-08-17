@@ -1,9 +1,11 @@
 import {Text,View,Image, TouchableOpacity, ActivityIndicator} from 'react-native'
 import React, { useState } from 'react'
+import * as Clipboard from 'expo-clipboard'
 import { images } from '@/constants/images'
 import FeedBackModal, { FeedBackPayload } from './FeedBackModal';
 import ReportProblem from './ReportProblem';
 import { Ionicons } from '@expo/vector-icons';
+import { useToast } from '@/context/useToast'
 
 type AiProps = {
     message: string;
@@ -48,6 +50,12 @@ const Ai = ({
     const [isFeedBackModalVisible, setIsFeedBackModalVisible] = useState(false);
     const [hasSubmittedRating, setHasSubmittedRating] = useState(false);
     const [showThankYouCard, setShowThankYouCard] = useState(false);
+    const { showToastMessage } = useToast();
+
+    const handleCopy = async () => {
+        await Clipboard.setStringAsync(message);
+        showToastMessage("Copied to clipboard", true);
+    };
 
     const handleRatingSuccess = () => {
         setHasSubmittedRating(true);
@@ -96,15 +104,19 @@ const Ai = ({
     const shouldShowRating = showRating && !hasSubmittedRating;
 
     if (message == "loading"){
-        return <Image source={images.lhamo_mini_loading}/>
+        return <Image source={images.lhamo_mini_loading} style={{ width: 55, height: 55, resizeMode: "contain" }}/>
     } else {
     return (
         <>
             <View style={{gap:10,marginBottom:10}}>
-                <Image source={images.lhamo_mini}/>
+                <Image source={images.lhamo_mini} style={{ width: 25, height: 25, resizeMode: "contain" }}/>
                 <View style={{backgroundColor:"#8C8C8A",maxWidth:"90%",borderRadius:10}}>
                     <View style={{padding:15,gap:12}}>
-                        <Text style={{fontSize:16, color:"#FFFFFF",flexShrink:1}}>{message}</Text>
+                        <Text
+                            style={{fontSize:16, color:"#FFFFFF",flexShrink:1}}
+                            selectable
+                            onLongPress={handleCopy}
+                        >{message}</Text>
                         {showPlaybackControl ? (
                             <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
                                 {/* <TouchableOpacity

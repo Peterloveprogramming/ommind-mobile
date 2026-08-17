@@ -56,6 +56,8 @@ const PersonalisedMeditationModal = ({
   const trimmedInitialFocus = initialFocus?.trim() ?? "";
   const hasInitialFocus = Boolean(trimmedInitialFocus);
   const [focus, setFocus] = React.useState(FOCUS_OPTIONS[0]);
+  const trimmedFocus = focus.trim();
+  const isCustomFocus = Boolean(trimmedFocus) && !FOCUS_OPTIONS.includes(focus);
   const [isEditingFocus, setIsEditingFocus] = React.useState(false);
   const [selectedLength, setSelectedLength] = React.useState(LENGTH_OPTIONS[0]);
   const [selectedStyle, setSelectedStyle] = React.useState(STYLE_OPTIONS[0]);
@@ -124,6 +126,18 @@ const PersonalisedMeditationModal = ({
               autoFocus={isEditingFocus}
               onSubmitEditing={() => setIsEditingFocus(false)}
             />
+          ) : isCustomFocus ? (
+            <View style={styles.chipsRow}>
+              <TouchableOpacity
+                activeOpacity={0.85}
+                style={[styles.chip, styles.chipSelected]}
+                onPress={() => setIsEditingFocus(true)}
+              >
+                <Text style={[styles.chipText, styles.chipTextSelected]} numberOfLines={1}>
+                  {trimmedFocus}
+                </Text>
+              </TouchableOpacity>
+            </View>
           ) : (
             <View style={styles.chipsRow}>
               {FOCUS_OPTIONS.map((option) => {

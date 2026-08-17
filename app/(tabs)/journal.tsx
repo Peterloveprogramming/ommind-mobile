@@ -452,9 +452,21 @@ const Journal = () => {
 
         {isSelectionMode ? (
           <View style={styles.selectionActionsWrap}>
-            <Text style={styles.selectionCountText}>
-              {selectedEntryIds.length}/{MAX_SELECTED_ENTRIES} selected
-            </Text>
+            <View style={styles.selectionHeaderRow}>
+              <Text style={styles.selectionCountText}>
+                {selectedEntryIds.length}/{MAX_SELECTED_ENTRIES} selected
+              </Text>
+              <Pressable
+                onPress={handleExitSelectionMode}
+                hitSlop={12}
+                style={({ pressed }) => [
+                  styles.selectionCloseButton,
+                  pressed && styles.selectionActionButtonPressed,
+                ]}
+              >
+                <Ionicons name="close" size={18} color="#171717" />
+              </Pressable>
+            </View>
             <View style={styles.selectionActionsRow}>
               {/* Reflection is disabled for now.
               <Pressable
@@ -770,12 +782,27 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     paddingBottom: 118,
   },
-  selectionCountText: {
+  selectionHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     marginBottom: 12,
+  },
+  selectionCountText: {
     fontFamily: FONTS.interSemiBold,
     fontSize: 14,
     color: "#717178",
     textAlign: "center",
+  },
+  selectionCloseButton: {
+    position: "absolute",
+    right: 0,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: "#ECECF0",
+    alignItems: "center",
+    justifyContent: "center",
   },
   selectionActionsRow: {
     flexDirection: "row",
