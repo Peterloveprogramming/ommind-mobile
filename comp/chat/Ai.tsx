@@ -104,7 +104,7 @@ const Ai = ({
     const shouldShowRating = showRating && !hasSubmittedRating;
 
     if (message == "loading"){
-        return <Image source={images.lhamo_mini_loading} style={{ width: 55, height: 55, resizeMode: "contain" }}/>
+        return <Image source={images.lhamo_mini_loading} style={{ width: 60, height: 60, resizeMode: "contain" }}/>
     } else {
     return (
         <>

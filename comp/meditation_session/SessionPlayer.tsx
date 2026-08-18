@@ -42,6 +42,7 @@ import {
   clearRecommendedSession,
   setHomePageTextFromSessionTitle,
 } from "@/store/slices/HomePageInfoSlice";
+import { patchMeditationCourseSession } from "@/store/slices/MeditationSlice";
 
 const SEEK_STEP_SECONDS = 10;
 const TRACKER_SIZE = 24;
@@ -138,6 +139,7 @@ const SessionPlayer = () => {
     session_metadata?: string | string[];
     type?: string | string[];
     favourite?: string | string[];
+    course_uuid?: string | string[];
     course_number?: string | string[];
     session_number?: string | string[];
     progress?: string | string[];
@@ -151,6 +153,7 @@ const SessionPlayer = () => {
   const sessionTitlesParam = getSingleParam(params.session_titles);
   const sessionMetadataParam = getSingleParam(params.session_metadata);
   const meditationType = getSingleParam(params.type);
+  const courseUuid = getSingleParam(params.course_uuid);
   const generatedParam = getSingleParam(params.is_generated) ?? getSingleParam(params.is_genrated);
   const isGenerated = generatedParam === "1" || generatedParam === "true";
   const courseNumber = Number(getSingleParam(params.course_number));
@@ -232,6 +235,7 @@ const SessionPlayer = () => {
     favourite: sessionFavourite,
     messageId,
     meditationType,
+    courseUuid,
     courseNumber,
     sessionNumber,
   });
@@ -364,6 +368,16 @@ const SessionPlayer = () => {
         nextFavourite === 1 ? "Added to favourites" : "Removed from favourites",
         true
       );
+
+      if (!isGenerated && courseUuid && Number.isFinite(sessionNumber)) {
+        dispatch(
+          patchMeditationCourseSession({
+            uuid: courseUuid,
+            sessionNumber,
+            changes: { favourite: nextFavourite },
+          })
+        );
+      }
     } catch (error) {
       console.error("Failed to update favourite", error);
       showToastMessage("Unable to update favourite.", false);
@@ -375,9 +389,11 @@ const SessionPlayer = () => {
     isFavouriteUpdating,
     isGenerated,
     messageId,
+    courseUuid,
     courseNumber,
     sessionNumber,
     showToastMessage,
+    dispatch,
   ]);
 
   useEffect(() => {
@@ -434,13 +450,13 @@ const SessionPlayer = () => {
   ]);
 
   useEffect(() => {
-    console.log("voice status", {
-      isLoaded: voiceStatus.isLoaded,
-      playing: voiceStatus.playing,
-      isBuffering: voiceStatus.isBuffering,
-      duration: voiceStatus.duration,
-      currentTime: voiceStatus.currentTime,
-    });
+    // console.log("voice status", {
+    //   isLoaded: voiceStatus.isLoaded,
+    //   playing: voiceStatus.playing,
+    //   isBuffering: voiceStatus.isBuffering,
+    //   duration: voiceStatus.duration,
+    //   currentTime: voiceStatus.currentTime,
+    // });
   }, [
     voiceStatus.currentTime,
     voiceStatus.duration,
@@ -450,13 +466,13 @@ const SessionPlayer = () => {
   ]);
 
   useEffect(() => {
-    console.log("bgm status", {
-      isLoaded: bgmStatus.isLoaded,
-      playing: bgmStatus.playing,
-      isBuffering: bgmStatus.isBuffering,
-      duration: bgmStatus.duration,
-      currentTime: bgmStatus.currentTime,
-    });
+    // console.log("bgm status", {
+    //   isLoaded: bgmStatus.isLoaded,
+    //   playing: bgmStatus.playing,
+    //   isBuffering: bgmStatus.isBuffering,
+    //   duration: bgmStatus.duration,
+    //   currentTime: bgmStatus.currentTime,
+    // });
   }, [
     bgmStatus.currentTime,
     bgmStatus.duration,
@@ -464,8 +480,8 @@ const SessionPlayer = () => {
     bgmStatus.isLoaded,
     bgmStatus.playing,
   ]);
-  console.log("isgenerated",isGenerated)
-  console.log("messageId", messageId)
+  // console.log("isgenerated",isGenerated)
+  // console.log("messageId", messageId)
 
   const getCurrentProgressSecond = useCallback((overrideSeconds?: number) => {
     const rawSeconds = overrideSeconds ?? currentTimeRef.current;
@@ -492,13 +508,21 @@ const SessionPlayer = () => {
     playbackStartedAtMsRef.current = isVoicePlayingRef.current ? nowMs : null;
   }, []);
 
-  const saveSessionProgress = useCallback(async (overrideSeconds?: number, completed = false) => {
+  const saveSessionProgress = useCallback(async (
+    overrideSeconds?: number,
+    completed = false,
+    source = "unknown"
+  ) => {
     if (isGenerated) {
+      if (__DEV__) {
+        console.log("[SessionPlayer] skipping progress save for generated session", { source });
+      }
       return;
     }
 
     const {
       meditationType: currentMeditationType,
+      courseUuid: currentCourseUuid,
       courseNumber: currentCourseNumber,
       sessionNumber: currentSessionNumber,
     } = progressMetadataRef.current;
@@ -508,6 +532,14 @@ const SessionPlayer = () => {
       Number.isNaN(currentCourseNumber) ||
       Number.isNaN(currentSessionNumber)
     ) {
+      if (__DEV__) {
+        console.log("[SessionPlayer] skipping progress save; missing metadata", {
+          source,
+          currentMeditationType,
+          currentCourseNumber,
+          currentSessionNumber,
+        });
+      }
       return;
     }
 
@@ -516,12 +548,32 @@ const SessionPlayer = () => {
     const accumulatedMinutes = Math.floor(accumulatedPlaybackSecondsRef.current / 60);
     const progressSaveKey = `${currentMeditationType}-${currentCourseNumber}-${currentSessionNumber}-${progressSeconds}`;
     if (!completed && accumulatedMinutes <= 0 && lastSavedProgressKeyRef.current === progressSaveKey) {
+      if (__DEV__) {
+        console.log("[SessionPlayer] skipping duplicate progress save", {
+          source,
+          progressSeconds,
+          accumulatedMinutes,
+          completed,
+        });
+      }
       return;
     }
 
     lastSavedProgressKeyRef.current = progressSaveKey;
 
     try {
+      if (__DEV__) {
+        console.log("[SessionPlayer] progress save started", {
+          source,
+          progressSeconds,
+          accumulatedMinutes,
+          completed,
+          type: currentMeditationType,
+          courseNumber: currentCourseNumber,
+          sessionNumber: currentSessionNumber,
+        });
+      }
+
       const result = await updateSessionProgress({
         type: currentMeditationType,
         course_number: currentCourseNumber,
@@ -538,8 +590,29 @@ const SessionPlayer = () => {
         return;
       }
 
+      if (__DEV__) {
+        console.log("[SessionPlayer] progress save finished", {
+          source,
+          progressSeconds,
+          accumulatedMinutes,
+          completed,
+        });
+      }
+
       if (completed || accumulatedMinutes > 0) {
         dispatch(clearRecommendedSession());
+      }
+
+      if (currentCourseUuid) {
+        dispatch(
+          patchMeditationCourseSession({
+            uuid: currentCourseUuid,
+            sessionNumber: currentSessionNumber,
+            changes: completed
+              ? { progress: progressSeconds, session_completed: 1 }
+              : { progress: progressSeconds },
+          })
+        );
       }
     } catch (error) {
       console.error("Failed to update session progress", error);
@@ -567,13 +640,26 @@ const SessionPlayer = () => {
   }, [flushAccumulatedPlaybackTime, isGenerated, voiceStatus.playing]);
 
   useEffect(() => {
-    const unsubscribe = navigation.addListener("beforeRemove", () => {
+    const unsubscribe = navigation.addListener("beforeRemove", (event) => {
+      if (__DEV__) {
+        console.log("[SessionPlayer] beforeRemove", {
+          actionType: event.data.action.type,
+          isAdvancingSession: isAdvancingSessionRef.current,
+          isLeavingAfterSave: isLeavingAfterSaveRef.current,
+        });
+      }
+
       if (isAdvancingSessionRef.current || isLeavingAfterSaveRef.current) {
         return;
       }
 
       isLeavingAfterSaveRef.current = true;
-      void saveSessionProgress();
+
+      if (__DEV__) {
+        console.log("[SessionPlayer] starting background progress save from beforeRemove");
+      }
+
+      void saveSessionProgress(undefined, false, "beforeRemove");
     });
 
     return unsubscribe;
@@ -612,6 +698,7 @@ const SessionPlayer = () => {
           title: sessionTitles[String(nextSessionNumber)] ?? title,
           favourite: String(nextSessionMetadata?.favourite ?? 0),
           message_id: nextSessionMetadata?.message_id == null ? "" : String(nextSessionMetadata.message_id),
+          course_uuid: courseUuid ?? "",
           course_number: String(courseNumber),
           session_number: String(nextSessionNumber),
           session_titles: sessionTitlesParam ?? "",
@@ -622,7 +709,7 @@ const SessionPlayer = () => {
         },
       });
     })();
-  }, [backgroundUrl, bgmPlayer, courseNumber, hasPlaylistNavigation, image_url, isPlaybackEnabled, meditationType, router, saveSessionProgress, sessionMetadata, sessionMetadataParam, sessionNumber, sessionTitles, sessionTitlesParam, title, voicePlayer, voiceStatus.didJustFinish]);
+  }, [backgroundUrl, bgmPlayer, courseNumber, courseUuid, hasPlaylistNavigation, image_url, isPlaybackEnabled, meditationType, router, saveSessionProgress, sessionMetadata, sessionMetadataParam, sessionNumber, sessionTitles, sessionTitlesParam, title, voicePlayer, voiceStatus.didJustFinish]);
 
   const duration = voiceStatus.duration || 0;
   const currentTime = voiceStatus.currentTime || 0;
@@ -703,6 +790,7 @@ const SessionPlayer = () => {
     favourite: currentFavourite,
     messageId,
     meditationType,
+    courseUuid,
     courseNumber,
     sessionNumber,
   };
@@ -772,16 +860,30 @@ const SessionPlayer = () => {
 
   useFocusEffect(
     useCallback(() => {
+      if (__DEV__) {
+        console.log("[SessionPlayer] focused", {
+          sessionKey,
+          isGenerated,
+        });
+      }
+
       return () => {
+        if (__DEV__) {
+          console.log("[SessionPlayer] focus cleanup", {
+            sessionKey,
+            isLeavingAfterSave: isLeavingAfterSaveRef.current,
+          });
+        }
+
         if (isLeavingAfterSaveRef.current) {
           return;
         }
 
         void (async () => {
-          await saveSessionProgress();
+          await saveSessionProgress(undefined, false, "focusCleanup");
         })();
       };
-    }, [saveSessionProgress]),
+    }, [isGenerated, saveSessionProgress, sessionKey]),
   );
 
   const navigateToSession = async (nextSessionNumber: number) => {
@@ -810,6 +912,7 @@ const SessionPlayer = () => {
         title: sessionTitles[String(nextSessionNumber)] ?? title,
         favourite: String(nextSessionMetadata?.favourite ?? 0),
         message_id: nextSessionMetadata?.message_id == null ? "" : String(nextSessionMetadata.message_id),
+        course_uuid: courseUuid ?? "",
         course_number: String(courseNumber),
         session_number: String(nextSessionNumber),
         session_titles: sessionTitlesParam ?? "",

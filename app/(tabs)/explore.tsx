@@ -13,8 +13,7 @@ const formatSectionTitle = (value: keyof MeditationCoursesByType) => {
 
 const Explore = () => {
   const router = useRouter();
-  const { result, error, fetchMeditationCourses } = useMeditationCourses();
-  const coursesByType = result?.data?.courses;
+  const { coursesByType, error, fetchMeditationCourses } = useMeditationCourses();
 
   useFocusEffect(
     React.useCallback(() => {

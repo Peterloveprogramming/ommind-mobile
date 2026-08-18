@@ -1,10 +1,12 @@
 import { configureStore } from "@reduxjs/toolkit";
 
 import homePageInfoReducer from "@/store/slices/HomePageInfoSlice";
+import meditationReducer from "@/store/slices/MeditationSlice";
 
 export const store = configureStore({
   reducer: {
     homePageInfo: homePageInfoReducer,
+    meditation: meditationReducer,
   },
 });
 

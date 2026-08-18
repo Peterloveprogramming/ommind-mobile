@@ -19,6 +19,7 @@ type SessionCardProps = {
   locked: boolean;
   favourite: MeditationCourseSession["favourite"];
   messageId?: MeditationCourseSession["message_id"];
+  courseUuid: string;
   courseNumber: number;
   sessionNumber: number;
   sessionLengthInMins: number;
@@ -40,6 +41,7 @@ const SessionCard = ({
   locked,
   favourite,
   messageId,
+  courseUuid,
   courseNumber,
   sessionNumber,
   sessionLengthInMins,
@@ -87,6 +89,7 @@ const SessionCard = ({
         title,
         favourite: String(favourite),
         message_id: messageId == null ? "" : String(messageId),
+        course_uuid: courseUuid,
         course_number: String(courseNumber),
         session_number: String(sessionNumber),
         type: meditationType,
@@ -128,27 +131,63 @@ const renderDescriptionSection = (section: MeditationCourseDescriptionSection) =
 
 const MeditationSession = () => {
   const params = useLocalSearchParams<{ uuid?: string; type?: string }>();
-  const { detailsResult, detailsStatus, fetchMeditationCourseDetails } = useMeditationCourses();
-  const courseDetails = detailsResult?.data?.course_details;
+  const { courseDetails, detailsStatus, fetchMeditationCourseDetails } = useMeditationCourses({
+    courseDetailsUuid: params.uuid,
+    debugLabel: "MeditationSession",
+    enableDebugLogging: true,
+  });
+
+  useEffect(() => {
+    if (!__DEV__) {
+      return;
+    }
+
+    console.log("[MeditationSession] render state", {
+      uuid: params.uuid,
+      type: params.type,
+      hasCourseDetails: Boolean(courseDetails),
+      detailsStatus,
+      title: courseDetails?.title,
+      sessionCount: courseDetails?.sessions.length ?? 0,
+    });
+  }, [courseDetails, detailsStatus, params.type, params.uuid]);
 
   useFocusEffect(
     useCallback(() => {
+      const logBlur = () => {
+        if (__DEV__) {
+          console.log("[MeditationSession] blurred", {
+            uuid: params.uuid,
+            type: params.type,
+          });
+        }
+      };
+
       if (!params.uuid || !params.type) {
-        return;
+        if (__DEV__) {
+          console.log("[MeditationSession] missing route params; skipping course details fetch", {
+            uuid: params.uuid,
+            type: params.type,
+          });
+        }
+        return logBlur;
+      }
+
+      if (__DEV__) {
+        console.log("[MeditationSession] focused; requesting course details", {
+          uuid: params.uuid,
+          type: params.type,
+        });
       }
 
       void fetchMeditationCourseDetails({
         uuid: params.uuid,
         type: params.type as MeditationCourse["type"],
       });
+
+      return logBlur;
     }, [fetchMeditationCourseDetails, params.type, params.uuid])
   );
-
-  useEffect(() => {
-    if (detailsResult?.data?.course_details) {
-      console.log("Meditation course details:", detailsResult.data.course_details);
-    }
-  }, [detailsResult]);
 
   if (!courseDetails) {
     return (
@@ -178,8 +217,6 @@ const MeditationSession = () => {
       return metadataBySession;
     }, {}),
   );
-  console.log("data is",detailsResult.data)
-
   return (
     <View style={styles.container}>
           <ScrollView
@@ -229,6 +266,7 @@ const MeditationSession = () => {
                   locked={false}
                   favourite={session.favourite}
                   messageId={session.message_id}
+                  courseUuid={courseDetails.uuid}
                   courseNumber={courseDetails.course_number}
                   sessionNumber={session.session_number}
                   sessionLengthInMins={session.session_length}

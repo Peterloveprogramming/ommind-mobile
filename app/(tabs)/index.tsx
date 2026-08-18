@@ -51,6 +51,7 @@ import {
   getHomePageInfoState,
   setHomePageInfo,
 } from "@/store/slices/HomePageInfoSlice";
+import { clearMeditationCache } from "@/store/slices/MeditationSlice";
 
 const MEDITATION_ICON = require("@/assets/images/home/meditation_icon.png");
 const NOTIFICATION_ICON = require("@/assets/images/home/notification.png");
@@ -743,6 +744,7 @@ const Home = () => {
             await deleteFromCache("authInfo");
             await deleteProfilePhotoUri();
             dispatch(clearHomePageInfo());
+            dispatch(clearMeditationCache());
             setProfileImageSource(MEDITATION_ICON);
             setPendingProfilePhotoUri(null);
             setPendingProfilePhotoBase64(null);
