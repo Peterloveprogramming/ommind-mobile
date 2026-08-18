@@ -567,19 +567,13 @@ const SessionPlayer = () => {
   }, [flushAccumulatedPlaybackTime, isGenerated, voiceStatus.playing]);
 
   useEffect(() => {
-    const unsubscribe = navigation.addListener("beforeRemove", (event: any) => {
+    const unsubscribe = navigation.addListener("beforeRemove", () => {
       if (isAdvancingSessionRef.current || isLeavingAfterSaveRef.current) {
-        console.log("can not exit")
         return;
       }
 
-      event.preventDefault();
       isLeavingAfterSaveRef.current = true;
-
-      void (async () => {
-        await saveSessionProgress();
-        navigation.dispatch(event.data.action);
-      })();
+      void saveSessionProgress();
     });
 
     return unsubscribe;
@@ -806,7 +800,7 @@ const SessionPlayer = () => {
     }
 
     isAdvancingSessionRef.current = true;
-    await saveSessionProgress();
+    void saveSessionProgress();
     voicePlayer.pause();
     bgmPlayer.pause();
     const nextSessionMetadata = sessionMetadata[String(nextSessionNumber)];

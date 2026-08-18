@@ -1,5 +1,5 @@
 import { File } from "expo-file-system";
-import { AUDIO_TO_TEXT_URL, LAMBDA_SERVICE_API_KEY } from "@/constant";
+import { AUDIO_TO_TEXT_URL, LAMBDA_SERVICE_API_KEY, SECRET_TOKEN } from "@/constant";
 
 export type SpeechToTextAudioFile = {
   uri: string;
@@ -10,6 +10,32 @@ export type SpeechToTextAudioFile = {
 export type SpeechToTextResponse = Record<string, unknown>;
 
 const CONVERT_AUDIO_TO_TEXT_ROUTE = "convert_audio_to_text";
+const TEST_SERVICE_HEALTH_ROUTE = "test";
+
+export type SpeechToTextHealthResponse = Record<string, unknown>;
+
+export async function checkSpeechToTextServiceHealthRequest(): Promise<SpeechToTextHealthResponse> {
+  const response = await fetch(AUDIO_TO_TEXT_URL, {
+    method: "POST",
+    headers: {
+      "x-api-key": LAMBDA_SERVICE_API_KEY,
+      Authorization: SECRET_TOKEN,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      route: TEST_SERVICE_HEALTH_ROUTE,
+    }),
+  });
+
+  if (!response.ok) {
+    const responseText = await response.text();
+    throw new Error(
+      `speech to text health check failed (${response.status}): ${responseText || "unknown error"}`
+    );
+  }
+
+  return (await response.json()) as SpeechToTextHealthResponse;
+}
 
 export async function convertAudioFileToTextRequest(
   audioFile: SpeechToTextAudioFile
@@ -25,6 +51,7 @@ export async function convertAudioFileToTextRequest(
     method: "POST",
     headers: {
       "x-api-key": LAMBDA_SERVICE_API_KEY,
+      Authorization: SECRET_TOKEN,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({

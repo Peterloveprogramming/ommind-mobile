@@ -1,5 +1,6 @@
 import { FONTS } from "@/theme";
 import { useMeditationApi } from "@/api/meditation/requests";
+import { checkSpeechToTextServiceHealthRequest } from "@/api/speechToText/requests";
 import AudioTest from "@/dummy/tests/AudioTest";
 import {
   getAudioServiceWebsocketUrl,
@@ -32,18 +33,23 @@ const TestButtonsPopup = ({ visible, onClose }: TestButtonsPopupProps) => {
   const [isResettingDailyMood, setIsResettingDailyMood] = React.useState(false);
   const [isAudioExpanded, setIsAudioExpanded] = React.useState(false);
   const [isAudioTestingVisible, setIsAudioTestingVisible] = React.useState(false);
+  const [isSpeechToTextTestingVisible, setIsSpeechToTextTestingVisible] = React.useState(false);
   const [audioActionLoading, setAudioActionLoading] = React.useState<
     "start" | "stop" | "health" | null
   >(null);
   const [audioStatusText, setAudioStatusText] = React.useState("");
   const [statusText, setStatusText] = React.useState("");
+  const [isCheckingSpeechToTextHealth, setIsCheckingSpeechToTextHealth] = React.useState(false);
+  const [speechToTextStatusText, setSpeechToTextStatusText] = React.useState("");
 
   React.useEffect(() => {
     if (visible) {
       setIsAudioExpanded(false);
       setIsAudioTestingVisible(false);
+      setIsSpeechToTextTestingVisible(false);
       setAudioStatusText("");
       setStatusText("");
+      setSpeechToTextStatusText("");
     }
   }, [visible]);
 
@@ -117,6 +123,25 @@ const TestButtonsPopup = ({ visible, onClose }: TestButtonsPopupProps) => {
       showAudioResult("Unable to check audio health.");
     } finally {
       setAudioActionLoading(null);
+    }
+  };
+
+  const handleCheckSpeechToTextHealthPress = async () => {
+    if (isCheckingSpeechToTextHealth) {
+      return;
+    }
+
+    setIsCheckingSpeechToTextHealth(true);
+    setSpeechToTextStatusText("Checking service health...");
+
+    try {
+      const response = await checkSpeechToTextServiceHealthRequest();
+      setSpeechToTextStatusText(`Service healthy.\n${JSON.stringify(response)}`);
+    } catch (error) {
+      console.error("Failed to check speech to text service health", error);
+      setSpeechToTextStatusText("Unable to check service health.");
+    } finally {
+      setIsCheckingSpeechToTextHealth(false);
     }
   };
 
@@ -238,6 +263,16 @@ const TestButtonsPopup = ({ visible, onClose }: TestButtonsPopupProps) => {
           <TouchableOpacity
             activeOpacity={0.85}
             accessibilityRole="button"
+            accessibilityLabel="Test Speech to Text"
+            onPress={() => setIsSpeechToTextTestingVisible(true)}
+            style={styles.resetDailyMoodButton}
+          >
+            <Text style={styles.resetDailyMoodButtonText}>Test Speech to Text</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            activeOpacity={0.85}
+            accessibilityRole="button"
             accessibilityLabel="Reset Daily Mood"
             disabled={isResettingDailyMood}
             onPress={handleResetDailyMoodPress}
@@ -279,6 +314,55 @@ const TestButtonsPopup = ({ visible, onClose }: TestButtonsPopupProps) => {
             <View style={styles.audioTestingContent}>
               <AudioTest />
             </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      <Modal
+        transparent
+        animationType="fade"
+        visible={isSpeechToTextTestingVisible}
+        onRequestClose={() => setIsSpeechToTextTestingVisible(false)}
+      >
+        <Pressable
+          style={styles.overlay}
+          onPress={() => setIsSpeechToTextTestingVisible(false)}
+        >
+          <Pressable style={styles.card} onPress={() => {}}>
+            <View style={styles.header}>
+              <Text style={styles.title}>Speech to Text Testing</Text>
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={() => setIsSpeechToTextTestingVisible(false)}
+                style={styles.closeButton}
+              >
+                <Text style={styles.closeText}>x</Text>
+              </TouchableOpacity>
+            </View>
+
+            <TouchableOpacity
+              activeOpacity={0.85}
+              accessibilityRole="button"
+              accessibilityLabel="Check Service Health"
+              disabled={isCheckingSpeechToTextHealth}
+              onPress={handleCheckSpeechToTextHealthPress}
+              style={[
+                styles.audioActionButton,
+                styles.speechToTextHealthButton,
+                isCheckingSpeechToTextHealth && styles.buttonDisabled,
+              ]}
+            >
+              <View style={styles.audioActionButtonContent}>
+                {isCheckingSpeechToTextHealth ? (
+                  <ActivityIndicator color="#4B4748" size="small" />
+                ) : null}
+                <Text style={styles.audioActionButtonText}>Check Service Health</Text>
+              </View>
+            </TouchableOpacity>
+
+            {speechToTextStatusText ? (
+              <Text style={styles.audioStatusText}>{speechToTextStatusText}</Text>
+            ) : null}
           </Pressable>
         </Pressable>
       </Modal>
@@ -382,6 +466,9 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
     color: "#4B4748",
+  },
+  speechToTextHealthButton: {
+    marginTop: 16,
   },
   audioStatusText: {
     marginTop: 10,
