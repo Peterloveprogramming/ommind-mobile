@@ -1,3 +1,5 @@
+// Before changing session-player behavior, read comp/meditation_session/player/SPEC.md.
+
 export type FavouriteValue = 0 | 1;
 
 export type SessionMetadata = {

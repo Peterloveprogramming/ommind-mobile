@@ -8,6 +8,8 @@ import {
   type SessionPlayerRouteParams,
 } from "@/comp/meditation_session/player/sessionPlayerParams";
 
+// Before changing session-player behavior, read comp/meditation_session/player/SPEC.md.
+
 const SessionPlayer = () => {
   const params = useLocalSearchParams<SessionPlayerRouteParams>();
   const parsedParams = parseSessionPlayerParams(params);
