@@ -70,7 +70,7 @@ const INSPIRED_ICON = require("@/assets/images/home/feelings/inspired.png");
 const TIRED_ICON = require("@/assets/images/home/feelings/tired.png");
 const DRAINED_ICON = require("@/assets/images/home/feelings/drained.png");
 const ANXIOUS_ICON = require("@/assets/images/home/feelings/anxious.png");
-const HOME_BACKGROUND_ASPECT_RATIO = 1473 / 856;
+const HOME_BACKGROUND_ASPECT_RATIO = 1473 / 900;
 const MAX_PROFILE_PHOTO_SIZE_BYTES = 5 * 1024 * 1024;
 const ACCEPTED_PROFILE_PHOTO_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const ACCEPTED_PROFILE_PHOTO_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp"];
@@ -817,22 +817,26 @@ const Home = () => {
           imageStyle={styles.heroCardImage}
         >
           <View style={styles.heroContentColumn}>
-            <View style={styles.guidingRow}>
-              <Image source={MOON_ICON} style={styles.moonIcon} />
-              <Text style={styles.guidingText}>
-                <Text style={styles.guidingName}>Lhamo</Text> is guiding you today
-              </Text>
-            </View>
+            <View style={styles.heroTextGroup}>
+              <View style={styles.guidingRow}>
+                <Image source={MOON_ICON} style={styles.moonIcon} />
+                <Text style={styles.guidingText}>
+                  <Text style={styles.guidingName}>Lhamo</Text> is guiding you today
+                </Text>
+              </View>
 
-            <View style={styles.messageBubble}>
-              <Text style={styles.messageText}>{homePageText}</Text>
+              <View style={styles.messageBubble}>
+                <Text style={styles.messageText} numberOfLines={6}>
+                  {homePageText}
+                </Text>
+              </View>
             </View>
 
             <View style={styles.buttonStack}>
               <BaseButton
                 text="Create Meditation"
-                height={30}
-                fontSize={13}
+                height={28}
+                fontSize={12}
                 onPress={handleCreateMeditationPress}
                 useIcon={true}
                 icon={<Image source={CREATE_MEDITATION_ICON} style={styles.buttonIcon} />}
@@ -841,8 +845,8 @@ const Home = () => {
               />
               <BaseButton
                 text="Chat with Lhamo"
-                height={30}
-                fontSize={13}
+                height={28}
+                fontSize={12}
                 onPress={handleChatWithLhamoPress}
                 useIcon={true}
                 icon={<Image source={CHAT_ICON} style={styles.buttonIcon} />}
@@ -1124,6 +1128,8 @@ const styles = StyleSheet.create({
     marginTop: 28,
     width: "100%",
     aspectRatio: HOME_BACKGROUND_ASPECT_RATIO,
+    minHeight: 238,
+    borderRadius: 28,
     overflow: "hidden",
     position: "relative",
   },
@@ -1134,26 +1140,30 @@ const styles = StyleSheet.create({
   heroContentColumn: {
     position: "absolute",
     left: "5%",
-    top: "9%",
+    top: "8%",
     width: "44%",
-    bottom: "10%",
+    bottom: "8%",
+    justifyContent: "space-between",
+  },
+  heroTextGroup: {
+    flexShrink: 1,
   },
   guidingRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 5,
+    marginBottom: 4,
   },
   moonIcon: {
-    width: 24,
-    height: 24,
+    width: 22,
+    height: 22,
     resizeMode: "contain",
     marginRight: 6,
   },
   guidingText: {
     flex: 1,
     fontFamily: FONTS.inter,
-    fontSize: 13,
-    lineHeight: 19,
+    fontSize: 12,
+    lineHeight: 17,
     color: "#4B4748",
   },
   guidingName: {
@@ -1163,20 +1173,20 @@ const styles = StyleSheet.create({
   messageBubble: {
     borderWidth: 1.5,
     borderColor: "rgba(255,255,255,0.92)",
-    borderRadius: 18,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    borderRadius: 17,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
     backgroundColor: "rgba(255,255,255,0.12)",
   },
   messageText: {
     fontFamily: FONTS.inter,
-    fontSize: 13,
-    lineHeight: 14,
+    fontSize: 12,
+    lineHeight: 13,
     color: "#4E4A4C",
   },
   buttonStack: {
-    marginTop: 5,
-    gap: 4,
+    marginTop: 8,
+    gap: 7,
     width: "100%",
   },
   buttonIcon: {
@@ -1188,13 +1198,13 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     width: "100%",
     alignSelf: "flex-start",
-    marginVertical: 3,
+    marginVertical: 0,
   },
   secondaryButton: {
     borderRadius: 999,
     width: "100%",
     alignSelf: "flex-start",
-    marginVertical: 3,
+    marginVertical: 0,
   },
   bottomDivider: {
     marginTop: 26,

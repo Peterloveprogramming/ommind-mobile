@@ -21,6 +21,8 @@ import { checkIfLambdaResultIsSuccess, convertFieldNameToReadableFormat, storeAu
 
 let debugUi = false
 const DEBUG = true;
+const TESTING_VERSION_LABEL = "TESTING ONLY - BETA 1.0.0";
+
 type LoginDetails = {
   email: string;
   password: string;
@@ -106,6 +108,9 @@ export default function Login() {
             <View style={styles.topSection}>
               <View>
                 <Text style={styles.askEmailText}>Welcome back</Text>
+                <View style={styles.testingVersionBadge}>
+                  <Text style={styles.testingVersionText}>{TESTING_VERSION_LABEL}</Text>
+                </View>
               </View>
 
               <BaseTextInput
@@ -177,7 +182,22 @@ const styles = StyleSheet.create({
   askEmailText: {
     fontFamily: FONTS.figtreeSemiBold,
     fontSize: 32,
+    marginBottom: 12,
+  },
+  testingVersionBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#AC2B3A',
+    borderRadius: 6,
     marginBottom: 20,
+    marginLeft: 2,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  testingVersionText: {
+    color: '#FFFFFF',
+    fontFamily: FONTS.figtreeSemiBold,
+    fontSize: 13,
+    letterSpacing: 0,
   },
   showPasswordText: {
     marginLeft: 20,
