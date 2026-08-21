@@ -16,6 +16,7 @@ import {
 } from "react-native";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useAudioPlayer, useAudioPlayerStatus } from "expo-audio";
+import * as Sentry from "@sentry/react-native";
 import { images } from "@/constants/images";
 import BookmarkButtonWhite from "@/comp/buttons/BookmarkButtonWhite";
 import { useMeditationAudio as useMeditationAudioService } from "@/api/meditation/useMeditationAudio";
@@ -43,6 +44,53 @@ import { usePlayerBackButton } from "./usePlayerBackButton";
 import { useSessionFavourite } from "./useSessionFavourite";
 
 const clampProgress = (value: number) => Math.max(0, Math.min(value, 1));
+
+type CourseAudioTelemetryData = Record<
+  string,
+  string | number | boolean | null | undefined
+>;
+
+const roundSeconds = (value?: number | null) =>
+  Math.round((value || 0) * 100) / 100;
+
+const sanitizeAudioUrlForTelemetry = (
+  prefix: "voice" | "bgm",
+  url?: string | null
+): CourseAudioTelemetryData => {
+  if (!url) {
+    return {
+      [`${prefix}UrlPresent`]: false,
+    };
+  }
+
+  try {
+    const parsedUrl = new URL(url);
+
+    return {
+      [`${prefix}UrlPresent`]: true,
+      [`${prefix}UrlProtocol`]: parsedUrl.protocol,
+      [`${prefix}UrlHost`]: parsedUrl.host,
+      [`${prefix}UrlPath`]: parsedUrl.pathname,
+      [`${prefix}UrlHasQuery`]: parsedUrl.search.length > 0,
+      [`${prefix}UrlExpiresSeconds`]: parsedUrl.searchParams.get("X-Amz-Expires"),
+      [`${prefix}UrlAmzDate`]: parsedUrl.searchParams.get("X-Amz-Date"),
+      [`${prefix}UrlHasSignature`]: parsedUrl.searchParams.has("X-Amz-Signature"),
+    };
+  } catch {
+    return {
+      [`${prefix}UrlPresent`]: true,
+      [`${prefix}UrlParseFailed`]: true,
+    };
+  }
+};
+
+const toError = (error: unknown, fallbackMessage: string) => {
+  if (error instanceof Error) {
+    return error;
+  }
+
+  return new Error(`${fallbackMessage}: ${String(error)}`);
+};
 
 export default function CourseSessionPlayer({
   backgroundUrl,
@@ -121,25 +169,157 @@ export default function CourseSessionPlayer({
   const accumulatedPlaybackSecondsRef = useRef(0);
   const playbackStartedAtMsRef = useRef<number | null>(null);
   const isVoicePlayingRef = useRef(false);
+  const latestPlaybackTelemetryRef = useRef<CourseAudioTelemetryData>({});
+  const lastPlayerStatusTelemetryKeyRef = useRef<string | null>(null);
+  const lastAutoplayGateTelemetryKeyRef = useRef<string | null>(null);
+  const hasCapturedPlaybackNotStartedRef = useRef(false);
   const progressMetadataRef = useRef({
     meditationType,
     courseUuid,
     courseNumber,
     sessionNumber,
   });
+  const baseTelemetryData = useMemo<CourseAudioTelemetryData>(
+    () => ({
+      sessionKey,
+      meditationType: meditationType ?? null,
+      courseUuid: courseUuid ?? null,
+      courseNumber,
+      sessionNumber,
+      title: title ?? null,
+      hasInitialProgress,
+    }),
+    [
+      courseNumber,
+      courseUuid,
+      hasInitialProgress,
+      meditationType,
+      sessionKey,
+      sessionNumber,
+      title,
+    ]
+  );
+  const getTelemetryData = useCallback(
+    (extra: CourseAudioTelemetryData = {}) => ({
+      ...baseTelemetryData,
+      ...latestPlaybackTelemetryRef.current,
+      ...extra,
+    }),
+    [baseTelemetryData]
+  );
+  const addAudioBreadcrumb = useCallback(
+    (message: string, data: CourseAudioTelemetryData = {}) => {
+      const payload = getTelemetryData(data);
+
+      console.log(`[CourseSessionPlayer] ${message}`, payload);
+      Sentry.addBreadcrumb({
+        category: "course_session_audio",
+        message,
+        level: "info",
+        data: payload,
+      });
+    },
+    [getTelemetryData]
+  );
+  const captureAudioWarning = useCallback(
+    (message: string, data: CourseAudioTelemetryData = {}) => {
+      const payload = getTelemetryData(data);
+
+      console.warn(`[CourseSessionPlayer] ${message}`, payload);
+      Sentry.captureMessage(`[CourseSessionPlayer] ${message}`, {
+        level: "warning",
+        tags: {
+          feature: "course_session_audio",
+          session_key: sessionKey,
+          meditation_type: meditationType ?? "missing",
+        },
+        extra: payload,
+      });
+    },
+    [getTelemetryData, meditationType, sessionKey]
+  );
+  const captureAudioException = useCallback(
+    (message: string, error: unknown, data: CourseAudioTelemetryData = {}) => {
+      const payload = {
+        ...getTelemetryData(data),
+        originalError: error instanceof Error ? error.message : String(error),
+      };
+
+      console.error(`[CourseSessionPlayer] ${message}`, payload, error);
+      Sentry.captureException(toError(error, message), {
+        tags: {
+          feature: "course_session_audio",
+          session_key: sessionKey,
+          meditation_type: meditationType ?? "missing",
+        },
+        extra: payload,
+      });
+    },
+    [getTelemetryData, meditationType, sessionKey]
+  );
+
+  useEffect(() => {
+    Sentry.setContext("course_session_player", baseTelemetryData);
+    addAudioBreadcrumb("mounted");
+
+    return () => {
+      addAudioBreadcrumb("unmounted");
+      Sentry.setContext("course_session_player", null);
+    };
+  }, [addAudioBreadcrumb, baseTelemetryData]);
 
   useEffect(() => {
     if (!meditationType || Number.isNaN(courseNumber) || Number.isNaN(sessionNumber)) {
-      console.error("meditationType or courseNumber or sessionNumber is missing ");
+      captureAudioWarning("audio_url_request_missing_metadata", {
+        hasMeditationType: Boolean(meditationType),
+        courseNumberIsNaN: Number.isNaN(courseNumber),
+        sessionNumberIsNaN: Number.isNaN(sessionNumber),
+      });
       return;
     }
 
-    void fetchMeditationAudioUrl({
-      type: meditationType,
-      course_number: courseNumber,
-      session_number: sessionNumber,
-    });
-  }, [courseNumber, fetchMeditationAudioUrl, meditationType, sessionNumber]);
+    const startedAtMs = Date.now();
+    addAudioBreadcrumb("audio_url_request_started");
+
+    void (async () => {
+      try {
+        const response = await fetchMeditationAudioUrl({
+          type: meditationType,
+          course_number: courseNumber,
+          session_number: sessionNumber,
+        });
+        const isSuccess = checkIfLambdaResultIsSuccess(response);
+
+        addAudioBreadcrumb("audio_url_request_finished", {
+          elapsedMs: Date.now() - startedAtMs,
+          responseStatusCode: response?.statusCode,
+          responseSuccess: isSuccess,
+          responseHasAudioUrl: Boolean(response?.data?.audio?.[0]),
+          responseHasBgmUrl: Boolean(response?.data?.bgm?.[0]),
+        });
+
+        if (!isSuccess) {
+          captureAudioWarning("audio_url_request_unsuccessful", {
+            elapsedMs: Date.now() - startedAtMs,
+            responseStatusCode: response?.statusCode,
+            responseText: response?.response,
+          });
+        }
+      } catch (error) {
+        captureAudioException("audio_url_request_failed", error, {
+          elapsedMs: Date.now() - startedAtMs,
+        });
+      }
+    })();
+  }, [
+    addAudioBreadcrumb,
+    captureAudioException,
+    captureAudioWarning,
+    courseNumber,
+    fetchMeditationAudioUrl,
+    meditationType,
+    sessionNumber,
+  ]);
 
   useEffect(() => {
     setIsResumePromptVisible(hasInitialProgress);
@@ -156,11 +336,12 @@ export default function CourseSessionPlayer({
       return;
     }
 
-    console.log("audio urls ready", {
-      audioUrl,
-      bgmUrl,
+    hasCapturedPlaybackNotStartedRef.current = false;
+    addAudioBreadcrumb("audio_urls_ready", {
+      ...sanitizeAudioUrlForTelemetry("voice", audioUrl),
+      ...sanitizeAudioUrlForTelemetry("bgm", bgmUrl),
     });
-  }, [audioUrl, bgmUrl]);
+  }, [addAudioBreadcrumb, audioUrl, bgmUrl]);
 
   useEffect(() => {
     if (!audioUrl || !bgmUrl) {
@@ -170,18 +351,42 @@ export default function CourseSessionPlayer({
     voicePlayer.volume = 1;
     voicePlayer.loop = false;
     bgmPlayer.loop = true;
-  }, [audioUrl, bgmPlayer, bgmUrl, voicePlayer]);
+    addAudioBreadcrumb("audio_player_configured", {
+      voiceVolume: 1,
+      voiceLoop: false,
+      bgmLoop: true,
+    });
+  }, [addAudioBreadcrumb, audioUrl, bgmPlayer, bgmUrl, voicePlayer]);
 
   useEffect(() => {
     bgmPlayer.volume = isBgmEnabled ? 0.2 : 0;
-  }, [bgmPlayer, isBgmEnabled]);
+    addAudioBreadcrumb("bgm_volume_set", {
+      isBgmEnabled,
+      bgmVolume: isBgmEnabled ? 0.2 : 0,
+    });
+  }, [addAudioBreadcrumb, bgmPlayer, isBgmEnabled]);
 
   useEffect(() => {
     if (hasAutoPlayedRef.current || !audioUrl || !bgmUrl) {
+      const reason = hasAutoPlayedRef.current ? "already_autoplayed" : "missing_urls";
+      if (lastAutoplayGateTelemetryKeyRef.current !== reason) {
+        lastAutoplayGateTelemetryKeyRef.current = reason;
+        addAudioBreadcrumb("autoplay_waiting", {
+          reason,
+          hasAudioUrl: Boolean(audioUrl),
+          hasBgmUrl: Boolean(bgmUrl),
+        });
+      }
       return;
     }
 
     if (!isInitialPlaybackReady) {
+      if (lastAutoplayGateTelemetryKeyRef.current !== "initial_playback_not_ready") {
+        lastAutoplayGateTelemetryKeyRef.current = "initial_playback_not_ready";
+        addAudioBreadcrumb("autoplay_waiting", {
+          reason: "initial_playback_not_ready",
+        });
+      }
       return;
     }
 
@@ -191,21 +396,51 @@ export default function CourseSessionPlayer({
       voiceStatus.playing ||
       bgmStatus.playing
     ) {
+      const reason =
+        voiceStatus.playing || bgmStatus.playing
+          ? "already_playing"
+          : "players_not_loaded";
+      const gateKey = `${reason}-${voiceStatus.isLoaded}-${bgmStatus.isLoaded}-${voiceStatus.isBuffering}-${bgmStatus.isBuffering}`;
+      if (lastAutoplayGateTelemetryKeyRef.current !== gateKey) {
+        lastAutoplayGateTelemetryKeyRef.current = gateKey;
+        addAudioBreadcrumb("autoplay_waiting", {
+          reason,
+          voiceLoaded: voiceStatus.isLoaded,
+          bgmLoaded: bgmStatus.isLoaded,
+          voiceBuffering: voiceStatus.isBuffering,
+          bgmBuffering: bgmStatus.isBuffering,
+          voicePlaying: voiceStatus.playing,
+          bgmPlaying: bgmStatus.playing,
+        });
+      }
       return;
     }
 
     hasAutoPlayedRef.current = true;
-    bgmPlayer.play();
-    voicePlayer.play();
+    lastAutoplayGateTelemetryKeyRef.current = "autoplay_started";
+    addAudioBreadcrumb("autoplay_starting");
+
+    try {
+      bgmPlayer.play();
+      voicePlayer.play();
+      addAudioBreadcrumb("autoplay_play_called");
+    } catch (error) {
+      hasAutoPlayedRef.current = false;
+      captureAudioException("autoplay_play_failed", error);
+    }
   }, [
+    addAudioBreadcrumb,
     audioUrl,
     bgmPlayer,
     bgmStatus.isLoaded,
+    bgmStatus.isBuffering,
     bgmStatus.playing,
     bgmUrl,
+    captureAudioException,
     isInitialPlaybackReady,
     voicePlayer,
     voiceStatus.isLoaded,
+    voiceStatus.isBuffering,
     voiceStatus.playing,
   ]);
 
@@ -307,6 +542,14 @@ export default function CourseSessionPlayer({
 
         if (!checkIfLambdaResultIsSuccess(result)) {
           console.error("Failed to update session progress", result);
+          captureAudioWarning("progress_save_unsuccessful", {
+            source,
+            progressSeconds,
+            accumulatedMinutes,
+            completed,
+            responseStatusCode: result?.statusCode,
+            responseText: result?.response,
+          });
           lastSavedProgressKeyRef.current = null;
           return;
         }
@@ -336,13 +579,22 @@ export default function CourseSessionPlayer({
           );
         }
       } catch (error) {
-        console.error("Failed to update session progress", error);
+        captureAudioException("progress_save_failed", error, {
+          source,
+          completed,
+        });
         lastSavedProgressKeyRef.current = null;
       } finally {
         accumulatedPlaybackSecondsRef.current = 0;
       }
     },
-    [dispatch, flushAccumulatedPlaybackTime, getCurrentProgressSecond]
+    [
+      captureAudioException,
+      captureAudioWarning,
+      dispatch,
+      flushAccumulatedPlaybackTime,
+      getCurrentProgressSecond,
+    ]
   );
 
   const handleBackToExplore = useCallback(() => {
@@ -379,27 +631,40 @@ export default function CourseSessionPlayer({
       return;
     }
 
+    addAudioBreadcrumb("voice_did_just_finish");
+
     if (
       !meditationType ||
       Number.isNaN(courseNumber) ||
       Number.isNaN(sessionNumber) ||
       isAdvancingSessionRef.current
     ) {
+      addAudioBreadcrumb("finish_ignored", {
+        reason: isAdvancingSessionRef.current ? "already_advancing" : "missing_metadata",
+      });
       return;
     }
 
     if (!hasPlaylistNavigation && !isPlaybackEnabled) {
+      addAudioBreadcrumb("finish_saving_completed_without_playlist");
       void saveSessionProgress(Math.ceil(durationRef.current || currentTimeRef.current), true);
       return;
     }
 
     const nextSessionNumber = isPlaybackEnabled ? sessionNumber : sessionNumber + 1;
     if (hasPlaylistNavigation && !sessionTitles[String(nextSessionNumber)]) {
+      addAudioBreadcrumb("finish_saving_completed_no_next_session", {
+        nextSessionNumber,
+      });
       void saveSessionProgress(Math.ceil(durationRef.current || currentTimeRef.current), true);
       return;
     }
 
     isAdvancingSessionRef.current = true;
+    addAudioBreadcrumb("finish_advancing_session", {
+      nextSessionNumber,
+      isPlaybackEnabled,
+    });
     void (async () => {
       await saveSessionProgress(Math.ceil(durationRef.current || currentTimeRef.current), true);
       voicePlayer.pause();
@@ -427,6 +692,7 @@ export default function CourseSessionPlayer({
       });
     })();
   }, [
+    addAudioBreadcrumb,
     backgroundUrl,
     bgmPlayer,
     courseNumber,
@@ -449,6 +715,98 @@ export default function CourseSessionPlayer({
 
   const duration = voiceStatus.duration || 0;
   const currentTime = voiceStatus.currentTime || 0;
+  latestPlaybackTelemetryRef.current = {
+    fetchStatus: status,
+    hasAudioUrl: Boolean(audioUrl),
+    hasBgmUrl: Boolean(bgmUrl),
+    voiceLoaded: voiceStatus.isLoaded,
+    voicePlaying: voiceStatus.playing,
+    voiceBuffering: voiceStatus.isBuffering,
+    voiceDidJustFinish: voiceStatus.didJustFinish,
+    voiceDuration: roundSeconds(voiceStatus.duration),
+    voiceCurrentTime: roundSeconds(voiceStatus.currentTime),
+    bgmLoaded: bgmStatus.isLoaded,
+    bgmPlaying: bgmStatus.playing,
+    bgmBuffering: bgmStatus.isBuffering,
+    bgmDuration: roundSeconds(bgmStatus.duration),
+    bgmCurrentTime: roundSeconds(bgmStatus.currentTime),
+    isInitialPlaybackReady,
+    isResumePromptVisible,
+    isBgmEnabled,
+    isPlaybackEnabled,
+    hasAutoPlayed: hasAutoPlayedRef.current,
+  };
+
+  useEffect(() => {
+    const statusKey = [
+      status,
+      audioUrl ? "voice-url" : "no-voice-url",
+      bgmUrl ? "bgm-url" : "no-bgm-url",
+      voiceStatus.isLoaded,
+      voiceStatus.playing,
+      voiceStatus.isBuffering,
+      voiceStatus.didJustFinish,
+      roundSeconds(voiceStatus.duration),
+      bgmStatus.isLoaded,
+      bgmStatus.playing,
+      bgmStatus.isBuffering,
+      roundSeconds(bgmStatus.duration),
+      isInitialPlaybackReady,
+      isResumePromptVisible,
+    ].join("|");
+
+    if (lastPlayerStatusTelemetryKeyRef.current === statusKey) {
+      return;
+    }
+
+    lastPlayerStatusTelemetryKeyRef.current = statusKey;
+    addAudioBreadcrumb("audio_player_status_changed");
+  }, [
+    addAudioBreadcrumb,
+    audioUrl,
+    bgmStatus.duration,
+    bgmStatus.isBuffering,
+    bgmStatus.isLoaded,
+    bgmStatus.playing,
+    bgmUrl,
+    isInitialPlaybackReady,
+    isResumePromptVisible,
+    status,
+    voiceStatus.didJustFinish,
+    voiceStatus.duration,
+    voiceStatus.isBuffering,
+    voiceStatus.isLoaded,
+    voiceStatus.playing,
+  ]);
+
+  useEffect(() => {
+    if (!audioUrl || !bgmUrl) {
+      hasCapturedPlaybackNotStartedRef.current = false;
+      return;
+    }
+
+    const timeout = setTimeout(() => {
+      const latestState = latestPlaybackTelemetryRef.current;
+
+      if (
+        hasCapturedPlaybackNotStartedRef.current ||
+        latestState.voicePlaying ||
+        latestState.bgmPlaying
+      ) {
+        return;
+      }
+
+      hasCapturedPlaybackNotStartedRef.current = true;
+      captureAudioWarning("playback_not_started_10s_after_urls_ready", {
+        ...sanitizeAudioUrlForTelemetry("voice", audioUrl),
+        ...sanitizeAudioUrlForTelemetry("bgm", bgmUrl),
+      });
+    }, 10000);
+
+    return () => {
+      clearTimeout(timeout);
+    };
+  }, [audioUrl, bgmUrl, captureAudioWarning]);
 
   useEffect(() => {
     if (
@@ -484,6 +842,10 @@ export default function CourseSessionPlayer({
       .then((result) => {
         if (!checkIfLambdaResultIsSuccess(result)) {
           console.error("Failed to add recently accessed session", result);
+          captureAudioWarning("recently_accessed_save_unsuccessful", {
+            responseStatusCode: result?.statusCode,
+            responseText: result?.response,
+          });
           recentlyAccessedSessionKeyRef.current = null;
           return;
         }
@@ -491,11 +853,13 @@ export default function CourseSessionPlayer({
         dispatch(clearRecommendedSession());
       })
       .catch((error) => {
-        console.error("Failed to add recently accessed session", error);
+        captureAudioException("recently_accessed_save_failed", error);
         recentlyAccessedSessionKeyRef.current = null;
       });
   }, [
     backgroundUrl,
+    captureAudioException,
+    captureAudioWarning,
     courseNumber,
     dispatch,
     duration,
@@ -544,11 +908,26 @@ export default function CourseSessionPlayer({
   const seekToTime = useCallback(async (seconds: number) => {
     const clampedSeconds = Math.max(0, Math.min(seconds, durationRef.current || 0));
 
-    await Promise.all([
-      voicePlayerRef.current.seekTo(clampedSeconds),
-      bgmPlayerRef.current.seekTo(clampedSeconds),
-    ]);
-  }, []);
+    addAudioBreadcrumb("seek_requested", {
+      requestedSeconds: roundSeconds(seconds),
+      clampedSeconds: roundSeconds(clampedSeconds),
+    });
+
+    try {
+      await Promise.all([
+        voicePlayerRef.current.seekTo(clampedSeconds),
+        bgmPlayerRef.current.seekTo(clampedSeconds),
+      ]);
+      addAudioBreadcrumb("seek_finished", {
+        clampedSeconds: roundSeconds(clampedSeconds),
+      });
+    } catch (error) {
+      captureAudioException("seek_failed", error, {
+        requestedSeconds: roundSeconds(seconds),
+        clampedSeconds: roundSeconds(clampedSeconds),
+      });
+    }
+  }, [addAudioBreadcrumb, captureAudioException]);
 
   useEffect(() => {
     if (
@@ -678,6 +1057,11 @@ export default function CourseSessionPlayer({
 
   const handleProgressPress = (event: GestureResponderEvent) => {
     if (!duration || !progressTrackWidth) {
+      addAudioBreadcrumb("progress_press_ignored", {
+        reason: "missing_duration_or_track_width",
+        duration: roundSeconds(duration),
+        progressTrackWidth,
+      });
       return;
     }
 
@@ -728,47 +1112,82 @@ export default function CourseSessionPlayer({
   );
 
   const handlePlay = () => {
+    addAudioBreadcrumb("manual_play_pressed");
+
     if (!isInitialPlaybackReady) {
+      addAudioBreadcrumb("manual_play_blocked", {
+        reason: "initial_playback_not_ready",
+      });
       return;
     }
 
     if (!audioUrl || !bgmUrl) {
-      console.log("play blocked: missing audio urls");
+      addAudioBreadcrumb("manual_play_blocked", {
+        reason: "missing_audio_urls",
+        hasAudioUrl: Boolean(audioUrl),
+        hasBgmUrl: Boolean(bgmUrl),
+      });
       return;
     }
 
     if (!voiceStatus.isLoaded || !bgmStatus.isLoaded) {
-      console.log("play blocked: players not loaded yet", {
+      addAudioBreadcrumb("manual_play_blocked", {
+        reason: "players_not_loaded",
         voiceLoaded: voiceStatus.isLoaded,
         bgmLoaded: bgmStatus.isLoaded,
+        voiceBuffering: voiceStatus.isBuffering,
+        bgmBuffering: bgmStatus.isBuffering,
       });
       return;
     }
-    console.log("pressed play");
-    console.log("starting to play");
-    bgmPlayer.play();
-    voicePlayer.play();
+
+    addAudioBreadcrumb("manual_play_starting");
+
+    try {
+      bgmPlayer.play();
+      voicePlayer.play();
+      addAudioBreadcrumb("manual_play_called");
+    } catch (error) {
+      captureAudioException("manual_play_failed", error);
+    }
   };
 
   const handlePause = () => {
-    voicePlayer.pause();
-    bgmPlayer.pause();
+    addAudioBreadcrumb("manual_pause_pressed");
+
+    try {
+      voicePlayer.pause();
+      bgmPlayer.pause();
+      addAudioBreadcrumb("manual_pause_called");
+    } catch (error) {
+      captureAudioException("manual_pause_failed", error);
+    }
   };
 
   const handleToggleBgm = () => {
     setIsBgmEnabled((currentValue) => !currentValue);
+    addAudioBreadcrumb("bgm_toggle_pressed", {
+      nextIsBgmEnabled: !isBgmEnabled,
+    });
   };
 
   const handleTogglePlayback = () => {
     setIsPlaybackEnabled((currentValue) => !currentValue);
+    addAudioBreadcrumb("playback_toggle_pressed", {
+      nextIsPlaybackEnabled: !isPlaybackEnabled,
+    });
   };
 
   const handleResumeFromProgress = () => {
+    addAudioBreadcrumb("resume_prompt_continue_pressed", {
+      initialProgress: roundSeconds(initialProgress),
+    });
     setIsResumePromptVisible(false);
     setPendingInitialStartSeconds(initialProgress);
   };
 
   const handleStartFromBeginning = () => {
+    addAudioBreadcrumb("resume_prompt_start_over_pressed");
     setIsResumePromptVisible(false);
     setPendingInitialStartSeconds(0);
   };
