@@ -25,26 +25,24 @@ Sentry.init({
   enableAutoSessionTracking: true,
 });
 
-const handleHeaderBackPress = (
+const handleMeditationHeaderBackPress = (
   screenName: string,
-  canGoBack: () => boolean,
-  goBack: () => void
+  navigateToExplore: () => void
 ) => {
   const startedAt = Date.now();
 
   if (__DEV__) {
-    console.log(`[HeaderBack:${screenName}] dispatching goBack`, {
-      canGoBackBefore: canGoBack(),
+    console.log(`[HeaderBack:${screenName}] navigating to explore`, {
+      route: "/explore",
     });
   }
 
-  goBack();
+  navigateToExplore();
 
   if (__DEV__) {
     setTimeout(() => {
-      console.log(`[HeaderBack:${screenName}] after goBack dispatch`, {
+      console.log(`[HeaderBack:${screenName}] after explore navigation dispatch`, {
         elapsedMs: Date.now() - startedAt,
-        canGoBackAfter: canGoBack(),
       });
     }, 0);
   }
@@ -145,7 +143,7 @@ function RootLayout() {
 
         <Stack.Screen
           name="meditation_session/session"
-          options={({ navigation }) => ({
+          options={{
             headerTitle: () => <View />,
             headerShown: true,
             headerTransparent: true,
@@ -157,21 +155,20 @@ function RootLayout() {
               <BackButton
                 debugLabel="HeaderBack:meditation_session/session"
                 onTouch={() =>
-                  handleHeaderBackPress(
+                  handleMeditationHeaderBackPress(
                     "meditation_session/session",
-                    () => navigation.canGoBack(),
-                    () => navigation.goBack()
+                    () => router.dismissTo("/explore")
                   )
                 }
               />
             ),
             headerRight:()=><MoreButton onTouch={() => console.log("More pressed")} />
-            })}
+            }}
           />
 
         <Stack.Screen
           name="meditation_session/player"
-          options={({ navigation }) => ({
+          options={{
             headerTitle: () => <View />,
             headerShown: true,
             headerTransparent: true,
@@ -183,16 +180,15 @@ function RootLayout() {
               <BackButton
                 debugLabel="HeaderBack:meditation_session/player"
                 onTouch={() =>
-                  handleHeaderBackPress(
+                  handleMeditationHeaderBackPress(
                     "meditation_session/player",
-                    () => navigation.canGoBack(),
-                    () => navigation.goBack()
+                    () => router.dismissTo("/explore")
                   )
                 }
               />
             ),
             headerRight:()=><MoreButton onTouch={() => console.log("More pressed")} />
-            })}
+            }}
           />
 
         <Stack.Screen
