@@ -1,6 +1,6 @@
 // const URL = "https://api.hulolo.xyz";
 // const URL = "http://192.168.5.29:8000"
-// const URL = "https://fee4-192-169-101-99.ngrok-free.app"
+// const URL = "https://8941-192-169-101-99.ngrok-free.app"
 //export constants 
 // export const LAMBDA_SERVICE_URL = URL + "/2015-03-31/functions/function/invocations"
 export const LAMBDA_SERVICE_URL="https://dyhmz23j13.execute-api.eu-west-2.amazonaws.com/dev/"

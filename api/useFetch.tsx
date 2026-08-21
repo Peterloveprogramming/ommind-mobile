@@ -91,14 +91,24 @@ export function useFetch <ResultType> ({
                 throw e;
             }
 
-            if (!response.ok){
-                console.error("Response status:",response.status)
-                throw new Error("error occurred while using fetch")
-            }
             try{
                 const jsonData = await response.json()
 
-                if (jsonData.statusCode && jsonData.statusCode == 401 && clearUserInfoFromCacheIfUnauthorized){
+                if (!response.ok && !jsonData?.statusCode) {
+                    console.error("Response status:",response.status)
+                    throw new Error("error occurred while using fetch")
+                }
+
+                if (!response.ok) {
+                    console.log("commonFetch non-2xx lambda response", {
+                        route: input?.route,
+                        httpStatus: response.status,
+                        lambdaStatusCode: jsonData.statusCode,
+                        response: jsonData.response,
+                    });
+                }
+
+                if (jsonData.statusCode && jsonData.statusCode === 401 && clearUserInfoFromCacheIfUnauthorized){
                     await deleteFromCache("authInfo")
                     router.push("/welcome"); // Redirect to welcome screen
                     throw new Error(`Unauthorized. Status code: ${jsonData.statusCode}`);

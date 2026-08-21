@@ -20,7 +20,7 @@ import { useToast } from '@/context/useToast';
 import { checkIfLambdaResultIsSuccess, convertFieldNameToReadableFormat, storeAuthInfo } from '@/utils/helper';
 
 let debugUi = false
-const DEBUG = false;
+const DEBUG = true;
 type LoginDetails = {
   email: string;
   password: string;
@@ -66,6 +66,7 @@ export default function Login() {
 
       const resultSuccess = checkIfLambdaResultIsSuccess(loginUserResult);
       if (!resultSuccess) {
+        console.log("loginUserResult",loginUserResult)
         showToastMessage(loginUserResult.response, false);
         return;
       }

@@ -288,6 +288,12 @@ export default function CourseSessionPlayer({
           course_number: courseNumber,
           session_number: sessionNumber,
         });
+        if (__DEV__) {
+          console.log("PRESIGNED_URL", {
+            audioUrl: response?.data?.audio?.[0] ?? null,
+            bgmUrl: response?.data?.bgm?.[0] ?? null,
+          });
+        }
         const isSuccess = checkIfLambdaResultIsSuccess(response);
 
         addAudioBreadcrumb("audio_url_request_finished", {
