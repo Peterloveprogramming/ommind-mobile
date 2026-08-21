@@ -6,6 +6,7 @@ import FeedBackModal, { FeedBackPayload } from './FeedBackModal';
 import ReportProblem from './ReportProblem';
 import { Ionicons } from '@expo/vector-icons';
 import { useToast } from '@/context/useToast'
+import AiTypingIndicator from './AiTypingIndicator';
 
 type AiProps = {
     message: string;
@@ -28,7 +29,6 @@ type AiProps = {
     }) => Promise<boolean | null> | boolean | null;
   };
 
-  
 const Ai = ({
     message,
     showPlaybackControl = false,
@@ -103,8 +103,8 @@ const Ai = ({
 
     const shouldShowRating = showRating && !hasSubmittedRating;
 
-    if (message == "loading"){
-        return <Image source={images.lhamo_mini_loading} style={{ width: 60, height: 60, resizeMode: "contain" }}/>
+    if (message === "loading"){
+        return <AiTypingIndicator />
     } else {
     return (
         <>

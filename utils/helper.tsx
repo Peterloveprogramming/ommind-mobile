@@ -29,10 +29,12 @@ export type UpdateFavouriteInput =
       message_id: string | number;
       course_number?: never;
       session_number?: never;
+      meditation_type?: never;
       favourite: 0 | 1;
     }
   | {
-      type: string;
+      type: "course_session";
+      meditation_type: string;
       course_number: string | number;
       session_number: string | number;
       message_id?: never;

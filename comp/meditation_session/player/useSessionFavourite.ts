@@ -67,7 +67,8 @@ export function useSessionFavourite({
           : null
         : hasCourseIdentity
           ? {
-              type: meditationType,
+              type: "course_session" as const,
+              meditation_type: meditationType,
               course_number: courseNumber,
               session_number: sessionNumber,
               favourite: nextFavourite,
