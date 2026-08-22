@@ -1,6 +1,7 @@
-import { TEXT_TO_AUDIO_URL } from "@/constant";
+import { SECRET_TOKEN, TEXT_TO_AUDIO_URL } from "@/constant";
 import { HexPcmAudioPlayer, PlaybackStatus } from "@/services/hexPcmAudioPlayer";
-import { SECRET_TOKEN } from "@/constant";
+import * as Sentry from "@sentry/react-native";
+
 export type ConnectionStatus = "idle" | "connecting" | "open" | "closed" | "error";
 type RNWebSocketCtor = new (
   url: string,
@@ -19,6 +20,81 @@ export type WebsocketHexPcmAudioServiceOptions = {
   onStatusChange?: (status: ConnectionStatus) => void;
   onPlaybackStatusChange?: (status: PlaybackStatus) => void;
   onError?: (error: unknown) => void;
+};
+
+type WebSocketDiagnosticData = Record<string, string | number | boolean | null | undefined>;
+
+type ReportedWebSocketError = Error & {
+  diagnostics?: WebSocketDiagnosticData;
+};
+
+const sanitizeWsUrlForDiagnostics = (wsUrl: string): WebSocketDiagnosticData => {
+  try {
+    const parsedUrl = new URL(wsUrl);
+
+    return {
+      wsUrlProtocol: parsedUrl.protocol,
+      wsUrlHost: parsedUrl.host,
+      wsUrlPath: parsedUrl.pathname,
+      wsUrlHasQuery: parsedUrl.search.length > 0,
+    };
+  } catch {
+    return {
+      wsUrlParseFailed: true,
+    };
+  }
+};
+
+const getWebSocketEventDiagnostics = (event: unknown): WebSocketDiagnosticData => {
+  if (!event || typeof event !== "object") {
+    return {
+      eventValue: String(event),
+    };
+  }
+
+  const eventRecord = event as Record<string, unknown>;
+  const diagnostics: WebSocketDiagnosticData = {};
+
+  for (const key of ["type", "message", "code", "reason", "wasClean"]) {
+    const value = eventRecord[key];
+    if (
+      typeof value === "string" ||
+      typeof value === "number" ||
+      typeof value === "boolean" ||
+      value === null
+    ) {
+      diagnostics[`event_${key}`] = value;
+    }
+  }
+
+  return diagnostics;
+};
+
+const makeWebSocketError = (
+  message: string,
+  diagnostics: WebSocketDiagnosticData,
+  cause?: unknown
+) => {
+  const error = new Error(message, { cause }) as ReportedWebSocketError;
+  error.diagnostics = diagnostics;
+  return error;
+};
+
+const captureWebSocketFailure = (
+  error: ReportedWebSocketError,
+  diagnostics: WebSocketDiagnosticData
+) => {
+  console.error("[ws-audio] websocket failure", diagnostics, error.message);
+  Sentry.captureException(error, {
+    tags: {
+      feature: "websocket_audio",
+      ws_protocol: String(diagnostics.wsUrlProtocol ?? "unknown"),
+      ws_host: String(diagnostics.wsUrlHost ?? "unknown"),
+    },
+    contexts: {
+      websocket_audio: diagnostics,
+    },
+  });
 };
 
 export class WebsocketHexPcmAudioService {
@@ -105,13 +181,26 @@ export class WebsocketHexPcmAudioService {
     this.connectPromise = new Promise<void>((resolve, reject) => {
       const WebSocketCtor = WebSocket as unknown as RNWebSocketCtor;
       const headers = this.authorization ? { Authorization: this.authorization } : undefined;
+      const baseDiagnostics = {
+        ...sanitizeWsUrlForDiagnostics(this.wsUrl),
+        hasAuthorizationHeader: Boolean(this.authorization),
+        fileFormat: this.fileFormat,
+      };
+
+      console.log("[ws-audio] connecting", baseDiagnostics);
       const socket = new WebSocketCtor(this.wsUrl, undefined, { headers });
 
       let settled = false;
       this.socket = socket;
 
       socket.onopen = () => {
-        console.log("[ws-audio] socket open");
+        console.log("[ws-audio] socket open", baseDiagnostics);
+        Sentry.addBreadcrumb({
+          category: "websocket_audio",
+          message: "socket_open",
+          level: "info",
+          data: baseDiagnostics,
+        });
         settled = true;
         this.setStatus("open");
         resolve();
@@ -125,23 +214,38 @@ export class WebsocketHexPcmAudioService {
       };
 
       socket.onerror = (event) => {
+        const diagnostics = {
+          ...baseDiagnostics,
+          ...getWebSocketEventDiagnostics(event),
+        };
+        const error = makeWebSocketError("WebSocket connection failed", diagnostics, event);
+
         this.setStatus("error");
-        this.onError?.(event);
+        captureWebSocketFailure(error, diagnostics);
+        this.onError?.(error);
         if (!settled) {
           settled = true;
-          reject(new Error("WebSocket connection failed"));
+          reject(error);
         }
       };
 
-      socket.onclose = () => {
-        console.log("[ws-audio] socket closed");
+      socket.onclose = (event) => {
+        const diagnostics = {
+          ...baseDiagnostics,
+          ...getWebSocketEventDiagnostics(event),
+        };
+
+        console.log("[ws-audio] socket closed", diagnostics);
         this.socket = null;
         this.connectPromise = null;
         void this.audioPlayer.completeStream();
         this.setStatus("closed");
         if (!settled) {
+          const error = makeWebSocketError("WebSocket closed before opening", diagnostics, event);
+
+          captureWebSocketFailure(error, diagnostics);
           settled = true;
-          reject(new Error("WebSocket closed before opening"));
+          reject(error);
         }
       };
     });
