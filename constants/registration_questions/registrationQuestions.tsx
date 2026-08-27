@@ -20,23 +20,23 @@ const QUESTION1: Question = {
   questionOptions: [
     {
       label: "To deepen meditation and inner growth",
-      value: "To deepen meditation and inner growth",
+      value: "Interested in deepening meditation and inner growth.",
     },
     {
       label: "To explore energy, chakras, or mystical states",
-      value: "To explore energy, chakras, or mystical states",
+      value: "Interested in subtle and mystical experiences.",
     },
     {
       label: "To explore dreams and consciousness",
-      value: "To explore dreams and consciousness",
+      value: "Interested in dreams and consciousness.",
     },
     {
       label: "To cultivate compassion and benefit others",
-      value: "To cultivate compassion and benefit others",
+      value: "Interested in compassion and helping others.",
     },
     {
       label: "To connect with wisdom traditions and timeless practices",
-      value: "To connect with wisdom traditions and timeless practices",
+      value: "Interested in traditional spiritual wisdom and practices.",
     },
   ],
 };
@@ -48,23 +48,23 @@ const QUESTION2: Question = {
   questionOptions: [
     {
       label: "I’m completely new",
-      value: "I’m completely new",
+      value: "New to meditation or spiritual practice.",
     },
     {
       label: "I’ve tried a little (mindfulness, yoga, journaling, breathwork)",
-      value: "I’ve tried a little (mindfulness, yoga, journaling, breathwork)",
+      value: "Has some prior practice experience.",
     },
     {
       label: "I practice regularly (meditation, energy work, mantras)",
-      value: "I practice regularly (meditation, energy work, mantras)",
+      value: "Has a regular spiritual or meditation practice.",
     },
     {
       label: "I’ve done retreats, dream practice, or advanced energy work",
-      value: "I’ve done retreats, dream practice, or advanced energy work",
+      value: "Has substantial prior practice experience.",
     },
     {
       label: "I’ve trained in nondual/emptiness practices (Dzogchen, Mahamudra, Zen)",
-      value: "I’ve trained in nondual/emptiness practices (Dzogchen, Mahamudra, Zen)",
+      value: "Has experience with advanced awareness-based practice.",
     },
   ],
 };
@@ -76,27 +76,27 @@ const QUESTION3: Question = {
   questionOptions: [
     {
       label: "Stress, anxiety, or poor sleep",
-      value: "Stress, anxiety, or poor sleep",
+      value: "Currently seeking more calm and rest.",
     },
     {
       label: "Emotional ups and downs",
-      value: "Emotional ups and downs",
+      value: "Currently seeking greater emotional balance.",
     },
     {
       label: "Feeling lost or lacking purpose",
-      value: "Feeling lost or lacking purpose",
+      value: "Currently seeking greater clarity and direction.",
     },
     {
       label: "Energy sensitivity or blockages",
-      value: "Energy sensitivity or blockages",
+      value: "Currently experiencing energy-related sensitivity or difficulty.",
     },
     {
       label: "Balancing deep practice with work, family, and daily responsibilities",
-      value: "Balancing deep practice with work, family, and daily responsibilities",
+      value: "Currently seeking better integration of practice and daily life.",
     },
     {
       label: "Maintaining consistency in my practice",
-      value: "Maintaining consistency in my practice",
+      value: "Currently seeking greater practice consistency.",
     },
   ],
 };
@@ -108,23 +108,23 @@ const QUESTION4: Question = {
   questionOptions: [
     {
       label: "I don’t notice much",
-      value: "I don’t notice much",
+      value: "Reports little awareness of inner sensations.",
     },
     {
       label: "I sometimes feel relaxation or tingling",
-      value: "I sometimes feel relaxation or tingling",
+      value: "Reports occasional calm or body awareness.",
     },
     {
       label: "I often feel strong emotions or energies",
-      value: "I often feel strong emotions or energies",
+      value: "Reports strong bodily or energy-like sensations.",
     },
     {
       label: "I experience vivid dreams, energy surges, or mystical states",
-      value: "I experience vivid dreams, energy surges, or mystical states",
+      value: "Reports unusual or mystical inner experiences.",
     },
     {
       label: "I rest naturally in awareness, beyond effort",
-      value: "I rest naturally in awareness, beyond effort",
+      value: "Reports familiarity with effortless awareness.",
     },
   ],
 };
@@ -136,27 +136,27 @@ const QUESTION5: Question = {
   questionOptions: [
     {
       label: "Breath & body",
-      value: "Breath & body",
+      value: "Prefers breath- and body-based practices.",
     },
     {
       label: "Visualization / chakras",
-      value: "Visualization / chakras",
+      value: "Prefers visualization or subtle-body practices.",
     },
     {
       label: "Heart / compassion",
-      value: "Heart / compassion",
+      value: "Prefers compassion- and heart-based practices.",
     },
     {
       label: "Silence & awareness",
-      value: "Silence & awareness",
+      value: "Prefers silent or awareness-based practices.",
     },
     {
       label: "Daily life / mindful living",
-      value: "Daily life / mindful living",
+      value: "Prefers practices integrated into daily life.",
     },
     {
       label: "I’d like to explore a mix",
-      value: "I’d like to explore a mix",
+      value: "Open to a mix of practice styles.",
     },
   ],
 };
