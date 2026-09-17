@@ -21,7 +21,7 @@ import { checkIfLambdaResultIsSuccess, convertFieldNameToReadableFormat, storeAu
 
 let debugUi = false
 const DEBUG = true;
-const TESTING_VERSION_LABEL = "TESTING ONLY - BETA 1.0.1";
+const TESTING_VERSION_LABEL = "TESTING ONLY - BETA 1.0.2";
 
 type LoginDetails = {
   email: string;

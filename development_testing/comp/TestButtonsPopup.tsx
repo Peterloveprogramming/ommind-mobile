@@ -1,5 +1,7 @@
 import { FONTS } from "@/theme";
 import { useMeditationApi } from "@/api/meditation/requests";
+import { useMemoryApi } from "@/api/memory/requests";
+import type { MemoryFactsUpdateStats } from "@/api/memory/types";
 import { checkSpeechToTextServiceHealthRequest } from "@/api/speechToText/requests";
 import AudioTest from "@/dummy/tests/AudioTest";
 import {
@@ -27,10 +29,31 @@ type TestButtonsPopupProps = {
   onClose: () => void;
 };
 
+const formatMemoryUpdateStats = (stats?: MemoryFactsUpdateStats | null) => {
+  if (!stats) {
+    return "No stats returned.";
+  }
+
+  const failedIds =
+    Array.isArray(stats.failed_ids) && stats.failed_ids.length > 0
+      ? `\nFailed IDs: ${stats.failed_ids.join(", ")}`
+      : "";
+
+  return [
+    `Fetched: ${stats.fetched ?? 0}`,
+    `Processed: ${stats.processed ?? 0}`,
+    `Updated: ${stats.updated ?? 0}`,
+    `Unchanged: ${stats.unchanged ?? 0}`,
+    `Failed: ${stats.failed ?? 0}${failedIds}`,
+  ].join("\n");
+};
+
 const TestButtonsPopup = ({ visible, onClose }: TestButtonsPopupProps) => {
   const dispatch = useAppDispatch();
   const { resetDailyMood } = useMeditationApi();
+  const { triggerMemoryFactsUpdateAgent } = useMemoryApi();
   const [isResettingDailyMood, setIsResettingDailyMood] = React.useState(false);
+  const [isUpdatingMemory, setIsUpdatingMemory] = React.useState(false);
   const [isAudioExpanded, setIsAudioExpanded] = React.useState(false);
   const [isAudioTestingVisible, setIsAudioTestingVisible] = React.useState(false);
   const [isSpeechToTextTestingVisible, setIsSpeechToTextTestingVisible] = React.useState(false);
@@ -39,6 +62,7 @@ const TestButtonsPopup = ({ visible, onClose }: TestButtonsPopupProps) => {
   >(null);
   const [audioStatusText, setAudioStatusText] = React.useState("");
   const [statusText, setStatusText] = React.useState("");
+  const [memoryUpdateStatusText, setMemoryUpdateStatusText] = React.useState("");
   const [isCheckingSpeechToTextHealth, setIsCheckingSpeechToTextHealth] = React.useState(false);
   const [speechToTextStatusText, setSpeechToTextStatusText] = React.useState("");
 
@@ -49,6 +73,7 @@ const TestButtonsPopup = ({ visible, onClose }: TestButtonsPopupProps) => {
       setIsSpeechToTextTestingVisible(false);
       setAudioStatusText("");
       setStatusText("");
+      setMemoryUpdateStatusText("");
       setSpeechToTextStatusText("");
     }
   }, [visible]);
@@ -142,6 +167,39 @@ const TestButtonsPopup = ({ visible, onClose }: TestButtonsPopupProps) => {
       setSpeechToTextStatusText("Unable to check service health.");
     } finally {
       setIsCheckingSpeechToTextHealth(false);
+    }
+  };
+
+  const handleUpdateMemoryPress = async () => {
+    if (isUpdatingMemory) {
+      return;
+    }
+
+    setIsUpdatingMemory(true);
+    setMemoryUpdateStatusText("Updating memory...");
+
+    try {
+      const response = await triggerMemoryFactsUpdateAgent();
+
+      if (!checkIfLambdaResultIsSuccess(response)) {
+        const message = getLambdaErrorMessage(response);
+        setMemoryUpdateStatusText(message);
+        Alert.alert("Update memory", message);
+        return;
+      }
+
+      setMemoryUpdateStatusText(
+        `${response.response || "Memory update triggered."}\n${formatMemoryUpdateStats(
+          response.data
+        )}`
+      );
+    } catch (error) {
+      console.error("Failed to update memory", error);
+      const message = "Unable to update memory right now.";
+      setMemoryUpdateStatusText(message);
+      Alert.alert("Update memory", message);
+    } finally {
+      setIsUpdatingMemory(false);
     }
   };
 
@@ -269,6 +327,24 @@ const TestButtonsPopup = ({ visible, onClose }: TestButtonsPopupProps) => {
           >
             <Text style={styles.resetDailyMoodButtonText}>Test Speech to Text</Text>
           </TouchableOpacity>
+
+          <TouchableOpacity
+            activeOpacity={0.85}
+            accessibilityRole="button"
+            accessibilityLabel="Update Memory"
+            disabled={isUpdatingMemory}
+            onPress={handleUpdateMemoryPress}
+            style={[styles.resetDailyMoodButton, isUpdatingMemory && styles.buttonDisabled]}
+          >
+            <View style={styles.resetDailyMoodButtonContent}>
+              {isUpdatingMemory ? <ActivityIndicator color="#9E3F3F" size="small" /> : null}
+              <Text style={styles.resetDailyMoodButtonText}>Update Memory</Text>
+            </View>
+          </TouchableOpacity>
+
+          {memoryUpdateStatusText ? (
+            <Text style={styles.statusText}>{memoryUpdateStatusText}</Text>
+          ) : null}
 
           <TouchableOpacity
             activeOpacity={0.85}
