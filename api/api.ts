@@ -128,12 +128,18 @@ export const useRegistrationQuestionApi =() => {
 //ChatAi
 export const useChatAiApi =() => {
     const {
-        chatAi
+        chatAi,
+        chatSubmit,
+        chatJobStatus,
+        getActiveChatJob
     } = useChatAi()
 
     return {
         chatAi:{
-            chatAi
+            chatAi,
+            chatSubmit,
+            chatJobStatus,
+            getActiveChatJob
         }
     }
 }

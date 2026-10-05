@@ -28,3 +28,20 @@ export type ChatResponseData = {
 };
 
 export type ChatResult = LambdaResult<ChatResponseData>;
+
+export type ChatJobStatus = "queued" | "running" | "succeeded" | "failed";
+export type ChatJobData = {
+  request_id: string;
+  session_id: string;
+  status: ChatJobStatus;
+  error_code: string | null;
+  message: ChatResponseData | null;
+};
+export type ChatJobResult = LambdaResult<ChatJobData>;
+export type ActiveChatJobData = {
+  request_id: string;
+  session_id: string;
+  status: "queued" | "running";
+  user_message: string | null;
+};
+export type ActiveChatJobResult = LambdaResult<ActiveChatJobData | null>;

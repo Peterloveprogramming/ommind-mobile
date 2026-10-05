@@ -14,6 +14,9 @@ export type LambdaRequest = {
             "jwt_valid"|
             "save_registration_question_answers" |
             "chat" |
+            "chat_submit" |
+            "chat_job_status" |
+            "get_active_chat_job" |
             "get_chat_history" |
             "get_chat_messages_by_session_id" |
             "get_chat_message_content_by_id" |

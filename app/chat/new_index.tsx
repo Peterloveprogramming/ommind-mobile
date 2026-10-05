@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
-import { StyleSheet, Text, View, TextInput, Platform, TouchableOpacity, FlatList, Keyboard, TouchableWithoutFeedback, ActivityIndicator, Image, Animated, Easing } from 'react-native'
+import { StyleSheet, Text, View, TextInput, Platform, TouchableOpacity, FlatList, Keyboard, TouchableWithoutFeedback, ActivityIndicator, Image, Animated, Easing, AppState } from 'react-native'
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller'
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -57,6 +57,36 @@ const getGeneratedMeditationMessageId = (message?: ChatMessageItem | null) =>
 
 const normalizeMessageId = (messageId?: string | number | null) =>
   messageId == null ? null : String(messageId);
+
+const buildHumanChatMessage = (
+  content: string,
+  sessionId: string,
+  requestId: string | null,
+  mode: string | null = null
+): ChatMessage => ({
+  role: "human",
+  chatMessage: {
+    id: generateClientMessageId(),
+    session_id: sessionId,
+    user_id: 0,
+    content,
+    role: "human",
+    model: null,
+    classification: null,
+    workflow_executed: mode,
+    needs_stage: null,
+    needs_categorization_reasoning: null,
+    needs_categorization_confidence: null,
+    rating: null,
+    archived: false,
+    created_at: null,
+    updated_at: null,
+    deleted_at: null,
+  },
+  status: "ready",
+  mode,
+  requestId,
+});
 
 const getSingleParam = (param?: string | string[]) =>
   Array.isArray(param) ? param[0] : param;
@@ -171,7 +201,7 @@ const SpiritualMentorChat = () => {
     const dreamAnalysisPayloadParam = getSingleParam(dream_analysis_payload);
     const isExistingChat = getSingleParam(existing_chat) === "true";
     const {showToastMessage} = useToast()
-    const {aiMessage,isAiLoading,aiError,aiMode,aiRequestId,activeRequestId,fetchMessage,reset:resetAiMessageState} = useFetchAiMessage(false,normalizedSessionId ?? "");
+    const {aiMessage,isAiLoading,aiError,aiMode,aiRequestId,activeRequestId,fetchMessage,reset:resetAiMessageState,resumeActiveJob,wakePolling,pendingUserMessage} = useFetchAiMessage(false,normalizedSessionId ?? "");
     const { fetchChatMessages } = useChatMessagesBySessionId();
     const { submitMessageRating, isLoading: isMessageRatingLoading } = useMessageRating();
     const { playAudio, playbackStatus, pause, resume, dispose } = useWebsocketHexPcmAudio();
@@ -198,6 +228,7 @@ const SpiritualMentorChat = () => {
     const [updatingFavouriteMessageId, setUpdatingFavouriteMessageId] = useState<string | null>(null);
     const flatListRef = useRef<FlatList<ChatMessage> | null>(null);
     const fetchChatMessagesRef = useRef(fetchChatMessages);
+    const resumeActiveJobRef = useRef(resumeActiveJob);
     const hasTriggeredInitialGuidedMeditationRef = useRef(false);
     const hasTriggeredInitialDreamAnalysisRef = useRef(false);
     // Closes the stale-closure double-send window: `isAiLoading` is only up
@@ -300,6 +331,10 @@ const SpiritualMentorChat = () => {
     }, [fetchChatMessages]);
 
     useEffect(() => {
+      resumeActiveJobRef.current = resumeActiveJob;
+    }, [resumeActiveJob]);
+
+    useEffect(() => {
       const showEvent = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
       const hideEvent = Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
       const showSubscription = Keyboard.addListener(showEvent, () => setIsKeyboardVisible(true));
@@ -346,7 +381,15 @@ const SpiritualMentorChat = () => {
       setChatSessionContext(normalizedSessionId ?? null);
       addChatBreadcrumb("session_opened", { session_id: normalizedSessionId ?? null });
 
-      if (!normalizedSessionId || !isExistingChat) {
+      if (!normalizedSessionId) {
+        return () => {
+          isCancelled = true;
+        };
+      }
+
+      if (!isExistingChat) {
+        // Ask the server whether a reply is still being generated for this session.
+        void resumeActiveJobRef.current();
         return () => {
           isCancelled = true;
         };
@@ -387,6 +430,10 @@ const SpiritualMentorChat = () => {
             };
           })
         );
+
+        // Asked after history loads so a resumed job's pending message and
+        // spinner land after the existing messages.
+        void resumeActiveJobRef.current();
       })();
 
       return () => {
@@ -651,6 +698,46 @@ const SpiritualMentorChat = () => {
         return prevMessages.slice(0, -1);
       });
     }, [aiError, aiRequestId]);
+
+    // JS timers are paused in the background on iOS: on return, poll now if a
+    // job is being polled, otherwise ask the server whether one is generating.
+    useEffect(() => {
+      if (!normalizedSessionId) {
+        return;
+      }
+      const subscription = AppState.addEventListener("change", (nextState) => {
+        if (nextState !== "active") {
+          return;
+        }
+        if (!wakePolling()) {
+          void resumeActiveJobRef.current();
+        }
+      });
+      return () => {
+        subscription.remove();
+      };
+    }, [normalizedSessionId, wakePolling]);
+
+    // A resumed job's human message isn't in history until the reply is
+    // saved, so show it optimistically above the loading placeholder.
+    useEffect(() => {
+      if (!pendingUserMessage || !activeRequestId) {
+        return;
+      }
+      setMessages(prevMessages => {
+        const alreadyShown = prevMessages.some(
+          message => message.role === "human" && message.requestId === activeRequestId
+        );
+        if (alreadyShown) {
+          return prevMessages;
+        }
+        return [
+          ...prevMessages,
+          buildHumanChatMessage(pendingUserMessage, normalizedSessionId ?? "", activeRequestId),
+        ];
+      });
+      scrollToLatestMessage(500);
+    }, [activeRequestId, normalizedSessionId, pendingUserMessage, scrollToLatestMessage]);
 
 
     useEffect(()=>{
