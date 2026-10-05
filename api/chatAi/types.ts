@@ -10,7 +10,7 @@ export type GuidedMeditationWorkflowSpecificInput = {
 export type ChatAiInput = {
     session_id: string;
     user_message?: string;
-    category?: "guided_meditation";
+    category?: "guided_meditation" | "dream";
     workflowSpecificInput?: GuidedMeditationWorkflowSpecificInput;
     // Client-generated id correlating this request to its response and to
     // logging/observability on both mobile and backend.

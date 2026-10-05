@@ -18,7 +18,8 @@ import BackButton from "@/comp/headers/BackButton";
 import useAwarenessLogs from "@/api/awarenessLogs/useAwarenessLogs";
 import useDreamLogs from "@/api/dreamLogs/useDreamLogs";
 import { useToast } from "@/context/useToast";
-import { FONTS } from "@/theme.js";
+import { COLORS, FONTS } from "@/theme.js";
+import { generateUniqueId } from "@/utils/helper";
 
 type JournalType = "dreams" | "awareness";
 type DreamDetailKey =
@@ -236,6 +237,7 @@ export default function JournalWriteScreen() {
   const [entryText, setEntryText] = useState(typeof content === "string" ? content : "");
   const [areInstructionsVisible, setAreInstructionsVisible] = useState(false);
   const [areDreamDetailsExpanded, setAreDreamDetailsExpanded] = useState(true);
+  const [isAnalyzingDream, setIsAnalyzingDream] = useState(false);
   const [selectedDreamDetails, setSelectedDreamDetails] = useState(() =>
     getInitialDreamDetails(dreamDetailParamValues)
   );
@@ -268,6 +270,7 @@ export default function JournalWriteScreen() {
   const isSaving =
     isCreating || isCreatingAwarenessLog || isUpdating || isUpdatingAwarenessLog;
   const isSaveDisabled = entryText.trim().length === 0 || isSaving;
+  const isAnalyzeDreamDisabled = isSaveDisabled || isAnalyzingDream;
 
   const navigateBackToJournal = () => {
     router.replace({
@@ -320,6 +323,50 @@ export default function JournalWriteScreen() {
 
     showToastMessage(isEditMode ? "Dream log updated" : "Dream log saved", true);
     navigateBackToJournal();
+  };
+
+  const handleAnalyzeDream = async () => {
+    const trimmedEntryText = entryText.trim();
+    if (!isDreamJournal || isSaving || isAnalyzingDream) {
+      return;
+    }
+
+    if (!trimmedEntryText) {
+      showToastMessage("Write a dream before analyzing.", false);
+      return;
+    }
+
+    setIsAnalyzingDream(true);
+    try {
+      const dreamLogContext = getDreamLogContextForSave();
+      const savedDreamLog = isEditMode
+        ? await updateDreamLog({
+            dream_log_id: logId,
+            log: trimmedEntryText,
+            ...dreamLogContext,
+          })
+        : await createDreamLog({
+            log: trimmedEntryText,
+            ...dreamLogContext,
+          });
+
+      if (!savedDreamLog) {
+        return;
+      }
+
+      router.push({
+        pathname: "/chat/new_index",
+        params: {
+          session_id: generateUniqueId(),
+          dream_analysis_payload: JSON.stringify({
+            dreamLogId: savedDreamLog.id ?? logId ?? null,
+            dreamJournal: trimmedEntryText,
+          }),
+        },
+      });
+    } finally {
+      setIsAnalyzingDream(false);
+    }
   };
 
   const handleDreamDetailPress = (detailKey: DreamDetailKey, option: string) => {
@@ -499,6 +546,27 @@ export default function JournalWriteScreen() {
       />
 
       {renderDreamDetailsPanel()}
+
+      {isDreamJournal && (
+        <Pressable
+          onPress={handleAnalyzeDream}
+          disabled={isAnalyzeDreamDisabled}
+          accessibilityRole="button"
+          accessibilityLabel="Analyze Dream"
+          accessibilityState={{ disabled: isAnalyzeDreamDisabled, busy: isAnalyzingDream }}
+          style={({ pressed }) => [
+            styles.analyzeDreamButton,
+            isAnalyzeDreamDisabled && styles.analyzeDreamButtonDisabled,
+            pressed && !isAnalyzeDreamDisabled && styles.analyzeDreamButtonPressed,
+          ]}
+        >
+          {isAnalyzingDream ? (
+            <ActivityIndicator size="small" color="#FFFFFF" />
+          ) : (
+            <Text style={styles.analyzeDreamText}>Analyze Dream</Text>
+          )}
+        </Pressable>
+      )}
     </>
   );
 
@@ -792,5 +860,24 @@ const styles = StyleSheet.create({
     fontSize: 18,
     lineHeight: 22,
     color: "#111111",
+  },
+  analyzeDreamButton: {
+    marginTop: 22,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: COLORS.brandYellow,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  analyzeDreamButtonPressed: {
+    opacity: 0.82,
+  },
+  analyzeDreamButtonDisabled: {
+    opacity: 0.45,
+  },
+  analyzeDreamText: {
+    fontFamily: FONTS.figtreeSemiBold,
+    fontSize: 16,
+    color: "#FFFFFF",
   },
 });

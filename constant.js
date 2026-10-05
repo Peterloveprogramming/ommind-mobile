@@ -1,10 +1,10 @@
 // const URL = "https://api.hulolo.xyz";
 // const URL = "http://192.168.5.29:8000"
-// const URL = "https://8941-192-169-101-99.ngrok-free.app"
+const URL = "https://9ac1-43-230-10-132.ngrok-free.app"
 //export constants 
-// export const LAMBDA_SERVICE_URL = URL + "/2015-03-31/functions/function/invocations"
-export const LAMBDA_SERVICE_URL="https://dyhmz23j13.execute-api.eu-west-2.amazonaws.com/dev/"
-export const LAMBDA_SERVICE_API_KEY="oJQnTrxKjeaD7YG6cd6xA8q0J9CSRFiUarJSyjx7"
+export const LAMBDA_SERVICE_URL = URL + "/2015-03-31/functions/function/invocations"
+// export const LAMBDA_SERVICE_URL="https://dyhmz23j13.execute-api.eu-west-2.amazonaws.com/dev/"
+// export const LAMBDA_SERVICE_API_KEY="oJQnTrxKjeaD7YG6cd6xA8q0J9CSRFiUarJSyjx7"
 
 export const DEFAULT_HOME_PAGE_TEXT = "How are you feeling today?"
 export const DEFAULT_MOOD = ""
@@ -32,3 +32,4 @@ export const SENTRY_DSN = process.env.EXPO_PUBLIC_SENTRY_DSN ?? ""
 export const GENERAL = "general"
 export const MEDITATION = "meditation"
 export const GUIDED_MEDITATION = "guided_meditation"
+export const DREAM = "dream"

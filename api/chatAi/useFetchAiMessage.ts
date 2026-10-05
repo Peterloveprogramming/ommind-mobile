@@ -3,7 +3,7 @@ import { useCallback, useRef, useState } from "react"
 import { ChatMessageItem } from "@/api/chatMessages/types";
 import { addRecentlyAccessedSession, checkIfLambdaResultIsSuccess, generateRequestId } from "@/utils/helper";
 import { useToast } from "@/context/useToast";
-import { GENERAL, GUIDED_MEDITATION } from "@/constant";
+import { DREAM, GENERAL, GUIDED_MEDITATION } from "@/constant";
 import { ChatAiInput, ChatAiRequest, ChatResponseData } from "./types";
 import { addChatBreadcrumb, captureChatException } from "@/utils/chatTelemetry";
 
@@ -19,6 +19,16 @@ const getRandomQuote = () => {
 };
 
 type FetchAiMessageInput = string | ChatAiRequest;
+
+const getRequestedMode = (category?: ChatAiRequest["category"]) =>
+  category === GUIDED_MEDITATION
+    ? GUIDED_MEDITATION
+    : category === DREAM
+      ? DREAM
+      : GENERAL;
+
+const getWorkflowExecutedForMode = (mode: string | null) =>
+  mode === GUIDED_MEDITATION || mode === DREAM ? mode : null;
 
 const buildChatMessageItem = (
   data: ChatResponseData,
@@ -86,10 +96,9 @@ export default function useFetchAiMessage (testMode:boolean = true,session_id:st
             await new Promise(resolve => setTimeout(resolve, 6000)); // Use await for delay
 
             const randomQuote = getRandomQuote();
-            const requestedMode =
-              typeof input !== "string" && input?.category === GUIDED_MEDITATION
-                ? GUIDED_MEDITATION
-                : GENERAL;
+            const requestedMode = getRequestedMode(
+              typeof input !== "string" ? input?.category : undefined
+            );
             setAiMessage({
               id: Date.now(),
               session_id,
@@ -97,7 +106,7 @@ export default function useFetchAiMessage (testMode:boolean = true,session_id:st
               content: randomQuote,
               role: "assistant",
               model: null,
-              workflow_executed: requestedMode === GUIDED_MEDITATION ? GUIDED_MEDITATION : null,
+              workflow_executed: getWorkflowExecutedForMode(requestedMode),
               classification: null,
               needs_stage: null,
               needs_categorization_reasoning: null,
@@ -127,8 +136,7 @@ export default function useFetchAiMessage (testMode:boolean = true,session_id:st
           typeof input === "string"
             ? { user_message: input, session_id, request_id: activeRequest }
             : { ...input, session_id, request_id: activeRequest };
-        const requestedMode =
-          chatAiInput.category === GUIDED_MEDITATION ? GUIDED_MEDITATION : GENERAL;
+        const requestedMode = getRequestedMode(chatAiInput.category);
 
         // Supersede any request from this hook instance that's still in
         // flight: cancel its network call and make its eventual resolution
@@ -185,7 +193,7 @@ export default function useFetchAiMessage (testMode:boolean = true,session_id:st
           const nextAiMessage = buildChatMessageItem(
             response.data,
             session_id,
-            requestedMode === GUIDED_MEDITATION ? GUIDED_MEDITATION : null
+            getWorkflowExecutedForMode(requestedMode)
           );
 
           if (requestedMode === GUIDED_MEDITATION) {

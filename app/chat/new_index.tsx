@@ -16,7 +16,7 @@ import { images } from '@/constants/images'
 import useFetchAiMessage from '@/api/chatAi/useFetchAiMessage'
 import { useToast } from '@/context/useToast'
 import { useWebsocketHexPcmAudio } from "@/services/useWebsocketHexPcmAudio"
-import { GUIDED_MEDITATION } from "@/constant"
+import { DREAM, GUIDED_MEDITATION } from "@/constant"
 import { PlaybackStatus } from '@/services/hexPcmAudioPlayer'
 import { useVoiceToText } from '@/services/useVoiceToText'
 import useChatMessagesBySessionId from '@/api/chatMessages/useChatMessagesBySessionId'
@@ -95,6 +95,51 @@ const parseGuidedMeditationSelectionParam = (
   }
 };
 
+type DreamAnalysisLaunchPayload = {
+  dreamLogId?: string | number | null;
+  dreamJournal: string;
+};
+
+const DREAM_ANALYSIS_PREFIX = "Analyze the dream journal below";
+
+const isDreamAnalysisDisplayMessage = (content: string) =>
+  content.trim().startsWith(DREAM_ANALYSIS_PREFIX);
+
+const buildDreamAnalysisDisplayMessage = (dreamText: string) => {
+  const trimmed = dreamText.trim();
+  if (isDreamAnalysisDisplayMessage(trimmed)) {
+    return trimmed;
+  }
+
+  return `${DREAM_ANALYSIS_PREFIX}\n\n---\n${trimmed}\n---`;
+};
+
+const parseDreamAnalysisPayloadParam = (
+  param?: string
+): DreamAnalysisLaunchPayload | null => {
+  if (!param) {
+    return null;
+  }
+
+  try {
+    const parsedPayload = JSON.parse(param) as Partial<DreamAnalysisLaunchPayload>;
+    if (
+      typeof parsedPayload.dreamJournal !== "string" ||
+      parsedPayload.dreamJournal.trim().length === 0
+    ) {
+      return null;
+    }
+
+    return {
+      dreamLogId: parsedPayload.dreamLogId ?? null,
+      dreamJournal: parsedPayload.dreamJournal,
+    };
+  } catch (error) {
+    console.error("Failed to parse dream analysis payload", error);
+    return null;
+  }
+};
+
 const buildGuidedMeditationChatRequest = (
   selection: PersonalisedMeditationSelection
 ): ChatAiRequest => ({
@@ -108,10 +153,11 @@ const buildGuidedMeditationChatRequest = (
 });
 
 const SpiritualMentorChat = () => {
-    const { session_id, existing_chat, guided_meditation_selection } = useLocalSearchParams<{
+    const { session_id, existing_chat, guided_meditation_selection, dream_analysis_payload } = useLocalSearchParams<{
       session_id?: string | string[];
       existing_chat?: string | string[];
       guided_meditation_selection?: string | string[];
+      dream_analysis_payload?: string | string[];
     }>()
     const router = useRouter();
     const insets = useSafeAreaInsets();
@@ -122,6 +168,7 @@ const SpiritualMentorChat = () => {
     const [isGuidedMeditationGenerating, setIsGuidedMeditationGenerating] = useState(false);
     const normalizedSessionId = getSingleParam(session_id);
     const guidedMeditationSelectionParam = getSingleParam(guided_meditation_selection);
+    const dreamAnalysisPayloadParam = getSingleParam(dream_analysis_payload);
     const isExistingChat = getSingleParam(existing_chat) === "true";
     const {showToastMessage} = useToast()
     const {aiMessage,isAiLoading,aiError,aiMode,aiRequestId,activeRequestId,fetchMessage,reset:resetAiMessageState} = useFetchAiMessage(false,normalizedSessionId ?? "");
@@ -152,6 +199,7 @@ const SpiritualMentorChat = () => {
     const flatListRef = useRef<FlatList<ChatMessage> | null>(null);
     const fetchChatMessagesRef = useRef(fetchChatMessages);
     const hasTriggeredInitialGuidedMeditationRef = useRef(false);
+    const hasTriggeredInitialDreamAnalysisRef = useRef(false);
     // Closes the stale-closure double-send window: `isAiLoading` is only up
     // to date after the next render, but this ref is up to date immediately.
     const isSendingRef = useRef(false);
@@ -318,6 +366,8 @@ const SpiritualMentorChat = () => {
         setMessages(
           historyMessages.map((message) => {
             const messageMode = message.workflow_executed ?? message.classification ?? null;
+            const isDreamHumanMessage =
+              message.role === "human" && message.workflow_executed === DREAM;
 
             return {
               id: message.id,
@@ -325,7 +375,9 @@ const SpiritualMentorChat = () => {
               chatMessage:
                 messageMode === GUIDED_MEDITATION && message.role === "ai"
                   ? { ...message, content: "Guided meditation ended" }
-                  : message,
+                  : isDreamHumanMessage
+                    ? { ...message, content: buildDreamAnalysisDisplayMessage(message.content) }
+                    : message,
               status: "ready",
               mode: messageMode,
               showPlayBackControl: false,
@@ -341,6 +393,69 @@ const SpiritualMentorChat = () => {
         isCancelled = true;
       };
     }, [dispose, isExistingChat, normalizedSessionId, resetAiMessageState]);
+
+    // Declared after the session-switch effect so its reset (clearing
+    // messages and aborting in-flight requests) runs before this auto-send.
+    useEffect(() => {
+      if (
+        hasTriggeredInitialDreamAnalysisRef.current ||
+        isExistingChat ||
+        !normalizedSessionId
+      ) {
+        return;
+      }
+
+      const payload = parseDreamAnalysisPayloadParam(dreamAnalysisPayloadParam);
+      if (!payload) {
+        return;
+      }
+
+      hasTriggeredInitialDreamAnalysisRef.current = true;
+      isSendingRef.current = true;
+      const requestId = generateRequestId();
+      const newMessage: ChatMessage = {
+        role: "human",
+        chatMessage: {
+          id: generateClientMessageId(),
+          session_id: normalizedSessionId,
+          user_id: 0,
+          content: buildDreamAnalysisDisplayMessage(payload.dreamJournal),
+          role: "human",
+          model: null,
+          classification: null,
+          workflow_executed: DREAM,
+          needs_stage: null,
+          needs_categorization_reasoning: null,
+          needs_categorization_confidence: null,
+          rating: null,
+          archived: false,
+          created_at: null,
+          updated_at: null,
+          deleted_at: null,
+        },
+        status: "ready",
+        mode: DREAM,
+        requestId,
+      };
+
+      setMessages(prevMessages => [...prevMessages, newMessage]);
+      void fetchMessage(
+        {
+          category: DREAM,
+          user_message: payload.dreamJournal.trim(),
+        },
+        requestId
+      ).finally(() => {
+        isSendingRef.current = false;
+      });
+      scrollToLatestMessage(500);
+    }, [
+      dreamAnalysisPayloadParam,
+      fetchMessage,
+      isExistingChat,
+      normalizedSessionId,
+      scrollToLatestMessage,
+    ]);
 
     const updateLatestGuidedMeditationMessage = useCallback((status: PlaybackStatus) => {
       setMessages(prevMessages => {
