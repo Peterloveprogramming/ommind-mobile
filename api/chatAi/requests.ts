@@ -5,7 +5,7 @@ import { ActiveChatJobResult, ChatAiInput, ChatJobResult, ChatResult } from "./t
 
 // Submit / status / active-job calls never wait on the LLM, so they get a
 // short timeout instead of useFetch's 45s default.
-const CHAT_JOB_TIMEOUT_MS = 10000;
+const CHAT_JOB_TIMEOUT_MS = 30000;
 
 export const useChatAi = () => {
     const {commonFetch} = useFetch<ChatResult>({
