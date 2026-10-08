@@ -354,12 +354,19 @@ export default function JournalWriteScreen() {
         return;
       }
 
+      // The analysis is loaded server-side by dream log id, so one must exist.
+      const dreamLogId = savedDreamLog.id ?? logId;
+      if (dreamLogId === undefined || dreamLogId === null || dreamLogId === "") {
+        showToastMessage("Couldn't start dream analysis. Please try again.", false);
+        return;
+      }
+
       router.push({
         pathname: "/chat/new_index",
         params: {
           session_id: generateUniqueId(),
           dream_analysis_payload: JSON.stringify({
-            dreamLogId: savedDreamLog.id ?? logId ?? null,
+            dreamLogId,
             dreamJournal: trimmedEntryText,
           }),
         },

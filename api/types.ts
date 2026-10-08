@@ -49,9 +49,8 @@ export type LambdaRequest = {
             "update_dream_log" |
             "delete_dream_log" |
             "bulk_delete_dream_logs" |
-            "trigger_memory_facts_update_agent",
-            // Reflection is disabled for now.
-            // "analyze_dream",
+            "trigger_memory_facts_update_agent" |
+            "analyze_dream",
     action?: string;
     user_id?: number | string;
     ip_address?: string;

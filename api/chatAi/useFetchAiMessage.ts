@@ -18,7 +18,15 @@ const getRandomQuote = () => {
     return comfortingQuotes[randomIndex];
 };
 
-type FetchAiMessageInput = string | ChatAiRequest;
+// Dream analysis by saved dream log: submitted via the analyze_dream route,
+// which loads the dream text and details server-side.
+type DreamAnalysisRequest = { dream_log_id: number | string };
+type FetchAiMessageInput = string | ChatAiRequest | DreamAnalysisRequest;
+
+const isDreamAnalysisRequest = (
+  input: FetchAiMessageInput | undefined
+): input is DreamAnalysisRequest =>
+  typeof input === "object" && input !== null && "dream_log_id" in input;
 
 const getRequestedMode = (category?: ChatAiRequest["category"]) =>
   category === GUIDED_MEDITATION
@@ -112,7 +120,7 @@ export default function useFetchAiMessage (testMode:boolean = true,session_id:st
     // Human message of a job resumed after a remount: it's only saved to the
     // DB together with the AI reply, so the screen renders it optimistically.
     const [pendingUserMessage, setPendingUserMessage] = useState<string | null>(null);
-    const {chatAi:{chatSubmit, chatJobStatus, getActiveChatJob}} = useChatAiApi()
+    const {chatAi:{chatSubmit, analyzeDream, chatJobStatus, getActiveChatJob}} = useChatAiApi()
     const {showToastMessage} = useToast()
 
     // Bumped on every fetchAiMessageLive call; a call only applies its result
@@ -149,9 +157,9 @@ export default function useFetchAiMessage (testMode:boolean = true,session_id:st
             await new Promise(resolve => setTimeout(resolve, 6000)); // Use await for delay
 
             const randomQuote = getRandomQuote();
-            const requestedMode = getRequestedMode(
-              typeof input !== "string" ? input?.category : undefined
-            );
+            const requestedMode = isDreamAnalysisRequest(input)
+              ? DREAM
+              : getRequestedMode(typeof input !== "string" ? input?.category : undefined);
             setAiMessage({
               id: Date.now(),
               session_id,
@@ -375,11 +383,16 @@ export default function useFetchAiMessage (testMode:boolean = true,session_id:st
 
     const fetchAiMessageLive = useCallback(async (input:FetchAiMessageInput, requestId?: string) => {
         const activeRequest = requestId ?? generateRequestId();
-        const chatAiInput: ChatAiInput =
-          typeof input === "string"
-            ? { user_message: input, session_id, request_id: activeRequest }
-            : { ...input, session_id, request_id: activeRequest };
-        const requestedMode = getRequestedMode(chatAiInput.category);
+        const dreamAnalysis = isDreamAnalysisRequest(input) ? input : null;
+        const chatAiInput: ChatAiInput | null =
+          dreamAnalysis
+            ? null
+            : typeof input === "string"
+              ? { user_message: input, session_id, request_id: activeRequest }
+              : { ...(input as ChatAiRequest), session_id, request_id: activeRequest };
+        const requestedMode = dreamAnalysis
+          ? DREAM
+          : getRequestedMode(chatAiInput?.category);
 
         // Supersede any request from this hook instance that's still in
         // flight: stop its polling and make its eventual resolution a no-op
@@ -387,11 +400,21 @@ export default function useFetchAiMessage (testMode:boolean = true,session_id:st
         // abortController per 1 hook instance.
         const { abortController, isCurrent, finish } = beginRequest(activeRequest);
 
-        console.log("human message is", chatAiInput.user_message ?? chatAiInput.category)
+        if (dreamAnalysis) {
+          // Never log the dream text; the backend loads it from the dream log.
+          console.log("analyzing dream log", dreamAnalysis.dream_log_id)
+        } else {
+          console.log("human message is", chatAiInput?.user_message ?? chatAiInput?.category)
+        }
         addChatBreadcrumb("message_sent", { request_id: activeRequest, session_id, mode: requestedMode });
 
         try {
-          const response = await chatSubmit(chatAiInput, { signal: abortController.signal })
+          const response = dreamAnalysis
+            ? await analyzeDream(
+                { dream_log_id: dreamAnalysis.dream_log_id, session_id, request_id: activeRequest },
+                { signal: abortController.signal }
+              )
+            : await chatSubmit(chatAiInput as ChatAiInput, { signal: abortController.signal })
           if (!isCurrent()) {
             addChatBreadcrumb("ai_response_discarded_stale", { request_id: activeRequest, session_id });
             return;
@@ -439,7 +462,7 @@ export default function useFetchAiMessage (testMode:boolean = true,session_id:st
         } finally {
           finish();
         }
-    }, [beginRequest, chatSubmit, pollChatJob, session_id, settleJob, showToastMessage]);
+    }, [analyzeDream, beginRequest, chatSubmit, pollChatJob, session_id, settleJob, showToastMessage]);
 
     // Picks up polling for a job the server says is still generating (after
     // a remount or returning from the background). No-op if that request_id

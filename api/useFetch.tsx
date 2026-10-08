@@ -42,12 +42,7 @@ export function useFetch <ResultType> ({
         input,
         fetchOptions
     }:CommonFetch)=>{
-        console.log("commonFetch request", {
-            url,
-            method,
-            route: input?.route,
-            input,
-        });
+        console.log("lambda request:", input?.route, input);
 
         // Compose an internal timeout with any caller-supplied AbortSignal (e.g.
         // a superseded request) so either can cancel the underlying fetch.

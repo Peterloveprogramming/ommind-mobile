@@ -44,11 +44,6 @@ export type BulkDeleteDreamLogsInput = {
   log_ids: DreamLogIdentifier[];
 };
 
-export type AnalyzeDreamInput = {
-  logs_id: DreamLogIdentifier[];
-  user_id?: string | number;
-};
-
 export type DreamLogItem = {
   id?: number;
   user_id?: number;
@@ -74,14 +69,4 @@ export type DeleteDreamLogResult = LambdaResult<DreamLogItem | null>;
 export type BulkDeleteDreamLogsResult = LambdaResult<{
   deleted_ids?: number[];
   deleted_count?: number;
-} | null>;
-export type AnalyzeDreamResult = LambdaResult<{
-  final_response?: string;
-  feedback?: string;
-  session_id?: string;
-  session_title?: string;
-  logs?: unknown;
-  saved_chat_message?: unknown;
-  missing_log_ids?: number[];
-  [key: string]: unknown;
 } | null>;

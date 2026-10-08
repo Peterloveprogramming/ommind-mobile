@@ -126,9 +126,17 @@ const parseGuidedMeditationSelectionParam = (
 };
 
 type DreamAnalysisLaunchPayload = {
-  dreamLogId?: string | number | null;
+  // The backend loads the dream text and details from this log (analyze_dream).
+  dreamLogId: string | number;
+  // Only used for the optimistic human bubble.
   dreamJournal: string;
 };
+
+const DREAM_ANALYSIS_START_ERROR = "Couldn't start dream analysis. Please try again.";
+
+const isUsableDreamLogId = (value: unknown): value is string | number =>
+  (typeof value === "number" && Number.isInteger(value)) ||
+  (typeof value === "string" && /^\d+$/.test(value.trim()));
 
 const DREAM_ANALYSIS_PREFIX = "Analyze the dream journal below";
 
@@ -155,13 +163,14 @@ const parseDreamAnalysisPayloadParam = (
     const parsedPayload = JSON.parse(param) as Partial<DreamAnalysisLaunchPayload>;
     if (
       typeof parsedPayload.dreamJournal !== "string" ||
-      parsedPayload.dreamJournal.trim().length === 0
+      parsedPayload.dreamJournal.trim().length === 0 ||
+      !isUsableDreamLogId(parsedPayload.dreamLogId)
     ) {
       return null;
     }
 
     return {
-      dreamLogId: parsedPayload.dreamLogId ?? null,
+      dreamLogId: parsedPayload.dreamLogId,
       dreamJournal: parsedPayload.dreamJournal,
     };
   } catch (error) {
@@ -452,8 +461,14 @@ const SpiritualMentorChat = () => {
         return;
       }
 
+      if (!dreamAnalysisPayloadParam) {
+        return;
+      }
+
       const payload = parseDreamAnalysisPayloadParam(dreamAnalysisPayloadParam);
       if (!payload) {
+        hasTriggeredInitialDreamAnalysisRef.current = true;
+        showToastMessage(DREAM_ANALYSIS_START_ERROR, false);
         return;
       }
 
@@ -486,13 +501,7 @@ const SpiritualMentorChat = () => {
       };
 
       setMessages(prevMessages => [...prevMessages, newMessage]);
-      void fetchMessage(
-        {
-          category: DREAM,
-          user_message: payload.dreamJournal.trim(),
-        },
-        requestId
-      ).finally(() => {
+      void fetchMessage({ dream_log_id: payload.dreamLogId }, requestId).finally(() => {
         isSendingRef.current = false;
       });
       scrollToLatestMessage(500);
@@ -502,6 +511,7 @@ const SpiritualMentorChat = () => {
       isExistingChat,
       normalizedSessionId,
       scrollToLatestMessage,
+      showToastMessage,
     ]);
 
     const updateLatestGuidedMeditationMessage = useCallback((status: PlaybackStatus) => {

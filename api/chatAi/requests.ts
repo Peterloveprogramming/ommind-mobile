@@ -1,7 +1,7 @@
 import { useFetch } from "@/api/useFetch";
 import {LAMBDA_SERVICE_URL} from "@/constant"
 import { LambdaRequest } from "@/api/types";
-import { ActiveChatJobResult, ChatAiInput, ChatJobResult, ChatResult } from "./types";
+import { ActiveChatJobResult, AnalyzeDreamInput, ChatAiInput, ChatJobResult, ChatResult } from "./types";
 
 // Submit / status / active-job calls never wait on the LLM, so they get a
 // short timeout instead of useFetch's 45s default.
@@ -53,6 +53,17 @@ export const useChatAi = () => {
         fetchOptions})
     };
 
+    // Queues a dream analysis for a saved dream log; same 202 job shape as chatSubmit.
+    const analyzeDream = (analyzeDreamInput:AnalyzeDreamInput, fetchOptions?: RequestInit) => {
+        const route: LambdaRequest["route"] = "analyze_dream";
+        return chatJobFetch({
+        input:{
+            route,
+            ...analyzeDreamInput
+        },
+        fetchOptions})
+    };
+
     const chatJobStatus = (
         input: { request_id: string; session_id: string },
         fetchOptions?: RequestInit
@@ -80,5 +91,5 @@ export const useChatAi = () => {
         fetchOptions})
     };
 
-    return { chatAi, chatSubmit, chatJobStatus, getActiveChatJob };
+    return { chatAi, chatSubmit, analyzeDream, chatJobStatus, getActiveChatJob };
 }

@@ -29,8 +29,6 @@ import {
 } from "./awarenessLogs/requests";
 import {
     useAddDreamLog,
-    // Reflection is disabled for now.
-    // useAnalyzeDream,
     useBulkDeleteDreamLogs,
     useDeleteDreamLog,
     useGetDreamLog,
@@ -130,6 +128,7 @@ export const useChatAiApi =() => {
     const {
         chatAi,
         chatSubmit,
+        analyzeDream,
         chatJobStatus,
         getActiveChatJob
     } = useChatAi()
@@ -138,6 +137,7 @@ export const useChatAiApi =() => {
         chatAi:{
             chatAi,
             chatSubmit,
+            analyzeDream,
             chatJobStatus,
             getActiveChatJob
         }
@@ -217,10 +217,6 @@ export const useDreamLogsApi = () => {
     const {
         bulkDeleteDreamLogs
     } = useBulkDeleteDreamLogs()
-    // Reflection is disabled for now.
-    // const {
-    //     analyzeDream
-    // } = useAnalyzeDream()
 
     return {
         getDreamLogs: {
@@ -241,10 +237,6 @@ export const useDreamLogsApi = () => {
         bulkDeleteDreamLogs: {
             bulkDeleteDreamLogs
         },
-        // Reflection is disabled for now.
-        // analyzeDream: {
-        //     analyzeDream
-        // }
     }
 }
 

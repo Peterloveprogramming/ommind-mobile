@@ -1,9 +1,9 @@
 // const URL = "https://api.hulolo.xyz";
 // const URL = "http://192.168.5.29:8000"
-// const URL = "https://9ac1-43-230-10-132.ngrok-free.app"
+const URL = "https://3fed-43-230-10-131.ngrok-free.app"
 //export constants 
-// export const LAMBDA_SERVICE_URL = URL + "/2015-03-31/functions/function/invocations"
-export const LAMBDA_SERVICE_URL="https://dyhmz23j13.execute-api.eu-west-2.amazonaws.com/dev/"
+export const LAMBDA_SERVICE_URL = URL + "/2015-03-31/functions/function/invocations"
+// export const LAMBDA_SERVICE_URL="https://dyhmz23j13.execute-api.eu-west-2.amazonaws.com/dev/"
 export const LAMBDA_SERVICE_API_KEY="oJQnTrxKjeaD7YG6cd6xA8q0J9CSRFiUarJSyjx7"
 
 export const DEFAULT_HOME_PAGE_TEXT = "How are you feeling today?"

@@ -19,6 +19,13 @@ export type ChatAiInput = {
 
 export type ChatAiRequest = Omit<ChatAiInput, "session_id">;
 
+// Dream analysis by dream log id: the backend loads the log text and details.
+export type AnalyzeDreamInput = {
+    session_id: string;
+    dream_log_id: number | string;
+    request_id?: string;
+};
+
 export type ChatResponseData = {
     id: number;
     session_id: string;

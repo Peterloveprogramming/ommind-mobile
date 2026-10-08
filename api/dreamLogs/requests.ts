@@ -8,16 +8,12 @@ import {
   UpdateDreamLogInput,
   DeleteDreamLogInput,
   BulkDeleteDreamLogsInput,
-  // Reflection is disabled for now.
-  // AnalyzeDreamInput,
   GetDreamLogsResult,
   GetDreamLogResult,
   AddDreamLogResult,
   UpdateDreamLogResult,
   DeleteDreamLogResult,
   BulkDeleteDreamLogsResult,
-  // Reflection is disabled for now.
-  // AnalyzeDreamResult,
 } from "./types";
 
 const useDreamLogsLambdaFetch = <T,>() =>
@@ -155,23 +151,3 @@ export const useBulkDeleteDreamLogs = () => {
 
   return { bulkDeleteDreamLogs };
 };
-
-// Reflection is disabled for now.
-// export const useAnalyzeDream = () => {
-//   const { commonFetch } = useDreamLogsLambdaFetch<AnalyzeDreamResult>();
-//
-//   const lambdaConfig: LambdaRequest = {
-//     route: "analyze_dream",
-//   };
-//
-//   const analyzeDream = ({ logs_id, user_id }: AnalyzeDreamInput) =>
-//     commonFetch({
-//       input: {
-//         ...lambdaConfig,
-//         logs_id,
-//         ...(user_id !== undefined ? { user_id } : {}),
-//       },
-//     });
-//
-//   return { analyzeDream };
-// };
