@@ -9,13 +9,108 @@ change.
 
 ## Current Goal
 
+- 03-fix-input-box: rebuild the chat composer in `app/chat/new_index.tsx`
+  as `comp/chat/ChatComposer.tsx` (grey gradient panel + white pill + 54 pt
+  yellow mic/send button) that matches Figma and sits directly on the
+  keyboard with a 24 pt gap on iOS and Android.
+
+## Completed
+
+- `comp/chat/ChatComposer.tsx` (new, `React.memo`):
+  - `COMPOSER` constants object exactly as specified, plus
+    `RECORDING_GLOW` / `CONVERTING_GLOW`. All colours live there for the
+    colour-token spec to move later (`constants/colors.ts` unchanged).
+  - Panel is a reanimated `Animated.View`; `paddingBottom` interpolated on
+    the UI thread from `useReanimatedKeyboardAnimation().progress`:
+    `max(insets.bottom, 24)` closed → `24` open, clamped.
+  - Gradient via `react-native-svg` (`omComposerGradient`, stops at
+    19.474 % / 120.53 %, absolute-fill `Rect`). No blur, no new deps.
+  - Pill: `#FAFAFA`, 1 pt `#BBBBBB`, radius 32, padding 15/5/5/5,
+    `alignItems: "flex-end"`.
+  - TextInput: `onChangeText`, Figtree Regular (`FONTS.figtreeMedium`) 16,
+    letter spacing −0.408, `#1E1E1E`, placeholder `#868686`, padding
+    16/16/0, `marginRight 8`, min 54 / max 120 height, `textAlignVertical
+    "top"`, `includeFontPadding false`, no `lineHeight`,
+    `accessibilityLabel="Message"`.
+  - One 54 pt button: send (`Ionicons arrow-up`, white, on yellow circle,
+    "Send message") when trimmed text exists and not recording/converting;
+    white spinner on yellow circle while converting (presses ignored);
+    otherwise `MicButton` at 54 × 54 with press-in/out ("Hold to record a
+    voice message"). Pressed/recording: scale 0.9 + `#FF8A3D` glow/border;
+    converting: `#FFB06E` border/glow.
+- `app/chat/new_index.tsx`:
+  - `KeyboardAvoidingView` (keyboard-controller) now `behavior="padding"`
+    on both platforms.
+  - Old composer block replaced with `<ChatComposer … />` in the same spot
+    (after the Create My Meditation row, before the modal).
+  - Removed `COMPOSER_MIN_BOTTOM_PADDING`, `composerBottomPadding`, styles
+    `inputView` / `inputChild` / `inputBox` / `sendButtonStyle` /
+    `micButtonContainer` / `micButtonPressed` / `micButtonConverting`,
+    imports `SendButton`, `MicButton`, `TextInput`. `insets` kept (header).
+  - Untouched: `handleSend`, mic handlers, `useVoiceToText`,
+    `isKeyboardVisible` listener, meditation pill, FlatList props, header,
+    bubbles.
+- Deleted `assets/svg/chat/SendButton.tsx` (`git rm`; no other importers).
+- `npx expo lint`: 0 errors, 42 warnings (same as baseline, none new).
+  `npx tsc --noEmit`: 44 errors vs 45 baseline, none in touched files.
+  No `console.log` in new or changed code.
+
+- Fix (Android device test): the grey gradient stopped short of the
+  panel's right and bottom edges. The Svg with `absoluteFill` plus
+  `width/height="100%"` didn't fill the panel. Now an `absoluteFill`
+  `View` measures the panel (`onLayout`) and the Svg/Rect are drawn at
+  the exact pixel size, with the gradient in `userSpaceOnUse`
+  (y1 = 19.474 %, y2 = 120.53 % of the measured height). Same approach as
+  `TabBarBackground`. tsc/lint unchanged (44 / 0 errors).
+
+## In Progress
+
+- Re-test the gradient fix on Android (keyboard closed and open).
+
+## Next Up
+
+- Run the spec "Test Matrix" (iPhone SE / 16 / 16 Pro Max, Pixel 8
+  gesture + 3-button, API ≤ 34 emulator) against the Acceptance Criteria,
+  incl. iOS interactive drag-to-dismiss and keyboard height changes
+  (emoji / predictive bar). Screenshot-compare against Figma `2100:5006`.
+
+## Open Questions
+
+- None.
+
+## Architecture Decisions
+
+- See `03-fix-input-box.md` "Decisions". Notably: mic doubles as send,
+  stacked panel with no blur, `KeyboardAvoidingView` `padding` kept (not
+  `KeyboardStickyView` / `KeyboardChatScrollView`), safe area wins over
+  Figma only while the keyboard is closed.
+
+## Session Notes
+
+- Changes are uncommitted on `main`. `SendButton.tsx` deletion is staged
+  (`git rm`); everything else is unstaged.
+- The callbacks passed to `ChatComposer` are inline arrows (as the spec
+  shows), and `handleSend` isn't memoized, so `React.memo` doesn't skip
+  re-renders yet. Wrap them in `useCallback` if streaming re-renders
+  become a problem.
+
+---
+
+# Previous Goal: 02-fix-bottom-nav-bar
+
+### Phase
+
+- Complete (code) — awaiting manual test matrix on simulators/devices.
+
+### Current Goal
+
 - 02-fix-bottom-nav-bar: rebuild the tab bar as a custom React Navigation
   `tabBar` (`comp/navigation/AppTabBar.tsx`) whose grey background reaches
   the physical bottom edge, matches the Figma geometry, respects the
   bottom safe-area inset, and reports its real height so tab screens can
   pad with `useBottomTabBarHeight()`.
 
-## Completed
+### Completed
 
 - Step 0: `yarn add @react-navigation/bottom-tabs@^7.4.0`. `yarn why`
   shows exactly one installed copy (7.14.0, hoisted, shared with
@@ -55,21 +150,21 @@ change.
   (`explore.tsx` MeditationCard props, `lhamo.tsx` context typing).
   No `console.log` in new or changed files.
 
-## In Progress
+### In Progress
 
 - None.
 
-## Next Up
+### Next Up
 
 - Run the spec "Test Matrix" (iPhone SE / 16 / 16 Pro Max, Pixel 8
   gesture + 3-button, 360-wide Android) against the Acceptance Criteria.
   Screenshot-compare against Figma on the 393-wide device.
 
-## Open Questions
+### Open Questions
 
 - None.
 
-## Architecture Decisions
+### Architecture Decisions
 
 - See `02-fix-bottom-nav-bar.md` "Decisions". Notably: JS `Tabs` with a
   custom `tabBar` (not `NativeTabs`), no background blur, and the safe
@@ -77,7 +172,7 @@ change.
 - The reported tab bar height includes `ORB_OVERHANG` (31), so
   `tabBarHeight + 24` padding always clears the orb.
 
-## Session Notes
+### Session Notes
 
 - Changes are uncommitted on `main`. `BottomNavigationBar.tsx` deletion is
   staged (`git rm`); everything else is unstaged.

@@ -1,13 +1,12 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
-import { StyleSheet, Text, View, TextInput, Platform, TouchableOpacity, FlatList, Keyboard, TouchableWithoutFeedback, ActivityIndicator, Image, Animated, Easing, AppState } from 'react-native'
+import { StyleSheet, Text, View, Platform, TouchableOpacity, FlatList, Keyboard, TouchableWithoutFeedback, ActivityIndicator, Image, Animated, Easing, AppState } from 'react-native'
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller'
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import Back from '@/assets/svg/header/Back'
-import SendButton from '@/assets/svg/chat/SendButton'
-import MicButton from '@/assets/svg/chat/MicButton'
 import PrecautionButton from '@/assets/svg/chat/PrecautionButton'
 import Ai from '@/comp/chat/Ai'
+import ChatComposer from '@/comp/chat/ChatComposer'
 import Human from '@/comp/chat/Human'
 import OpenChatHistoryButton from '@/comp/headers/OpenChatHistoryButton'
 import PersonalisedMeditationModal, { PersonalisedMeditationSelection } from '@/comp/modals/PersonalisedMeditationModal'
@@ -34,7 +33,6 @@ import {
 import { addChatBreadcrumb, setChatSessionContext } from '@/utils/chatTelemetry'
 
 const CHAT_LIST_BOTTOM_PADDING = 16;
-const COMPOSER_MIN_BOTTOM_PADDING = 8;
 
 type ChatMessage = {
   id?: number;
@@ -244,7 +242,6 @@ const SpiritualMentorChat = () => {
     // to date after the next render, but this ref is up to date immediately.
     const isSendingRef = useRef(false);
     const guidedMeditationSpinValue = useRef(new Animated.Value(0)).current;
-    const composerBottomPadding = Math.max(insets.bottom, COMPOSER_MIN_BOTTOM_PADDING);
     const isGuidedMeditationInProgress =
       playbackStatus === "buffering" ||
       playbackStatus === "playing" ||
@@ -973,7 +970,7 @@ const SpiritualMentorChat = () => {
     return (
       <KeyboardAvoidingView
         style={styles.Parent}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        behavior="padding"
       >
         <Stack.Screen options={{ headerShown: false }} />
 
@@ -1089,51 +1086,17 @@ const SpiritualMentorChat = () => {
             </View>
           )}
 
-          <View style={[styles.inputView, { paddingBottom: composerBottomPadding }]}>
-            <View style={styles.inputChild}>
-
-              {/* message box  */}
-              <TextInput
-                style={styles.inputBox}
-                placeholder="You can type here to reply..."
-                placeholderTextColor="#999"
-                value={inputText}
-                multiline={true}
-                onChange={(e) => setInputText(e.nativeEvent.text)}
-                onFocus={() => scrollToLatestMessage()}
-              />
-
-              {/* mic button */}
-              <TouchableOpacity
-                onPressIn={() => {
-                  void handleMicPressIn();
-                }}
-                onPressOut={() => {
-                  void handleMicPressOut();
-                }}
-                activeOpacity={0.85}
-                style={[
-                  styles.micButtonContainer,
-                  (isMicPressed || isRecording) && styles.micButtonPressed,
-                  isConverting && styles.micButtonConverting,
-                ]}
-              >
-                {isConverting ? (
-                  <ActivityIndicator size="small" color="#F8C63E" />
-                ) : (
-                  <MicButton />
-                )}
-              </TouchableOpacity>
-            </View>
-
-            {/* send button */}
-            <View style={styles.sendButtonStyle}>
-              <TouchableOpacity onPress={handleSend}>
-                <SendButton />
-              </TouchableOpacity>
-            </View>
-
-          </View>
+          <ChatComposer
+            value={inputText}
+            onChangeText={setInputText}
+            onFocus={() => scrollToLatestMessage()}
+            onSend={handleSend}
+            onMicPressIn={() => { void handleMicPressIn(); }}
+            onMicPressOut={() => { void handleMicPressOut(); }}
+            isMicPressed={isMicPressed}
+            isRecording={isRecording}
+            isConverting={isConverting}
+          />
 
           <PersonalisedMeditationModal
             visible={showMeditationModal}
@@ -1237,61 +1200,5 @@ const styles = StyleSheet.create({
         fontSize: 15,
         fontWeight: "700",
         color: "#3A3A38",
-      },
-      inputView:{
-        gap:5,
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingHorizontal: 5,
-        paddingVertical: 5,
-        justifyContent:"center",
-      },
-      inputChild:{
-        flexDirection:"row",
-        alignItems: "center",
-        borderRadius:30,
-        backgroundColor:"#F7F2E9",
-        width:"90%",
-        height:"auto"
-      },
-      inputBox:{
-        flex:1,
-        maxHeight:80,
-        minHeight:70,
-        borderRadius: 30,
-        paddingHorizontal: 15,
-        paddingTop: Platform.OS === 'ios' ? 10 : 8,
-        paddingBottom: Platform.OS === 'ios' ? 10 : 8,
-        backgroundColor: "#F7F2E9",
-        fontSize: 16,
-        textAlignVertical: "center",
-      },
-      sendButtonStyle: {
-      },
-      micButtonContainer: {
-        justifyContent: "center",
-        alignItems: "center",
-        marginRight: 3,
-        width: 44,
-        height: 44,
-        borderRadius: 22,
-        borderWidth: 1,
-        borderColor: "rgba(255, 255, 255, 0.0)",
-        backgroundColor: "rgba(255, 255, 255, 0.0)",
-      },
-      micButtonPressed: {
-        backgroundColor: "#FFE7D6",
-        borderColor: "#FF8A3D",
-        transform: [{ scale: 0.9 }],
-        shadowColor: "#FF8A3D",
-        shadowOpacity: 0.35,
-        shadowRadius: 10,
-        shadowOffset: { width: 0, height: 0 },
-        elevation: 6,
-      },
-      micButtonConverting: {
-        backgroundColor: "#FFF2E6",
-        borderColor: "#FFB06E",
-        shadowColor: "#FFB06E",
       }
 })
