@@ -2,7 +2,6 @@ import { Stack } from "expo-router";
 import { View, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
 import { Platform } from "react-native";
-import { useEffect, useState } from "react";
 import BackButton from "@/comp/headers/BackButton";
 import MoreButton from "@/comp/headers/MoreButton";
 import * as SplashScreen from "expo-splash-screen";
@@ -10,7 +9,6 @@ import { useFonts as useFigtree, Figtree_400Regular, Figtree_500Medium, Figtree_
 import { useFonts as useInter, Inter_400Regular, Inter_600SemiBold, Inter_500Medium } from "@expo-google-fonts/inter";
 import { Afacad_400Regular, Afacad_700Bold } from "@expo-google-fonts/afacad";
 import GlobalProviders from "@/context/GlobalProviders";
-import { getAuthInfo } from "@/utils/helper";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import * as Sentry from "@sentry/react-native";
 import { SENTRY_DSN } from "@/constant";
@@ -68,38 +66,25 @@ function RootLayout() {
     Inter_600SemiBold,
   });
 
-  const [initialRoute,setInitialRoute] = useState<string|null>(null);
-
-  const everythingReady = figtreeLoaded && interLoaded && initialRoute;
-
-  useEffect(()=>{
-    const initializeRoute = async () => {
-      const authInfo = await getAuthInfo();
-      if (authInfo){
-        setInitialRoute("welcome")
-      } else {
-        setInitialRoute("welcome")
-      }
-    };
-    initializeRoute();
-  },[])
-
-  useEffect(() => {
-    if (everythingReady) {
-      console.log("everything good to go")
-      SplashScreen.hideAsync();
-    }
-  }, [everythingReady]);
+  // The splash screen is hidden by app/index.tsx once the auth redirect is
+  // decided, so the unstyled index route is never visible.
+  const everythingReady = figtreeLoaded && interLoaded;
 
   if (!everythingReady) {
     console.log("not fully loaded yet")
     return null
   };
-  console.log("initial route is",initialRoute)
   return (
     <KeyboardProvider>
     <GlobalProviders>
       <Stack>
+        <Stack.Screen
+          name="index"
+          options={{
+            headerShown: false,
+          }}
+        />
+
          <Stack.Screen
           name="welcome"
           options={{

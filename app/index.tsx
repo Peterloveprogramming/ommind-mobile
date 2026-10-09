@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Redirect } from "expo-router";
+import * as SplashScreen from "expo-splash-screen";
 import { getAuthInfo } from "@/utils/helper"; // Assuming this helper function is available
 
 export default function Index() {
@@ -19,6 +20,13 @@ export default function Index() {
 
     checkAuth(); // Check auth status when component mounts
   }, []);
+
+  // The root layout keeps the splash up until the redirect target is known.
+  useEffect(() => {
+    if (initialRoute !== null) {
+      SplashScreen.hideAsync();
+    }
+  }, [initialRoute]);
 
   // If the initial route is not yet determined, return null or a loading indicator.
   if (initialRoute === null) {
