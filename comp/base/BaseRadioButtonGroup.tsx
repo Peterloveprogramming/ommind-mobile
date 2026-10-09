@@ -15,24 +15,28 @@ interface BaseRadioButtonGroupProps {
   options:Option[];
   selectedValue:string,
   onChange: (value:string)=>void,
-  style?:ViewStyle
+  style?:ViewStyle,
+  gap?:number
 }
 
 const BaseRadioButtonGroup = ({  
   options,
   selectedValue,
   onChange,
-  style
+  style,
+  gap = 12
 }: BaseRadioButtonGroupProps) => {
   return (
     <View
-      style={[styles.baseRadioButtonGroupContainer,style]}
+      style={[styles.baseRadioButtonGroupContainer,{gap},style]}
+      accessibilityRole="radiogroup"
     >
       {options.map((option)=>{
         // console.log(option)
         return <BaseRadioButton
+        key={String(option.value)}
         label={option.label}
-        value={option.value}
+        value={String(option.value)}
         onChange={onChange}
         selected={option.value === selectedValue }
         />
@@ -48,7 +52,6 @@ const styles = StyleSheet.create({
     baseRadioButtonGroupContainer:{
       borderWidth:debug?1:0,
       width:"100%",
-      alignItems:"center",
-      gap:15,
+      alignItems:"stretch",
     },
 })

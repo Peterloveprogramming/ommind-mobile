@@ -1,9 +1,22 @@
 import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
-import { Checkbox } from 'expo-checkbox';
 import { COLORS,FONTS } from '@/theme.js';
-import { Dispatch,SetStateAction } from 'react';
 
-let debug = true;
+// Card values for the starter-questions screen (spec 05). Kept here so a
+// later colour-token spec can move them in one go.
+const RADIO_CARD = {
+  minHeight: 58,
+  borderRadius: 10,
+  borderWidth: 1.5,
+  borderColor: "#CFCFCF",
+  selectedBorderColor: COLORS.brandYellow,
+  paddingHorizontal: 20,
+  paddingVertical: 12,
+  radioToLabelGap: 10,
+  labelColor: "#1E1E1E",
+  labelFontSize: 16,
+  labelLineHeight: 22,
+  maxFontSizeMultiplier: 1.3,
+};
 
 const RadioButtonNotSelected = () => {
   return <View style={RadioButtonStyles.buttonNotSelected}>
@@ -26,7 +39,8 @@ const RadioButtonStyles = StyleSheet.create({
       borderRadius:50,
       backgroundColor:"white",
       borderWidth:1,
-      borderColor:"#757575"
+      borderColor:"#757575",
+      flexShrink:0,
     },buttonSelected:{
       height:16,
       width:16,
@@ -35,7 +49,8 @@ const RadioButtonStyles = StyleSheet.create({
       alignItems:"center",
       backgroundColor:"#E6E6E6",
       borderWidth:1,
-      borderColor:COLORS.brandYellow
+      borderColor:COLORS.brandYellow,
+      flexShrink:0,
     },
     buttonSelectedInner:{
       height:10,
@@ -47,9 +62,9 @@ const RadioButtonStyles = StyleSheet.create({
 })
 
 interface BaseRadioButtonProps {
-  selected:Boolean,
-  label:String
-  value:String,
+  selected:boolean,
+  label:string
+  value:string,
   onChange: (value:string)=>void,
 }
 
@@ -61,12 +76,23 @@ const BaseRadioButton = ({
   }: BaseRadioButtonProps) => {
   return (
       <TouchableOpacity 
-        style={styles.baseRadioButtonContainer}
+        style={[
+          styles.baseRadioButtonContainer,
+          { borderColor: selected ? RADIO_CARD.selectedBorderColor : RADIO_CARD.borderColor },
+        ]}
         onPress={() => onChange(value)}
+        accessibilityRole="radio"
+        accessibilityState={{ checked: selected }}
+        accessibilityLabel={label}
       >
         <View style={styles.container}>
           {selected?<RadioButtonSelected/>:<RadioButtonNotSelected />}
-          <Text style={styles.fontStyle}>{label}</Text>
+          <Text
+            style={styles.fontStyle}
+            maxFontSizeMultiplier={RADIO_CARD.maxFontSizeMultiplier}
+          >
+            {label}
+          </Text>
         </View>
       </TouchableOpacity>
   );
@@ -76,25 +102,23 @@ export default BaseRadioButton
 
 const styles = StyleSheet.create({
     baseRadioButtonContainer:{
-      borderWidth:1.5,
-      width:360,
-      height:58,
-      borderRadius:10,
-      borderColor:"#CFCFCF",
+      borderWidth:RADIO_CARD.borderWidth,
+      width:"100%",
+      minHeight:RADIO_CARD.minHeight,
+      borderRadius:RADIO_CARD.borderRadius,
       justifyContent:"center",
-      paddingHorizontal:20,
-      // flexDirection:"row",
-      // alignItems:'center',
-      // gap:5,
+      paddingHorizontal:RADIO_CARD.paddingHorizontal,
+      paddingVertical:RADIO_CARD.paddingVertical,
     },container:{
       flexDirection:"row",
       alignItems:'center',
-      gap:5,
-      marginLeft:10,
+      gap:RADIO_CARD.radioToLabelGap,
     },
     fontStyle:{
+      flex:1,
       fontFamily:FONTS.figtreeMedium,
-      fontSize:16,
-      
+      fontSize:RADIO_CARD.labelFontSize,
+      lineHeight:RADIO_CARD.labelLineHeight,
+      color:RADIO_CARD.labelColor,
     }
 })

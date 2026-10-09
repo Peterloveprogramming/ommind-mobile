@@ -35,13 +35,12 @@ const BaseProgressBar = ({
  numberOfBars,
  currentBar
 }: BaseProgressBarProps) => {
-    let counter = 0;
   return (
    <View style={baseProgressBarStyles.barContainer}>
        {Array.from({length:numberOfBars},(_,index)=>{
-        counter += 1
             return(<Bar 
-                active={counter<=currentBar}
+                key={index}
+                active={index + 1 <= currentBar}
             />)
     })}
    </View>

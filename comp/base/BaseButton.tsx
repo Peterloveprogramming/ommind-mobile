@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View, TouchableOpacity,ViewStyle, ActivityIndicator } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity,ViewStyle, TextStyle, ActivityIndicator } from 'react-native';
 import React from 'react';
 import { FONTS } from "@/theme.js";
 import { COLORS } from '@/theme.js';
@@ -10,13 +10,16 @@ interface BaseButtonProps {
   backgroundColor?: string;
   fontColor?: string;
   text: string;
-  height: number;
+  height?: number;
   fontSize?: number;
   onPress: () => void;
-  useIcon: boolean;
+  useIcon?: boolean;
   icon?: React.ReactNode;
   style?:ViewStyle;
-  isLoading:boolean
+  textStyle?:TextStyle;
+  isLoading?:boolean;
+  disabled?: boolean;
+  disabledBackgroundColor?: string;
 }
 
 const BaseButton = ({
@@ -29,14 +32,24 @@ const BaseButton = ({
   useIcon = false,
   icon,
   style,
+  textStyle,
   isLoading = false,     // <-- add default
+  disabled = false,
+  disabledBackgroundColor = "#D9D9D9",
 }: BaseButtonProps) => {
+  const isInactive = disabled || isLoading;
   return (
-    <TouchableOpacity onPress={isLoading ? undefined : onPress} activeOpacity={isLoading ? 1 : 0.7}>
+    <TouchableOpacity
+      onPress={onPress}
+      disabled={isInactive}
+      activeOpacity={isInactive ? 1 : 0.7}
+      accessibilityRole="button"
+      accessibilityState={{ disabled, busy: isLoading }}
+    >
       <View
         style={[
           styles.buttonContainer,
-          { backgroundColor, height },
+          { backgroundColor: disabled && !isLoading ? disabledBackgroundColor : backgroundColor, height },
           style
         ]}
       >
@@ -45,7 +58,7 @@ const BaseButton = ({
         ) : (
           <>
             {useIcon && icon && <View style={{ marginRight: 8 }}>{icon}</View>}
-            <Text style={[styles.buttonText, { color: fontColor, fontSize }]}>{text}</Text>
+            <Text style={[styles.buttonText, { color: fontColor, fontSize }, textStyle]}>{text}</Text>
           </>
         )}
       </View>

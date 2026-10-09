@@ -16,6 +16,7 @@ export const FONTS = {
   figtreeSemiBold: "Figtree_600SemiBold",
   figtreeBold: "Figtree_700Bold",
   interThin: "Inter_100Thin",
+  interRegular: "Inter_400Regular",
   inter: "Inter_500Medium",
   interSemiBold: "Inter_600SemiBold",
 };

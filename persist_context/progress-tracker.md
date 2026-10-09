@@ -5,16 +5,170 @@ change.
 
 ## Current Phase
 
-- Complete (code) — awaiting manual test matrix on simulators/devices.
+- Complete (code) — awaiting Figma measurement and manual test matrix on
+  simulators/devices.
 
 ## Current Goal
+
+- 05-fix-starter-question-ui: restyle `app/authentication/registration_questions.tsx`
+  (fixed 24 gutter, fluid cards, pinned footer, disabled grey Continue until
+  an option is picked, one compact height breakpoint at 740). Style/layout
+  only.
+
+## Completed
+
+- Baseline: `npx tsc --noEmit` 44 errors; `npx expo lint` 0 errors /
+  42 warnings.
+- `comp/base/BaseButton.tsx`: optional `disabled` (default `false`) and
+  `disabledBackgroundColor` (default `#D9D9D9`). `isInactive = disabled ||
+  isLoading` drives `TouchableOpacity` `disabled` / `activeOpacity`.
+  `accessibilityRole="button"`, `accessibilityState={{ disabled, busy }}`.
+  Grey only when `disabled && !isLoading` (spinner stays on yellow).
+  `height`, `useIcon`, `isLoading` now optional. No other visual change, and
+  no other call site passes `disabled`.
+- `comp/base/BaseRadioButton.tsx`: `RADIO_CARD` constants object; card is
+  `width: "100%"`, `minHeight: 58`, padding 20/12, radius 10, border 1.5
+  `#CFCFCF` → `COLORS.brandYellow` when selected. Row gap 10 (no
+  `marginLeft`); label `flex: 1`, Figtree Regular 16 / 22, `#1E1E1E`,
+  `maxFontSizeMultiplier` 1.3. Radios `flexShrink: 0`. Kept
+  `TouchableOpacity`, added `accessibilityRole="radio"`, `checked` state and
+  label. Prop types `string` / `boolean`. Removed `debug = true` and the
+  unused `Checkbox` / `Dispatch` imports.
+- `comp/base/BaseRadioButtonGroup.tsx`: `gap?: number` (default 12),
+  `alignItems: "stretch"`, `key={String(option.value)}`, value passed as
+  `String(option.value)` (all values are already strings),
+  `accessibilityRole="radiogroup"`.
+- `comp/base/BaseProgressBar.tsx`: `key={index}`, `active={index + 1 <=
+  currentBar}`, removed `counter`.
+- `app/authentication/registration_questions.tsx`:
+  - `QUESTIONS_UI` token object at the top (gutter 24, max width 480,
+    breakpoint 740, regular/compact token sets per the spec table).
+  - Layout: root `View` (white) → content column (`flex: 1`, gutter, max
+    480, centered) with progress bar, title, description, and options in a
+    `flex: 1` `ScrollView` → pinned footer (gutter, `paddingTop` 12,
+    `paddingBottom: max(insets.bottom, 16)`, gap 10, max 480).
+  - `isCompact` from `useWindowDimensions().height < 740`. It drives the
+    option gap (12/8), title size (32/28), progress→title (20/12) and
+    description→options (24/16).
+  - Title / description `maxFontSizeMultiplier` 1.3. Description is now
+    explicitly Figtree Regular 18, opacity 0.7, left-aligned.
+  - Options `ScrollView` scrolls to top (not animated) whenever `currentBar`
+    changes.
+  - Continue: `disabled={!currentAnswer}`, where `currentAnswer` is a typed
+    lookup of `answers[currentBar]` (same value, no new TS7053). The
+    toast guard in `onPress` is kept.
+  - Removed `SafeAreaProvider` / `SafeAreaView`, the `onScroll`
+    `console.log`, the two `console.log`s in the save handler, `debug`, the
+    unused `TouchableOpacity` import, and the old `container` /
+    `scrollContent` / `buttonContainer` styles.
+  - Untouched: `ALL_QUESTIONS`, `answers` shape, `handleAnswerChange`,
+    save/API/toast/navigation logic, Go Back behaviour and style,
+    `app/_layout.tsx`.
+- `npx expo lint`: 0 errors, 41 warnings (baseline 42, one unused import
+  fixed, none new). `npx tsc --noEmit`: 32 errors (baseline 44, none new).
+  The remaining ones in touched files are pre-existing (toast context
+  typing, `BaseProgressBarProps` declared twice, `answers[currentBar]`
+  indexing). No `console.log` calls in changed files (only old commented-out
+  ones).
+
+- Follow-up (user request): added `QUESTIONS_UI.contentPaddingTop` (16,
+  same in both modes, close to the old `padding: 15`) on the content column
+  so the progress bar isn't flush under the native header. Check the value
+  against Figma.
+- Follow-up (user request): post-questions welcome screen (Figma
+  `2279:11254`, built from a user-supplied screenshot because the Figma
+  MCP is rate-limited).
+  - Image saved as `assets/images/welcome_image.png` and registered as
+    `images.welcome_image` in `constants/images.ts`.
+  - New `app/authentication/welcome_journey.tsx`: cream `#FFFCF3`
+    background, `WELCOME_JOURNEY_UI` tokens. Image is fluid with a 315 max
+    and 1:1 aspect ratio. "Welcome to OmMind!" is Figtree Bold 30
+    `#333230`, tucked −16 into the image's transparent bottom padding. The
+    subtitle is Figtree Regular 16 `#4D4C49`. Pinned footer with
+    "Begin Your Journey" (`BaseButton` default `brandYellow`) and an 11 pt
+    terms line ("Terms of Use and Privacy Policy" in bold, not tappable;
+    no URLs exist in the app). 24 gutter; top spacing 30 regular / 12
+    compact (< 740 tall).
+  - `registration_questions.tsx`: after a successful save,
+    `router.replace("/authentication/welcome_journey")` instead of
+    `/(tabs)`. The toast is unchanged.
+  - "Begin Your Journey" → `router.replace("/(tabs)")`.
+  - `app/_layout.tsx`: registered `authentication/welcome_journey` with
+    `headerShown: false`, `gestureEnabled: false`.
+  - tsc 32 / lint 0 errors, 41 warnings (unchanged).
+  - Fix (Android device test): the image rendered ~1023 dp tall, which
+    pushed the title/subtitle behind the footer. A `require()`d `Image`
+    gets the file's pixel size as its default style, which overrides
+    `aspectRatio`. The image now sits in a `View` box (width 100%, max 315,
+    `aspectRatio: 1`) and fills it at 100% × 100%. The button label is set
+    to 15 (`buttonFontSize`) to match Figma (`BaseButton` defaults to 17).
+  - Figma review (MCP now works via the Pro-team copy
+    `37GSSpgSU44KPNvLuVKAOw`, node `2279:11254`, 393 × 852 frame).
+    Rebuilt to the exact values:
+    - `welcome_image.png` replaced with the Figma asset (1024 × 1024, same
+      art; the user-supplied file was 1023 × 1023).
+    - Background `#FFFCF2`. Image is 341 square (26 gutter),
+      `insets.top + 10`, `resizeMode="cover"`. No compact breakpoint any
+      more; it fits on the SE / 360 × 640.
+    - Text block: 23 gutter, starts −23 into the image box, gap 11. Title
+      Figtree Bold 32, ls 0.36, `rgba(0,0,0,0.8)`. Subtitle Inter Regular
+      16 / 21, ls −0.32, `rgba(0,0,0,0.7)`.
+    - Footer: 23 gutter, gap 20, `paddingBottom: max(inset, 16) + 64`
+      (terms end 98 from the bottom on the 852 frame). Button is
+      `brandYellow` (Figma uses `#F8C63E` exactly; the earlier
+      `#F0C859` reading was screenshot sampling error), label Inter
+      SemiBold 15 / 20, ls −0.5. Terms Inter Regular 11 / 13, ls 0.066,
+      plus Inter SemiBold for "Terms of Use and Privacy Policy".
+    - `BaseButton`: new optional `textStyle?: TextStyle`, merged last
+      (no other call site passes it). `theme.js` `FONTS.interRegular =
+      "Inter_400Regular"` (already loaded in `_layout`).
+    - tsc 32 / lint 0 errors, 41 warnings (unchanged).
+
+## In Progress
+
+- None.
+
+## Next Up
+
+- Measure Figma frames `2277:10741` / `2113:9725` once the MCP limit
+  resets, update the spec's values table, and adjust every **(confirm)**
+  value where Figma differs (gutter, selected border, disabled grey, gaps,
+  description alignment).
+- Run the spec "Test Matrix" (iPhone SE / 16 / 16 Pro Max, 360 × 640
+  Android, Pixel 8 gesture + 3-button) against the Acceptance Criteria,
+  including largest standard font size and the full save flow.
+
+## Open Questions
+
+- Android hardware back on the welcome screen still pops to whatever is
+  below it in the stack (same as before, when the questions screen
+  replaced itself with tabs).
+- Figma: the original file `TspC5Aw91TShdpYFeKcLIY` belongs to a Starter
+  team and stays rate-limited. Use the Pro-team copy
+  `37GSSpgSU44KPNvLuVKAOw` (same node IDs). Spec 05's questions frames
+  `2277:10741` / `2113:9725` still haven't been measured, so all
+  **(confirm)** values use the spec defaults.
+
+## Session Notes
+
+- Changes are uncommitted on `main`.
+
+---
+
+# Previous Goal: 03-fix-input-box
+
+### Phase
+
+- Complete (code) — awaiting manual test matrix on simulators/devices.
+
+### Current Goal
 
 - 03-fix-input-box: rebuild the chat composer in `app/chat/new_index.tsx`
   as `comp/chat/ChatComposer.tsx` (grey gradient panel + white pill + 54 pt
   yellow mic/send button) that matches Figma and sits directly on the
   keyboard with a 24 pt gap on iOS and Android.
 
-## Completed
+### Completed
 
 - `comp/chat/ChatComposer.tsx` (new, `React.memo`):
   - `COMPOSER` constants object exactly as specified, plus
@@ -63,29 +217,29 @@ change.
   (y1 = 19.474 %, y2 = 120.53 % of the measured height). Same approach as
   `TabBarBackground`. tsc/lint unchanged (44 / 0 errors).
 
-## In Progress
+### In Progress
 
 - Re-test the gradient fix on Android (keyboard closed and open).
 
-## Next Up
+### Next Up
 
 - Run the spec "Test Matrix" (iPhone SE / 16 / 16 Pro Max, Pixel 8
   gesture + 3-button, API ≤ 34 emulator) against the Acceptance Criteria,
   incl. iOS interactive drag-to-dismiss and keyboard height changes
   (emoji / predictive bar). Screenshot-compare against Figma `2100:5006`.
 
-## Open Questions
+### Open Questions
 
 - None.
 
-## Architecture Decisions
+### Architecture Decisions
 
 - See `03-fix-input-box.md` "Decisions". Notably: mic doubles as send,
   stacked panel with no blur, `KeyboardAvoidingView` `padding` kept (not
   `KeyboardStickyView` / `KeyboardChatScrollView`), safe area wins over
   Figma only while the keyboard is closed.
 
-## Session Notes
+### Session Notes
 
 - Changes are uncommitted on `main`. `SendButton.tsx` deletion is staged
   (`git rm`); everything else is unstaged.

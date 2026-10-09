@@ -1,4 +1,5 @@
 import welcome_background from "@/assets/images/backgrounds/welcome_background.png";
+import welcome_image from "@/assets/images/welcome_image.png";
 import ommind_logo from "@/assets/images/logos/ommind_logo.png";
 import google_icon from "@/assets/images/icons/google_icon.png";
 import next_button_icon from "@/assets/images/icons/next_button_icon.png";
@@ -41,6 +42,7 @@ import open_chat_history from "@/assets/images/header/open_chat_history.png";
 
 export const images = {
   welcome_background,
+  welcome_image,
   ommind_logo,
   google_icon,
   next_button_icon,

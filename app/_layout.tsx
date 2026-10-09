@@ -203,7 +203,14 @@ function RootLayout() {
           }}
         />
 
-        
+        <Stack.Screen
+          name="authentication/welcome_journey"
+          options={{
+            headerShown: false,
+            gestureEnabled: false,
+          }}
+        />
+
         <Stack.Screen
           name="chat/new_index"
           options={{
