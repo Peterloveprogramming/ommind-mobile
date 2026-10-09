@@ -3,6 +3,7 @@ import { FONTS } from "@/theme";
 import React from "react";
 import { FlatList, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useFocusEffect, useRouter } from "expo-router";
+import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { MeditationCourse, MeditationCoursesByType } from "@/api/meditation/types";
 import { useMeditationCourses } from "@/api/meditation/useMeditationCourses";
 const COURSE_TYPES: (keyof MeditationCoursesByType)[] = ["calm", "awareness", "insight"];
@@ -13,6 +14,7 @@ const formatSectionTitle = (value: keyof MeditationCoursesByType) => {
 
 const Explore = () => {
   const router = useRouter();
+  const tabBarHeight = useBottomTabBarHeight();
   const { coursesByType, error, fetchMeditationCourses } = useMeditationCourses();
 
   useFocusEffect(
@@ -67,7 +69,7 @@ const Explore = () => {
       {/* <Text style={styles.title}>Coming Soon</Text> */}
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.verticalContent}
+        contentContainerStyle={{ paddingBottom: tabBarHeight + 24 }}
       >
         {COURSE_TYPES.map((type) => renderCourseRow(type))}
         {error ? <Text style={styles.errorText}>Failed to load meditation courses.</Text> : null}
@@ -83,9 +85,6 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingTop: 50,
     paddingLeft: 25
-  },
-  verticalContent: {
-    paddingBottom: 24,
   },
   rowContainer: {
     gap: 10,

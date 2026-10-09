@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
+import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import {
   ActivityIndicator,
   ScrollView,
@@ -37,6 +38,7 @@ const ProfileContactForm = ({
   onBackPress,
   onSubmitPress,
 }: ProfileContactFormProps) => {
+  const tabBarHeight = useBottomTabBarHeight();
   const [message, setMessage] = React.useState("");
   const [localErrorText, setLocalErrorText] = React.useState("");
 
@@ -52,7 +54,7 @@ const ProfileContactForm = ({
 
   return (
     <ScrollView
-      contentContainerStyle={styles.contentContainer}
+      contentContainerStyle={[styles.contentContainer, { paddingBottom: tabBarHeight + 24 }]}
       keyboardShouldPersistTaps="handled"
       style={styles.container}
     >
@@ -130,7 +132,6 @@ const styles = StyleSheet.create({
     minHeight: 760,
     paddingHorizontal: 24,
     paddingTop: 52,
-    paddingBottom: 140,
   },
   header: {
     minHeight: 76,

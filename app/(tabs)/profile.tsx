@@ -18,6 +18,7 @@ import {
 } from "@/utils/helper";
 import * as ImagePicker from "expo-image-picker";
 import { useFocusEffect, useRouter } from "expo-router";
+import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import React from "react";
 import {
   ActivityIndicator,
@@ -127,6 +128,7 @@ const formatCurrentFocus = (value: string[] | string | null | undefined) => {
 
 const Profile = () => {
   const router = useRouter();
+  const tabBarHeight = useBottomTabBarHeight();
   const {
     getAccountDetails: { getAccountDetails },
     getUserNameAndEmail: { getUserNameAndEmail },
@@ -766,7 +768,10 @@ const Profile = () => {
 
   return (
     <>
-      <ScrollView contentContainerStyle={styles.contentContainer} style={styles.container}>
+      <ScrollView
+        contentContainerStyle={[styles.contentContainer, { paddingBottom: tabBarHeight + 24 }]}
+        style={styles.container}
+      >
         {isLoading ? (
           <View style={styles.loadingWrap}>
             <ActivityIndicator color="#B88A1A" size="large" />
@@ -953,7 +958,6 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     paddingHorizontal: 16,
     paddingTop: 48,
-    paddingBottom: 32,
   },
   loadingWrap: {
     position: "absolute",
@@ -1190,7 +1194,7 @@ const styles = StyleSheet.create({
   followSection: {
     marginTop: 36,
     paddingTop: 28,
-    marginBottom:100,
+    marginBottom: 0,
     borderTopWidth: 1,
     borderTopColor: "#E7E0D7",
     alignItems: "center",

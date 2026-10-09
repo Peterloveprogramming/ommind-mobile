@@ -13,6 +13,7 @@ import {
   View,
 } from "react-native";
 import { useFocusEffect, usePathname, useRouter } from "expo-router";
+import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import * as ImagePicker from "expo-image-picker";
 import { useUserApi } from "@/api/api";
 import { useMeditationApi } from "@/api/meditation/requests";
@@ -130,6 +131,7 @@ type HomepageInfoLoadOptions = {
 
 const Home = () => {
   const router = useRouter();
+  const tabBarHeight = useBottomTabBarHeight();
   const pathname = usePathname();
   const dispatch = useAppDispatch();
   const cachedHomePageInfo = useAppSelector(getHomePageInfoState);
@@ -775,7 +777,7 @@ const Home = () => {
     <>
       <ScrollView
         style={styles.screen}
-        contentContainerStyle={styles.contentContainer}
+        contentContainerStyle={[styles.contentContainer, { paddingBottom: tabBarHeight + 24 }]}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.headerRow}>
@@ -1053,7 +1055,7 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     paddingHorizontal: 12,
-    paddingVertical: 100,
+    paddingTop: 100,
   },
   headerRow: {
     flexDirection: "row",

@@ -5,12 +5,13 @@ import {
   ImageBackground,
   Modal,
   Pressable,
-  SafeAreaView,
   StyleSheet,
   Text,
   View,
 } from "react-native";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
+import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import useAwarenessLogs from "@/api/awarenessLogs/useAwarenessLogs";
 import useDreamLogs from "@/api/dreamLogs/useDreamLogs";
@@ -140,6 +141,7 @@ const CLOSE_BUTTON_IMAGE = require("@/assets/images/journal/close_button.png");
 const MAX_SELECTED_ENTRIES = 3;
 
 const Journal = () => {
+  const tabBarHeight = useBottomTabBarHeight();
   const { activeTab: activeTabParam } = useLocalSearchParams<{
     activeTab?: JournalTab;
   }>();
@@ -350,7 +352,7 @@ const Journal = () => {
   //   selectedEntryIds.length === 0 || isAnalyzingDreamLogs || isAnalyzingAwarenessLogs;
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={["top"]}>
       <View style={styles.container}>
         <View style={styles.tabRow}>
           {TAB_CONFIG.map((tab) => {
@@ -451,7 +453,7 @@ const Journal = () => {
         </View>
 
         {isSelectionMode ? (
-          <View style={styles.selectionActionsWrap}>
+          <View style={[styles.selectionActionsWrap, { paddingBottom: tabBarHeight + 16 }]}>
             <View style={styles.selectionHeaderRow}>
               <Text style={styles.selectionCountText}>
                 {selectedEntryIds.length}/{MAX_SELECTED_ENTRIES} selected
@@ -520,7 +522,7 @@ const Journal = () => {
             </View>
           </View>
         ) : (
-          <View style={styles.ctaWrap}>
+          <View style={[styles.ctaWrap, { paddingBottom: tabBarHeight + 16 }]}>
             <Pressable
               onPress={handleStartWritingPress}
               style={({ pressed }) => [
@@ -758,7 +760,6 @@ const styles = StyleSheet.create({
     borderColor: COLORS.brandYellow,
   },
   ctaWrap: {
-    paddingBottom: 118,
     paddingTop: 12,
   },
   ctaButton: {
@@ -780,7 +781,6 @@ const styles = StyleSheet.create({
   },
   selectionActionsWrap: {
     paddingTop: 12,
-    paddingBottom: 118,
   },
   selectionHeaderRow: {
     flexDirection: "row",

@@ -5,6 +5,7 @@ import { images } from "@/constants/images";
 import { FONTS } from "@/theme";
 import { checkIfLambdaResultIsSuccess, getLambdaErrorMessage } from "@/utils/helper";
 import { useFocusEffect, useRouter } from "expo-router";
+import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import React from "react";
 import {
   ActivityIndicator,
@@ -31,6 +32,7 @@ const formatSessionLength = (value: number | null | undefined) => {
 
 const Saved = () => {
   const router = useRouter();
+  const tabBarHeight = useBottomTabBarHeight();
   const insets = useSafeAreaInsets();
   const {
     getFavourite: { getFavourite },
@@ -172,7 +174,7 @@ const Saved = () => {
           renderItem={renderSession}
           contentContainerStyle={[
             styles.listContent,
-            { paddingBottom: insets.bottom + 126 },
+            { paddingBottom: tabBarHeight + 24 },
             sessions.length === 0 && styles.emptyListContent,
           ]}
           showsVerticalScrollIndicator={false}
