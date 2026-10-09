@@ -1,20 +1,21 @@
-import { Ionicons } from "@expo/vector-icons";
+import GradientDivider from "@/comp/home/GradientDivider";
+import ProfileFormScreen, {
+  PROFILE_FORM_UI,
+  ProfileFormErrorText,
+  ProfileFormSubmitButton,
+  profileFormTextStyles,
+  useProfileFormGap,
+} from "@/comp/profile/ProfileFormScreen";
+import { COLORS } from "@/theme";
 import React from "react";
-import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
-import {
-  ActivityIndicator,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { Linking, StyleSheet, Text, TextInput, View } from "react-native";
 
-import { FONTS } from "@/theme";
+const MAX_SUBJECT_LENGTH = 100;
+const MAX_MESSAGE_LENGTH = 1000;
 
 type ProfileContactFormProps = {
   title: string;
+  subjectPlaceholder?: string;
   messagePlaceholder?: string;
   submitLabel?: string;
   responseTimeText: string;
@@ -23,11 +24,12 @@ type ProfileContactFormProps = {
   errorText?: string;
   isSubmitting?: boolean;
   onBackPress: () => void;
-  onSubmitPress?: (message: string) => void;
+  onSubmitPress?: (subject: string, message: string) => void;
 };
 
 const ProfileContactForm = ({
   title,
+  subjectPlaceholder = "Subject",
   messagePlaceholder = "Message",
   submitLabel = "Submit",
   responseTimeText,
@@ -38,201 +40,120 @@ const ProfileContactForm = ({
   onBackPress,
   onSubmitPress,
 }: ProfileContactFormProps) => {
-  const tabBarHeight = useBottomTabBarHeight();
+  const gap = useProfileFormGap();
+  const messageInputRef = React.useRef<TextInput>(null);
+  const [subject, setSubject] = React.useState("");
   const [message, setMessage] = React.useState("");
-  const [localErrorText, setLocalErrorText] = React.useState("");
 
   const handleSubmitPress = () => {
-    if (!message.trim()) {
-      setLocalErrorText("Description is missing");
-      return;
-    }
+    onSubmitPress?.(subject, message);
+  };
 
-    setLocalErrorText("");
-    onSubmitPress?.(message);
+  const handleEmailPress = () => {
+    Linking.openURL(`mailto:${emailAddress}`).catch((error) => {
+      console.error("Failed to open email client", error);
+    });
   };
 
   return (
-    <ScrollView
-      contentContainerStyle={[styles.contentContainer, { paddingBottom: tabBarHeight + 24 }]}
-      keyboardShouldPersistTaps="handled"
-      style={styles.container}
-    >
-      <View style={styles.header}>
-        <TouchableOpacity
-          activeOpacity={0.85}
-          hitSlop={8}
-          onPress={onBackPress}
-          style={styles.backButton}
-        >
-          <Ionicons name="chevron-back" size={42} color="#FFFFFF" />
-        </TouchableOpacity>
-        <Text style={styles.title}>{title}</Text>
-        <View style={styles.headerSpacer} />
+    <ProfileFormScreen title={title} onBackPress={onBackPress}>
+      <View style={styles.field}>
+        <TextInput
+          accessibilityLabel={subjectPlaceholder}
+          editable={!isSubmitting}
+          maxFontSizeMultiplier={PROFILE_FORM_UI.maxFontSizeMultiplier}
+          maxLength={MAX_SUBJECT_LENGTH}
+          onChangeText={setSubject}
+          onSubmitEditing={() => messageInputRef.current?.focus()}
+          placeholder={subjectPlaceholder}
+          placeholderTextColor={PROFILE_FORM_UI.placeholderColor}
+          returnKeyType="next"
+          style={[profileFormTextStyles.input, styles.subjectInput]}
+          submitBehavior="submit"
+          value={subject}
+        />
+        <GradientDivider style={styles.divider} />
       </View>
 
-      <View style={styles.formContent}>
+      <View style={[styles.field, { marginTop: gap(150) }]}>
         <TextInput
+          ref={messageInputRef}
           multiline
-          value={message}
-          onChangeText={(value) => {
-            setMessage(value);
-            if (localErrorText) {
-              setLocalErrorText("");
-            }
-          }}
+          accessibilityLabel={messagePlaceholder}
+          editable={!isSubmitting}
+          maxFontSizeMultiplier={PROFILE_FORM_UI.maxFontSizeMultiplier}
+          maxLength={MAX_MESSAGE_LENGTH}
+          onChangeText={setMessage}
           placeholder={messagePlaceholder}
-          placeholderTextColor="#8F9097"
-          textAlign="center"
-          style={styles.messageInput}
+          placeholderTextColor={PROFILE_FORM_UI.placeholderColor}
+          style={[profileFormTextStyles.input, styles.messageInput]}
+          value={message}
+        />
+        <GradientDivider style={styles.divider} />
+      </View>
+
+      <ProfileFormErrorText>{errorText}</ProfileFormErrorText>
+
+      <View style={[styles.footer, { marginTop: gap(81), gap: gap(30) }]}>
+        <ProfileFormSubmitButton
+          isSubmitting={isSubmitting}
+          label={submitLabel}
+          onPress={handleSubmitPress}
         />
 
-        <View style={styles.divider} />
-
-        {errorText || localErrorText ? (
-          <Text style={styles.errorText}>{localErrorText || errorText}</Text>
-        ) : null}
-
-        <TouchableOpacity
-          activeOpacity={0.85}
-          onPress={handleSubmitPress}
-          disabled={isSubmitting}
-          style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]}
+        <Text
+          maxFontSizeMultiplier={PROFILE_FORM_UI.maxFontSizeMultiplier}
+          style={[profileFormTextStyles.body, styles.responseTimeText]}
         >
-          {isSubmitting ? (
-            <ActivityIndicator color="#FFFFFF" />
-          ) : (
-            <>
-              <Ionicons name="paper-plane-outline" size={22} color="#FFFFFF" />
-              <Text style={styles.submitButtonText}>{submitLabel}</Text>
-            </>
-          )}
-        </TouchableOpacity>
+          {responseTimeText}
+        </Text>
 
-        <Text style={styles.responseTimeText}>{responseTimeText}</Text>
-
-        <View style={styles.emailRow}>
-          <Text style={styles.emailLabel}>{emailLabel} </Text>
-          <Text style={styles.emailAddress}>{emailAddress}</Text>
-        </View>
+        <Text
+          maxFontSizeMultiplier={PROFILE_FORM_UI.maxFontSizeMultiplier}
+          style={[profileFormTextStyles.body, styles.emailText]}
+        >
+          {`${emailLabel} `}
+          <Text
+            accessibilityRole="link"
+            onPress={handleEmailPress}
+            style={styles.emailAddress}
+            suppressHighlighting
+          >
+            {emailAddress}
+          </Text>
+        </Text>
       </View>
-    </ScrollView>
+    </ProfileFormScreen>
   );
 };
 
 export default ProfileContactForm;
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#F9F9F9",
+  field: {
+    alignSelf: "stretch",
   },
-  contentContainer: {
-    flexGrow: 1,
-    minHeight: 760,
-    paddingHorizontal: 24,
-    paddingTop: 52,
-  },
-  header: {
-    minHeight: 76,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  backButton: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    backgroundColor: "#C8C8C8",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  title: {
-    flex: 1,
-    marginHorizontal: 16,
-    fontFamily: FONTS.figtreeSemiBold,
-    fontSize: 22,
-    lineHeight: 28,
-    color: "#111111",
-    textAlign: "center",
-  },
-  headerSpacer: {
-    width: 70,
-  },
-  formContent: {
-    flex: 1,
-    alignItems: "center",
-    paddingTop: 124,
+  subjectInput: {
+    minHeight: 20,
   },
   messageInput: {
-    width: "100%",
-    minHeight: 216,
-    paddingHorizontal: 8,
-    paddingVertical: 92,
-    fontFamily: FONTS.inter,
-    fontSize: 22,
-    lineHeight: 30,
-    color: "#333333",
+    minHeight: 20,
+    maxHeight: 160,
   },
   divider: {
-    width: "100%",
-    height: 1,
-    backgroundColor: "#E6E6E6",
+    marginTop: 20,
+    marginHorizontal: PROFILE_FORM_UI.gutter,
   },
-  submitButton: {
-    marginTop: 112,
-    minHeight: 52,
-    borderRadius: 26,
-    backgroundColor: "#F7C331",
-    paddingHorizontal: 24,
-    flexDirection: "row",
+  footer: {
     alignItems: "center",
-    justifyContent: "center",
-  },
-  submitButtonDisabled: {
-    opacity: 0.7,
-  },
-  submitButtonText: {
-    marginLeft: 8,
-    fontFamily: FONTS.interSemiBold,
-    fontSize: 18,
-    lineHeight: 24,
-    color: "#FFFFFF",
-  },
-  errorText: {
-    marginTop: 24,
-    fontFamily: FONTS.inter,
-    fontSize: 18,
-    lineHeight: 24,
-    color: "#D14343",
-    textAlign: "center",
   },
   responseTimeText: {
-    marginTop: 40,
-    maxWidth: 300,
-    fontFamily: FONTS.inter,
-    fontSize: 22,
-    lineHeight: 30,
-    color: "#8F9097",
-    textAlign: "center",
+    maxWidth: 218,
   },
-  emailRow: {
-    marginTop: 52,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    flexWrap: "wrap",
-  },
-  emailLabel: {
-    fontFamily: FONTS.inter,
-    fontSize: 20,
-    lineHeight: 28,
-    color: "#8F9097",
+  emailText: {
+    maxWidth: 261,
   },
   emailAddress: {
-    fontFamily: FONTS.inter,
-    fontSize: 20,
-    lineHeight: 28,
-    color: "#F7C331",
+    color: COLORS.brandYellow,
   },
 });

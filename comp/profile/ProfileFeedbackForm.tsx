@@ -1,21 +1,22 @@
+import Paperclip from "@/assets/svg/profile/Paperclip";
+import GradientDivider from "@/comp/home/GradientDivider";
+import ProfileFormScreen, {
+  PROFILE_FORM_UI,
+  ProfileFormErrorText,
+  ProfileFormSubmitButton,
+  profileFormTextStyles,
+  useProfileFormGap,
+} from "@/comp/profile/ProfileFormScreen";
+import { FONTS } from "@/theme";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
-import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
-import {
-  ActivityIndicator,
-  Image,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { Image, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 
-import { FONTS } from "@/theme";
+const MAX_DESCRIPTION_LENGTH = 1000;
 
 type ProfileFeedbackFormProps = {
   title: string;
+  titleVariant?: "regular" | "semibold";
   placeholder: string;
   attachmentHelperText: string;
   errorText?: string;
@@ -30,6 +31,7 @@ type ProfileFeedbackFormProps = {
 
 const ProfileFeedbackForm = ({
   title,
+  titleVariant,
   placeholder,
   attachmentHelperText,
   errorText,
@@ -41,191 +43,133 @@ const ProfileFeedbackForm = ({
   onRemoveImagePress,
   onSubmitPress,
 }: ProfileFeedbackFormProps) => {
-  const tabBarHeight = useBottomTabBarHeight();
+  const gap = useProfileFormGap();
   const [message, setMessage] = React.useState("");
-
-  const handleAddImagePress = () => {
-    onAddImagePress?.();
-  };
 
   const handleSubmitPress = () => {
     onSubmitPress?.(message);
   };
 
   return (
-    <ScrollView
-      contentContainerStyle={[styles.contentContainer, { paddingBottom: tabBarHeight + 24 }]}
-      keyboardShouldPersistTaps="handled"
-      style={styles.container}
-    >
-      <View style={styles.header}>
-        <TouchableOpacity
-          activeOpacity={0.85}
-          hitSlop={8}
-          onPress={onBackPress}
-          style={styles.backButton}
-        >
-          <Ionicons name="chevron-back" size={42} color="#FFFFFF" />
-        </TouchableOpacity>
-        <Text style={styles.title}>{title}</Text>
-        <View style={styles.headerSpacer} />
-      </View>
-
-      <View style={styles.formContent}>
+    <ProfileFormScreen title={title} titleVariant={titleVariant} onBackPress={onBackPress}>
+      <View style={styles.fieldGroup}>
         <TextInput
           multiline
-          value={message}
+          accessibilityLabel={placeholder}
+          editable={!isSubmitting}
+          maxFontSizeMultiplier={PROFILE_FORM_UI.maxFontSizeMultiplier}
+          maxLength={MAX_DESCRIPTION_LENGTH}
           onChangeText={setMessage}
           placeholder={placeholder}
-          placeholderTextColor="#8F9097"
-          textAlign="center"
-          style={styles.messageInput}
+          placeholderTextColor={PROFILE_FORM_UI.placeholderColor}
+          style={[profileFormTextStyles.input, styles.messageInput]}
+          value={message}
         />
 
-        <View style={styles.divider} />
+        <GradientDivider style={styles.divider} />
 
-        <TouchableOpacity
-          activeOpacity={0.85}
-          onPress={handleAddImagePress}
-          style={styles.addImageButton}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={imagePreviewUri ? "Change image" : "Add an image"}
           disabled={isSubmitting}
+          hitSlop={6}
+          onPress={onAddImagePress}
+          style={({ pressed }) => [styles.addImageButton, pressed && styles.pressed]}
         >
-          <Ionicons name="attach-outline" size={26} color="#8F9097" />
-          <Text style={styles.addImageText}>{imagePreviewUri ? "Change image" : "Add an image"}</Text>
-        </TouchableOpacity>
+          <Paperclip />
+          <Text
+            maxFontSizeMultiplier={PROFILE_FORM_UI.maxFontSizeMultiplier}
+            numberOfLines={1}
+            style={styles.addImageText}
+          >
+            {imagePreviewUri ? "Change image" : "Add an image"}
+          </Text>
+        </Pressable>
 
         {imagePreviewUri ? (
           <View style={styles.imagePreviewWrap}>
             <Image source={{ uri: imagePreviewUri }} style={styles.imagePreview} />
-            <TouchableOpacity
-              activeOpacity={0.8}
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Remove image"
+              disabled={isSubmitting}
+              hitSlop={8}
               onPress={onRemoveImagePress}
               style={styles.removeImageButton}
-              disabled={isSubmitting}
             >
-              <Ionicons name="close" size={18} color="#FFFFFF" />
-            </TouchableOpacity>
+              <Ionicons name="close" size={16} color="#FFFFFF" />
+            </Pressable>
           </View>
         ) : null}
 
-        <Text style={styles.attachmentHelperText}>{attachmentHelperText}</Text>
-        {errorText ? <Text style={styles.errorText}>{errorText}</Text> : null}
-
-        <TouchableOpacity
-          activeOpacity={0.85}
-          onPress={handleSubmitPress}
-          disabled={isSubmitting}
-          style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]}
+        <Text
+          maxFontSizeMultiplier={PROFILE_FORM_UI.maxFontSizeMultiplier}
+          style={[profileFormTextStyles.body, styles.helperText]}
         >
-          {isSubmitting ? (
-            <ActivityIndicator color="#FFFFFF" />
-          ) : (
-            <>
-              <Ionicons name="paper-plane-outline" size={22} color="#FFFFFF" />
-              <Text style={styles.submitButtonText}>{submitLabel}</Text>
-            </>
-          )}
-        </TouchableOpacity>
+          {attachmentHelperText}
+        </Text>
+
+        <ProfileFormErrorText>{errorText}</ProfileFormErrorText>
       </View>
-    </ScrollView>
+
+      <View style={{ marginTop: gap(81) }}>
+        <ProfileFormSubmitButton
+          isSubmitting={isSubmitting}
+          label={submitLabel}
+          onPress={handleSubmitPress}
+        />
+      </View>
+    </ProfileFormScreen>
   );
 };
 
 export default ProfileFeedbackForm;
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#F9F9F9",
-  },
-  contentContainer: {
-    flexGrow: 1,
-    minHeight: 760,
-    paddingHorizontal: 24,
-    paddingTop: 52,
-  },
-  header: {
-    minHeight: 76,
-    flexDirection: "row",
+  fieldGroup: {
+    alignSelf: "stretch",
     alignItems: "center",
-    justifyContent: "space-between",
-  },
-  backButton: {
-    width: 60,
-    height: 60,
-    borderRadius: 35,
-    backgroundColor: "#C8C8C8",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  title: {
-    flex: 1,
-    marginHorizontal: 16,
-    fontFamily: FONTS.figtreeSemiBold,
-    fontSize: 22,
-    lineHeight: 28,
-    color: "#333333",
-    textAlign: "center",
-  },
-  headerSpacer: {
-    width: 70,
-  },
-  formContent: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingBottom: 120,
   },
   messageInput: {
-    width: "100%",
-    minHeight: 92,
-    paddingHorizontal: 8,
-    paddingVertical: 12,
-    fontFamily: FONTS.inter,
-    fontSize: 22,
-    lineHeight: 30,
-    color: "#333333",
+    minHeight: 20,
+    maxHeight: 160,
   },
   divider: {
-    width: "100%",
-    height: 1,
-    backgroundColor: "#E6E6E6",
+    marginTop: 20,
+    marginHorizontal: PROFILE_FORM_UI.gutter,
   },
   addImageButton: {
-    marginTop: 30,
-    minHeight: 52,
-    borderRadius: 26,
+    marginTop: 20,
+    minWidth: 150,
+    height: 36,
+    borderRadius: 18,
     borderWidth: 1,
-    borderColor: "#C9C9C9",
-    backgroundColor: "#E9E9E9",
-    paddingHorizontal: 28,
+    borderColor: "#CBCBCB",
+    backgroundColor: "#E4E4E4",
+    paddingLeft: 10,
+    paddingRight: 15,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
+    gap: 4,
   },
   addImageText: {
-    marginLeft: 10,
-    fontFamily: FONTS.interSemiBold,
-    fontSize: 18,
-    lineHeight: 24,
-    color: "#111111",
+    fontFamily: FONTS.figtreeMedium500,
+    fontSize: 14,
+    lineHeight: 20,
+    letterSpacing: -0.24,
+    color: PROFILE_FORM_UI.inputColor,
   },
-  attachmentHelperText: {
-    marginTop: 26,
-    maxWidth: 310,
-    fontFamily: FONTS.inter,
-    fontSize: 20,
-    lineHeight: 30,
-    color: "#8F9097",
-    textAlign: "center",
+  pressed: {
+    opacity: 0.8,
   },
   imagePreviewWrap: {
     marginTop: 20,
-    width: 180,
-    height: 120,
+    width: 150,
+    height: 100,
     borderRadius: 12,
     overflow: "hidden",
-    backgroundColor: "#E9E9E9",
+    backgroundColor: "#E4E4E4",
   },
   imagePreview: {
     width: "100%",
@@ -234,42 +178,17 @@ const styles = StyleSheet.create({
   },
   removeImageButton: {
     position: "absolute",
-    top: 8,
-    right: 8,
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    top: 6,
+    right: 6,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     backgroundColor: "rgba(17, 17, 17, 0.62)",
     alignItems: "center",
     justifyContent: "center",
   },
-  errorText: {
-    marginTop: 14,
-    maxWidth: 310,
-    fontFamily: FONTS.inter,
-    fontSize: 14,
-    lineHeight: 20,
-    color: "#C2452D",
-    textAlign: "center",
-  },
-  submitButton: {
-    marginTop: 112,
-    minHeight: 52,
-    borderRadius: 26,
-    backgroundColor: "#F7C331",
-    paddingHorizontal: 24,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  submitButtonDisabled: {
-    opacity: 0.7,
-  },
-  submitButtonText: {
-    marginLeft: 8,
-    fontFamily: FONTS.interSemiBold,
-    fontSize: 18,
-    lineHeight: 24,
-    color: "#FFFFFF",
+  helperText: {
+    marginTop: 20,
+    maxWidth: 261,
   },
 });

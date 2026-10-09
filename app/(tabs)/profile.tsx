@@ -744,18 +744,24 @@ const Profile = () => {
     setIsContactFormVisible(false);
   };
 
-  const handleSubmitContactPress = async (message: string) => {
-    const description = message.trim();
+  const handleSubmitContactPress = async (subject: string, message: string) => {
+    const trimmedSubject = subject.trim();
+    const trimmedMessage = message.trim();
 
-    if (!description) {
-      setContactError("Description is missing");
+    if (!trimmedMessage) {
+      setContactError("Message is missing");
       return;
     }
 
-    if (description.length > 1000) {
-      setContactError("Description must be 1000 characters or fewer.");
+    if (trimmedMessage.length > 1000) {
+      setContactError("Message must be 1000 characters or fewer.");
       return;
     }
+
+    // The endpoint only accepts a message, so the optional subject is sent as its first line.
+    const description = trimmedSubject
+      ? `Subject: ${trimmedSubject}\n\n${trimmedMessage}`
+      : trimmedMessage;
 
     setContactError("");
     setIsSubmittingContact(true);
@@ -814,11 +820,13 @@ const Profile = () => {
   const feedbackFormContent = {
     "report-bug": {
       title: "Report a bug",
+      titleVariant: "regular" as const,
       placeholder: "Describe the problem",
       attachmentHelperText: "You can attach a screenshot to help us better understand the problem",
     },
     "suggest-improvement": {
       title: "Suggest an improvement",
+      titleVariant: "semibold" as const,
       placeholder: "Your suggestion",
       attachmentHelperText: "You can attach a screenshot to help us better understand the problem",
     },
@@ -830,6 +838,7 @@ const Profile = () => {
     return (
       <ProfileFeedbackForm
         title={formContent.title}
+        titleVariant={formContent.titleVariant}
         placeholder={formContent.placeholder}
         attachmentHelperText={formContent.attachmentHelperText}
         errorText={feedbackError}
