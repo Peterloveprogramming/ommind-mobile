@@ -984,7 +984,14 @@ const SpiritualMentorChat = () => {
             <Text style={styles.lhamoText}>Lhamo</Text>
           </View>
 
-          <OpenChatHistoryButton onTouch={() => router.push("/chat/history")} />
+          <OpenChatHistoryButton
+            onTouch={() =>
+              router.push({
+                pathname: "/chat/history",
+                params: normalizedSessionId ? { active_session_id: normalizedSessionId } : {},
+              })
+            }
+          />
         </View>
 
           <TouchableWithoutFeedback onPress={Keyboard.dismiss}>

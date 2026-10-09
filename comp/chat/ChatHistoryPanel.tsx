@@ -1,11 +1,14 @@
+import NewChatButton from "@/assets/svg/chat/NewChatButton";
 import { ChatHistoryItem } from "@/api/chatHistory/types";
-import BaseButton from "@/comp/base/BaseButton";
 import useChatHistory from "@/api/chatHistory/useChatHistory";
+import { FONTS } from "@/theme.js";
 import { navigateToNewChat } from "@/utils/helper";
 import { useRouter } from "expo-router";
 import React, { useEffect, useMemo } from "react";
 import {
   ActivityIndicator,
+  Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -15,15 +18,20 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+// Figma drawer is 287pt wide on a 375pt screen.
+const PANEL_WIDTH_RATIO = 287 / 375;
+const PANEL_MAX_WIDTH = 360;
+
 type ChatHistoryPanelProps = {
   onClose: () => void;
+  activeSessionId?: string | null;
 };
 
-const ChatHistoryPanel = ({ onClose }: ChatHistoryPanelProps) => {
+const ChatHistoryPanel = ({ onClose, activeSessionId }: ChatHistoryPanelProps) => {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
-  const panelWidth = width * 0.75;
+  const panelWidth = Math.min(Math.round(width * PANEL_WIDTH_RATIO), PANEL_MAX_WIDTH);
   const { chatHistories, isLoading, error, fetchChatHistories } = useChatHistory();
 
   useEffect(() => {
@@ -68,6 +76,9 @@ const ChatHistoryPanel = ({ onClose }: ChatHistoryPanelProps) => {
 
   const handleHistoryPress = (historyItem: ChatHistoryItem) => {
     onClose();
+    if (historyItem.session_id === activeSessionId) {
+      return;
+    }
     router.replace({
       pathname: "/chat/new_index",
       params: {
@@ -82,81 +93,76 @@ const ChatHistoryPanel = ({ onClose }: ChatHistoryPanelProps) => {
     navigateToNewChat(router, "replace");
   };
 
-  const renderHistorySection = (
-    title: string,
-    historyItems: ChatHistoryItem[]
-  ) => (
-    <View style={styles.section} key={title}>
-      <Text style={styles.sectionTitle}>{title}</Text>
-      {historyItems.length === 0 ? (
-        <Text style={styles.emptySectionText}>No chats in this section.</Text>
-      ) : (
-        historyItems.map((item) => (
-          <TouchableOpacity
-            key={item.session_id}
-            style={styles.historyCard}
-            activeOpacity={0.85}
-            onPress={() => handleHistoryPress(item)}
-          >
-            <Text style={styles.historyTitle}>{item.title}</Text>
-          </TouchableOpacity>
-        ))
-      )}
-    </View>
-  );
+  const renderHistorySection = (title: string, historyItems: ChatHistoryItem[]) => {
+    if (historyItems.length === 0) {
+      return null;
+    }
+
+    return (
+      <View style={styles.section} key={title}>
+        <Text style={styles.sectionTitle}>{title}</Text>
+        {historyItems.map((item) => {
+          const isActive = item.session_id === activeSessionId;
+          return (
+            <Pressable
+              key={item.session_id}
+              onPress={() => handleHistoryPress(item)}
+              style={({ pressed }) => [
+                styles.historyRow,
+                (isActive || pressed) && styles.historyRowHighlighted,
+              ]}
+            >
+              <Text style={styles.historyTitle} numberOfLines={1}>
+                {item.title}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+    );
+  };
 
   return (
-    <View style={[styles.panel, { width: panelWidth, paddingTop: insets.top + 16 }]}>
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.eyebrow}>Lhamo</Text>
-          <Text style={styles.title}>Chat History</Text>
-        </View>
-
-        <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-          <Text style={styles.closeButtonText}>Close</Text>
-        </TouchableOpacity>
-      </View>
-
-      <BaseButton
-        text="New chat"
-        onPress={handleNewChatPress}
-        height={52}
-        useIcon={false}
-        isLoading={false}
+    <View style={[styles.panel, { width: panelWidth, paddingTop: insets.top + 12 }]}>
+      <TouchableOpacity
         style={styles.newChatButton}
-      />
+        activeOpacity={0.7}
+        onPress={handleNewChatPress}
+        accessibilityRole="button"
+        accessibilityLabel="New Chat"
+      >
+        <NewChatButton />
+        <Text style={styles.newChatText}>New Chat</Text>
+      </TouchableOpacity>
 
       <ScrollView
+        style={styles.scroll}
         contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 24 }]}
         showsVerticalScrollIndicator={false}
       >
         {isLoading ? (
-          <View style={styles.stateCard}>
-            <ActivityIndicator size="small" color="#7C6F5E" />
-            <Text style={styles.stateText}>Loading chat history...</Text>
+          <View style={styles.stateContainer}>
+            <ActivityIndicator size="small" color="#8E8E93" />
           </View>
         ) : null}
 
         {!isLoading && error ? (
-          <View style={styles.stateCard}>
-            <Text style={styles.stateTitle}>Couldn't load history</Text>
-            <Text style={styles.stateText}>{error}</Text>
+          <View style={styles.stateContainer}>
+            <Text style={styles.stateText}>Couldn&apos;t load chat history.</Text>
             <TouchableOpacity
               onPress={() => {
                 void fetchChatHistories();
               }}
-              style={styles.retryButton}
+              hitSlop={8}
             >
-              <Text style={styles.retryButtonText}>Try again</Text>
+              <Text style={styles.retryText}>Try again</Text>
             </TouchableOpacity>
           </View>
         ) : null}
 
         {!isLoading && !error && chatHistories.length === 0 ? (
-          <View style={styles.stateCard}>
-            <Text style={styles.stateTitle}>No chat history yet</Text>
-            <Text style={styles.stateText}>Your completed sessions will appear here.</Text>
+          <View style={styles.stateContainer}>
+            <Text style={styles.stateText}>No chat history yet.</Text>
           </View>
         ) : null}
 
@@ -171,140 +177,94 @@ const ChatHistoryPanel = ({ onClose }: ChatHistoryPanelProps) => {
   );
 };
 
+// Android adds extra font padding above/below glyphs; strip it so rows match iOS.
+const textReset = Platform.select({
+  android: { includeFontPadding: false, textAlignVertical: "center" as const },
+  default: {},
+});
+
 const styles = StyleSheet.create({
   panel: {
     height: "100%",
     backgroundColor: "#FFFFFF",
-    borderTopRightRadius: 24,
-    borderBottomRightRadius: 24,
-    paddingHorizontal: 18,
+    paddingHorizontal: 7,
     shadowColor: "#000",
-    shadowOpacity: 0.18,
-    shadowRadius: 16,
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
     shadowOffset: {
-      width: 4,
+      width: 2,
       height: 0,
     },
-    elevation: 10,
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-    marginBottom: 12,
-  },
-  eyebrow: {
-    fontSize: 12,
-    color: "#7C6F5E",
-    textTransform: "uppercase",
-    letterSpacing: 1.2,
-    marginBottom: 4,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: "#1F2937",
-  },
-  closeButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 999,
-    backgroundColor: "#E7DDCB",
-  },
-  closeButtonText: {
-    color: "#4B5563",
-    fontSize: 13,
-    fontWeight: "600",
-  },
-  description: {
-    fontSize: 14,
-    lineHeight: 20,
-    color: "#6B7280",
-    marginBottom: 20,
-  },
-  scrollContent: {
-    gap: 14,
+    elevation: 8,
   },
   newChatButton: {
-    borderRadius: 18,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    marginBottom: 18,
+    height: 34,
+    borderRadius: 5,
+    backgroundColor: "rgba(217, 217, 217, 0.5)",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 4,
   },
-  newChatButtonText: {
-    color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "700",
-    textAlign: "center",
+  newChatText: {
+    ...textReset,
+    fontFamily: FONTS.figtreeBold,
+    fontSize: 15,
+    letterSpacing: -0.24,
+    color: "#383838",
   },
-  section: {
-    gap: 10,
+  scroll: {
+    flex: 1,
   },
+  scrollContent: {
+    paddingTop: 21,
+    gap: 7,
+  },
+  section: {},
   sectionTitle: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#7C6F5E",
-    textTransform: "uppercase",
-    letterSpacing: 0.8,
+    ...textReset,
+    fontFamily: FONTS.inter,
+    fontSize: 15,
+    lineHeight: 20,
+    letterSpacing: -0.24,
+    color: "#8E8E93",
+    paddingHorizontal: 6,
   },
-  emptySectionText: {
-    fontSize: 14,
-    color: "#6B7280",
+  historyRow: {
+    height: 34,
+    borderRadius: 5,
+    paddingHorizontal: 7,
+    justifyContent: "center",
   },
-  historyCard: {
-    backgroundColor: "#FFFDF8",
-    borderRadius: 18,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: "#E9E1D2",
-  },
-  historyTime: {
-    fontSize: 12,
-    color: "#9CA3AF",
-    marginBottom: 8,
+  historyRowHighlighted: {
+    backgroundColor: "rgba(217, 217, 217, 0.5)",
   },
   historyTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#1F2937",
-    marginBottom: 6,
+    ...textReset,
+    fontFamily: FONTS.inter,
+    fontSize: 15,
+    letterSpacing: -0.24,
+    color: "#383838",
   },
-  historyPreview: {
-    fontSize: 14,
-    lineHeight: 20,
-    color: "#4B5563",
-  },
-  stateCard: {
-    backgroundColor: "#FFFDF8",
-    borderRadius: 18,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: "#E9E1D2",
-    alignItems: "center",
-    gap: 10,
-  },
-  stateTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#1F2937",
-    textAlign: "center",
+  stateContainer: {
+    paddingTop: 8,
+    paddingHorizontal: 7,
+    gap: 8,
+    alignItems: "flex-start",
   },
   stateText: {
-    fontSize: 14,
-    lineHeight: 20,
-    color: "#4B5563",
-    textAlign: "center",
+    ...textReset,
+    fontFamily: FONTS.inter,
+    fontSize: 15,
+    letterSpacing: -0.24,
+    color: "#8E8E93",
   },
-  retryButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 999,
-    backgroundColor: "#E7DDCB",
-  },
-  retryButtonText: {
-    color: "#4B5563",
-    fontSize: 13,
-    fontWeight: "600",
+  retryText: {
+    ...textReset,
+    fontFamily: FONTS.figtreeBold,
+    fontSize: 15,
+    letterSpacing: -0.24,
+    color: "#383838",
   },
 });
 

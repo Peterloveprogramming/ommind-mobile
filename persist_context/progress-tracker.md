@@ -5,10 +5,112 @@ change.
 
 ## Current Phase
 
+- Complete (backend code + tests) — awaiting deploy and the spec 08 manual
+  verification against staging/prod.
+
+## Current Goal
+
+- 08-feedback-email-notifications: every feedback path (chat 4–5★ tap,
+  chat 1–3★ `FeedBackModal`, chat `ReportProblem`, Profile bug /
+  improvement, Profile Contact us) sends one plain-text email to
+  `SMTP_USERNAME` (`ommind.contact@gmail.com`) with `Reply-To` = the user's
+  email. If the email fails the row stays saved and the handler returns 500
+  with the row in `data`. All changes are in the backend
+  (`/Users/zimingyan/PycharmProjects/lhamo`); no mobile code changes.
+
+## Completed
+
+- Baseline (backend): `controllers/api/test_feedback.py` +
+  `controllers/database/test_chat_messages.py` 12 passed.
+- New `services/feedback_notifications.py`:
+  - `send_feedback_notification(subject, body, reply_to=None,
+    attachments=None)`: config from `get_settings()`, from/to =
+    `smtp_username`, `ValueError("Missing feedback email config: ...")` on
+    any empty SMTP value, `Reply-To` only for a non-blank string,
+    attachments via `add_attachment(data, maintype, subtype, filename=)`,
+    `smtplib.SMTP(host, int(port), timeout=15)` → `starttls` / `login` /
+    `send_message`. Exceptions go to the caller.
+  - Helpers: `truncate` (1000 chars + `… [truncated]`, `(not available)`
+    for empty), `format_user_line` (`Name <email> (user id N)` /
+    `Unknown user (user id N)`), `format_issues` (flatten, split on commas,
+    trim, drop empties, `none`), `get_reply_to(user)`.
+  - Builders returning `(subject, body)`: `build_message_rating_email`
+    (`Low`/`High rating: N/5`, 1–3 = low; `Detailed ratings: not provided`
+    when all four are `None`; `Workflow: unknown` without context),
+    `build_message_report_email` (`Chat problem report`; session id from
+    context, `unknown` without it), `build_feedback_email` (`Bug report` /
+    `Improvement suggestion` / `General feedback`; `Screenshot: attached
+    (S3 key: …)` or `none`), `build_contact_us_email` (`Contact us`,
+    replaces `Customer Feedback`). `Submitted:` is the send time in UTC
+    (`YYYY-MM-DDTHH:MM:SSZ (UTC)`).
+- `controllers/database/chat_messages.py`: new
+  `get_message_with_preceding_question(user_id, message_id)` using the
+  spec's query (human `content`, not `enriched_content`); returns
+  `None` when not found.
+- `controllers/api/message_rating.py` / `message_reports.py`: after a
+  successful insert, best-effort user lookup and context lookup (errors
+  printed, email still sent with `(not available)`), build email from the
+  request values, send with `reply_to`. 500 `"message rating|report created
+  but email notification failed"` + saved row on failure; 201
+  `"... created and notification sent"` on success. Validation and existing
+  400/404/500 responses unchanged; no email when the insert fails.
+- `controllers/api/feedback.py`: removed `_send_customer_feedback_email` /
+  `_get_customer_feedback_email_config` and the `smtplib` / `EmailMessage`
+  imports. `submit_feedback` keeps `compressed_bytes`, does a best-effort
+  user lookup, attaches `feedback-{type}-{id}.jpg` (`image/jpeg`) when an
+  image was uploaded, and returns 201 `"feedback created and notification
+  sent"` / 500 `"feedback created but email notification failed"`.
+  `notify_customer_feedback` flow unchanged apart from the new email
+  (`reply_to=user.email`).
+- Tests: new `services/test_feedback_notifications.py`,
+  `controllers/api/test_message_rating.py`,
+  `controllers/api/test_message_reports.py`; updated
+  `controllers/api/test_feedback.py` (patches `send_feedback_notification`,
+  asserts `reply_to="jane@example.com"`, no-image / image attachment /
+  email-failure / user-lookup-failure / create-failure cases) and
+  `controllers/database/test_chat_messages.py`. Spec test command:
+  69 passed. Full backend suite: 525 passed; 1 failure + 2 collection
+  errors are pre-existing and unrelated (`test_jwt_valid.py` /
+  `utils/test_auth_helper.py` bare imports, meditation guidance prompt
+  wording assertion).
+- Routes, payloads, success status codes, DB schema and `config/config.py`
+  untouched. Mobile app untouched.
+
+## In Progress
+
+- None.
+
+## Next Up
+
+- Deploy the backend; confirm `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`,
+  `SMTP_PASSWORD` are set in the deployed Lambda/container env.
+- Run spec 08 "Manual Verification" steps 1–7 on staging/prod.
+- Update any Gmail filter matching the old `Customer Feedback` subject
+  (now `[OmMind] Contact us`).
+- Separately: check and revoke the non-placeholder-looking `SMTP_PASSWORD`
+  in the backend's tracked `.env.example` (out of scope for spec 08).
+
+## Open Questions
+
+- None. Accepted per spec: duplicate rows if the user retries after an
+  email failure.
+
+## Session Notes
+
+- Backend changes are uncommitted on `main` in
+  `/Users/zimingyan/PycharmProjects/lhamo` (its `text_to_audio` change was
+  already there and is not part of this work).
+
+---
+
+# Previous Goal: 07-fix-profile-page
+
+### Phase
+
 - Complete (code) — awaiting the manual test matrix on simulators/devices
   and a pixel overlay against Figma `2875:9496` on a 393 pt iPhone.
 
-## Current Goal
+### Current Goal
 
 - 07-fix-profile-page: restyle the Profile tab (`app/(tabs)/profile.tsx`)
   to Figma "Profile" `2875:9496` (Pro copy `37GSSpgSU44KPNvLuVKAOw`).
@@ -18,7 +120,7 @@ change.
   removed, `MeditationSessionCard` `variant="profile"`, two Figma copy
   tweaks.
 
-## Completed
+### Completed
 
 - Baseline: `npx tsc --noEmit` 32 errors; `npx expo lint` 0 errors /
   41 warnings (profile.tsx: 1 pre-existing `exhaustive-deps` warning).
@@ -104,11 +206,11 @@ change.
   lint`: 0 errors / 41 warnings (unchanged). No `console.log` in
   `profile.tsx`.
 
-## In Progress
+### In Progress
 
 - None.
 
-## Next Up
+### Next Up
 
 - Run the spec 07 "Test Matrix" (iPhone SE / 13 mini / 16 / 16 Pro Max,
   360 × 640 Android, Galaxy 384 dp, Pixel 8 gesture + 3-button) against the
@@ -119,13 +221,13 @@ change.
 - Cold start needed once so `expo-font` picks up Afacad (no native
   rebuild).
 
-## Open Questions
+### Open Questions
 
 - Dividers follow the spec literally (`marginHorizontal` 23, no 480 cap),
   so on foldables they are wider than the capped sections. Tablets and
   foldables are out of scope; cap them if that matters later.
 
-## Session Notes
+### Session Notes
 
 - Changes are uncommitted on `main`.
 
