@@ -6,8 +6,10 @@ import ProfilePhotoUploadModal from "@/comp/modals/ProfilePhotoUploadModal";
 import MeditationSessionCard from "@/comp/meditation_session/MeditationSessionCard";
 import ProfileContactForm from "@/comp/profile/ProfileContactForm";
 import ProfileFeedbackForm from "@/comp/profile/ProfileFeedbackForm";
+import GradientDivider from "@/comp/home/GradientDivider";
 import TestButtons from "@/development_testing/comp/TestButtons";
-import { FONTS } from "@/theme";
+import { IS_DEVELOPMENT_ENVIRONMENT } from "@/constant";
+import { COLORS, FONTS } from "@/theme";
 import {
   checkIfLambdaResultIsSuccess,
   getLambdaErrorMessage,
@@ -16,6 +18,7 @@ import {
   storeAuthInfo,
   storeProfilePhotoUri,
 } from "@/utils/helper";
+import { Feather } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
@@ -31,7 +34,9 @@ import {
   Text,
   TouchableOpacity,
   View,
+  useWindowDimensions,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const DEFAULT_PROFILE_IMAGE = require("@/assets/images/home/meditation_icon.png");
 const PENCIL_ICON = require("@/assets/images/profile/pencil.png");
@@ -51,6 +56,111 @@ const MAX_PROFILE_PHOTO_SIZE_BYTES = 5 * 1024 * 1024;
 const MAX_FEEDBACK_IMAGE_SIZE_BYTES = 10 * 1024 * 1024;
 const ACCEPTED_PROFILE_PHOTO_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const ACCEPTED_PROFILE_PHOTO_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp"];
+
+// Figma "Profile" frame 2875:9496 (Pro copy 37GSSpgSU44KPNvLuVKAOw), in pt.
+const PROFILE_UI = {
+  page: {
+    background: "#FAFAFA",
+    gutter: 23,
+    topOffset: 41, // avatar top = status bar + 41
+    maxContentWidth: 480,
+    compactWidthBreakpoint: 390,
+    maxFontSizeMultiplier: 1.2,
+    sectionGap: 15,
+    focusGap: 20, // divider ↔ focus block
+  },
+  header: {
+    avatarSize: 120,
+    avatarRingWidth: 1,
+    avatarRingColor: COLORS.brandYellow,
+    avatarFill: "#FBFAF6",
+    nameTopGap: 23,
+    nameFontSize: 24,
+    nameLineHeight: 28,
+    nameColor: "#000000",
+    pencilWidth: 22,
+    pencilHeight: 23,
+    pencilGap: 5,
+  },
+  stats: {
+    topGap: 28,
+    cardGap: 9,
+    cardMaxWidth: 110,
+    cardMinHeight: 130,
+    cardRadius: 20,
+    cardBackground: "rgba(37, 37, 37, 0.4)",
+    cardPaddingH: 12,
+    cardPaddingV: 15,
+    titleBoxMinHeight: 45, // 3 lines × 15
+    titleFontSize: 14,
+    titleLineHeight: 15,
+    badgeSize: 40,
+    valueFontSize: 36,
+    valueLineHeight: 36,
+    valueMinimumFontScale: 0.6,
+    unitFontSize: 12,
+    unitLineHeight: 14,
+    textColor: "#FFFFFF",
+  },
+  statsCompact: {
+    cardPaddingH: 10,
+    badgeSize: 34,
+  },
+  focus: {
+    iconSize: 44,
+    titleGap: 9,
+    titleFontSize: 20,
+    titleLineHeight: 20,
+    titleColor: "#000000",
+    valueGap: 9,
+    valueFontSize: 16,
+    valueLineHeight: 20,
+    valueColor: "#8F8F8F",
+    valueMaxWidth: 265,
+    buttonGap: 15,
+    buttonMinWidth: 145,
+    buttonMinHeight: 36,
+    buttonPaddingH: 14,
+    buttonBackground: "#595959",
+    buttonFontSize: 13,
+    buttonLineHeight: 22,
+    buttonLetterSpacing: -0.408,
+  },
+  recent: {
+    titleFontSize: 16,
+    titleLineHeight: 28,
+    titleLetterSpacing: 0.35,
+    titleColor: "#000000",
+    arrowSize: 24,
+    arrowColor: "#595959",
+    listGap: 4,
+    cardGap: 20,
+    emptyFontSize: 14,
+    emptyLineHeight: 20,
+    emptyColor: "#8B8B8B",
+  },
+  menu: {
+    rowGap: 8,
+    rowMinHeight: 44,
+    rowRadius: 5,
+    rowBackground: "#E5E5EA",
+    rowPaddingH: 10,
+    iconGap: 8,
+    iconSize: 25,
+    labelFontSize: 16,
+    labelLineHeight: 20,
+    labelColor: "#636366",
+  },
+  follow: {
+    titleFontSize: 16,
+    titleLineHeight: 28,
+    titleLetterSpacing: 0.35,
+    titleColor: "#636366",
+    iconsGap: 12,
+    iconGap: 19,
+    iconRadius: 12,
+  },
+} as const;
 
 type ProfileMenuItemId =
   | "saved"
@@ -113,7 +223,7 @@ const normalizeCurrentFocus = (value: string[] | string | null | undefined): str
 
   if (typeof value === "string" && value.trim().length > 0) {
     return value
-      .split(/[•,]/)
+      .split(/[•·,]/)
       .map((item) => item.trim())
       .filter(Boolean);
   }
@@ -123,12 +233,16 @@ const normalizeCurrentFocus = (value: string[] | string | null | undefined): str
 
 const formatCurrentFocus = (value: string[] | string | null | undefined) => {
   const focusItems = normalizeCurrentFocus(value);
-  return focusItems.length ? focusItems.join(" • ") : "No focus selected";
+  return focusItems.length ? focusItems.join(" · ") : "No focus selected";
 };
 
 const Profile = () => {
   const router = useRouter();
   const tabBarHeight = useBottomTabBarHeight();
+  const insets = useSafeAreaInsets();
+  const { width: windowWidth } = useWindowDimensions();
+  const isCompactWidth = windowWidth < PROFILE_UI.page.compactWidthBreakpoint;
+  const stats = isCompactWidth ? { ...PROFILE_UI.stats, ...PROFILE_UI.statsCompact } : PROFILE_UI.stats;
   const {
     getAccountDetails: { getAccountDetails },
     getUserNameAndEmail: { getUserNameAndEmail },
@@ -186,8 +300,6 @@ const Profile = () => {
 
         try {
           const result = await getAccountDetails();
-          console.log("getAccountDetails result", result);
-          console.log("recently_accessed_sessions", result.data?.recently_accessed_sessions);
 
           if (!checkIfLambdaResultIsSuccess(result)) {
             setErrorMessage(getLambdaErrorMessage(result));
@@ -693,10 +805,10 @@ const Profile = () => {
     { id: "suggest-improvement", label: "Suggest an improvement", icon: SUGGEST_AN_IMPROVEMENT_ICON },
     { id: "contact-us", label: "Contact us", icon: CONTACT_US_ICON },
   ];
-  const socialItems: { label: string; icon: ImageSourcePropType }[] = [
-    { label: "YouTube", icon: YOUTUBE_ICON },
-    { label: "TikTok", icon: TIKTOK_ICON },
-    { label: "Instagram", icon: INSTAGRAM_ICON },
+  const socialItems: { label: string; icon: ImageSourcePropType; width: number; height: number }[] = [
+    { label: "YouTube", icon: YOUTUBE_ICON, width: 42, height: 42 },
+    { label: "TikTok", icon: TIKTOK_ICON, width: 42, height: 42 },
+    { label: "Instagram", icon: INSTAGRAM_ICON, width: 40, height: 42 },
   ];
 
   const feedbackFormContent = {
@@ -747,7 +859,7 @@ const Profile = () => {
 
   const statCards = [
     {
-      title: "Average Daily Meditation Time",
+      title: "Average Meditation Time",
       value: formatStatValue(averageDailyMeditationMinutes),
       unit: "Minutes",
       icon: RED_ICON,
@@ -766,73 +878,137 @@ const Profile = () => {
     },
   ];
 
+  const maxFontSizeMultiplier = PROFILE_UI.page.maxFontSizeMultiplier;
+
   return (
     <>
       <ScrollView
-        contentContainerStyle={[styles.contentContainer, { paddingBottom: tabBarHeight + 24 }]}
+        contentContainerStyle={[
+          styles.contentContainer,
+          {
+            paddingTop: insets.top + PROFILE_UI.page.topOffset,
+            paddingBottom: tabBarHeight + 24,
+          },
+        ]}
         style={styles.container}
+        showsVerticalScrollIndicator={false}
       >
         {isLoading ? (
-          <View style={styles.loadingWrap}>
+          <View style={[styles.loadingWrap, { top: insets.top + 8 }]}>
             <ActivityIndicator color="#B88A1A" size="large" />
           </View>
         ) : null}
 
-        <View style={styles.headerSection}>
-          <TouchableOpacity activeOpacity={0.85} onPress={handleProfilePress}>
-            <View style={styles.avatarBorder}>
+        <View style={[styles.section, styles.headerSection]}>
+          <TouchableOpacity
+            activeOpacity={0.85}
+            accessibilityRole="button"
+            accessibilityLabel="Change profile photo"
+            onPress={handleProfilePress}
+          >
+            <View style={styles.avatarRing}>
               <Image source={profileImageSource} style={styles.avatarImage} />
             </View>
           </TouchableOpacity>
 
-          <TestButtons />
-
-          <TouchableOpacity activeOpacity={0.85} onPress={handleProfileDetailsPress} style={styles.nameRow}>
-            <Text style={styles.nameText}>{accountDetails.name || "Profile"}</Text>
+          <TouchableOpacity
+            activeOpacity={0.85}
+            accessibilityRole="button"
+            accessibilityLabel="Edit profile details"
+            hitSlop={8}
+            onPress={handleProfileDetailsPress}
+            style={[styles.nameRow, { maxWidth: windowWidth - 2 * PROFILE_UI.page.gutter }]}
+          >
+            {/* Balances the pencil so the name itself is centred. */}
+            <View style={styles.nameSpacer} />
+            <Text
+              style={styles.nameText}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+              maxFontSizeMultiplier={maxFontSizeMultiplier}
+            >
+              {accountDetails.name || "Profile"}
+            </Text>
             <Image source={PENCIL_ICON} style={styles.pencilIcon} />
           </TouchableOpacity>
 
-          {accountDetails.email ? <Text style={styles.emailText}>{accountDetails.email}</Text> : null}
-          {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
+          {errorMessage ? (
+            <Text style={styles.errorText} maxFontSizeMultiplier={maxFontSizeMultiplier}>
+              {errorMessage}
+            </Text>
+          ) : null}
         </View>
 
-        <View style={styles.statsRow}>
+        <View style={[styles.section, styles.statsRow]}>
           {statCards.map((card) => (
-            <View key={card.title} style={styles.statCard}>
-              <Text style={styles.statTitle}>{card.title}</Text>
+            <View
+              key={card.title}
+              accessible
+              accessibilityLabel={`${card.title}, ${card.value} ${card.unit}`}
+              style={[styles.statCard, { paddingHorizontal: stats.cardPaddingH }]}
+            >
+              <View style={styles.statTitleBox}>
+                <Text style={styles.statTitle} numberOfLines={3} maxFontSizeMultiplier={maxFontSizeMultiplier}>
+                  {card.title}
+                </Text>
+              </View>
               <View style={styles.statFooter}>
-                <View style={styles.statIconWrap}>
-                  <Image source={card.icon} style={styles.statBadgeImage} />
-                </View>
+                <Image
+                  source={card.icon}
+                  accessible={false}
+                  style={[styles.statBadgeImage, { width: stats.badgeSize, height: stats.badgeSize }]}
+                />
                 <View style={styles.statValueWrap}>
-                  <Text style={styles.statValue}>{card.value}</Text>
-                  <Text style={styles.statUnit}>{card.unit}</Text>
+                  <Text
+                    style={styles.statValue}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={stats.valueMinimumFontScale}
+                    maxFontSizeMultiplier={maxFontSizeMultiplier}
+                  >
+                    {card.value}
+                  </Text>
+                  <Text style={styles.statUnit} maxFontSizeMultiplier={maxFontSizeMultiplier}>
+                    {card.unit}
+                  </Text>
                 </View>
               </View>
             </View>
           ))}
         </View>
 
-        <View style={styles.focusSection}>
-          <View style={styles.focusIconWrap}>
-            <Image source={CHANGE_FOCUS_ICON} style={styles.focusIcon} />
-          </View>
+        <GradientDivider style={styles.divider} />
 
-          <Text style={styles.focusTitle}>Your current focus</Text>
-          <Text style={styles.focusValue}>{currentFocusText}</Text>
+        <View style={[styles.section, styles.focusSection]}>
+          <Image source={CHANGE_FOCUS_ICON} accessible={false} style={styles.focusIcon} />
+
+          <Text style={styles.focusTitle} maxFontSizeMultiplier={maxFontSizeMultiplier}>
+            Your current focus
+          </Text>
+          <Text style={styles.focusValue} maxFontSizeMultiplier={maxFontSizeMultiplier}>
+            {currentFocusText}
+          </Text>
 
           <TouchableOpacity
             activeOpacity={0.85}
+            accessibilityRole="button"
+            hitSlop={{ top: 4, bottom: 4 }}
             style={styles.changeFocusButton}
             onPress={handleChangeFocusPress}
           >
-            <Text style={styles.changeFocusButtonText}>Change focus</Text>
+            <Text style={styles.changeFocusButtonText} maxFontSizeMultiplier={maxFontSizeMultiplier}>
+              Change focus
+            </Text>
           </TouchableOpacity>
         </View>
 
+        <GradientDivider style={styles.dividerAfterFocus} />
+
         <View style={styles.recentlyPlayedSection}>
           <View style={styles.recentlyPlayedHeader}>
-            <Text style={styles.recentlyPlayedTitle}>Recently Played</Text>
+            <Text style={styles.recentlyPlayedTitle} maxFontSizeMultiplier={maxFontSizeMultiplier}>
+              Recently Played
+            </Text>
             <TouchableOpacity
               activeOpacity={0.75}
               accessibilityRole="button"
@@ -840,7 +1016,11 @@ const Profile = () => {
               hitSlop={10}
               onPress={handleRecentlyPlayedPress}
             >
-              <Text style={styles.recentlyPlayedArrow}>→</Text>
+              <Feather
+                name="arrow-right"
+                size={PROFILE_UI.recent.arrowSize}
+                color={PROFILE_UI.recent.arrowColor}
+              />
             </TouchableOpacity>
           </View>
 
@@ -849,9 +1029,11 @@ const Profile = () => {
             data={recentlyPlayedSessions}
             keyExtractor={(item) => `${item.type}-${item.course_number}-${item.session_number}-${item.id}`}
             showsHorizontalScrollIndicator={false}
+            style={styles.recentlyPlayedList}
             contentContainerStyle={styles.recentlyPlayedRow}
             renderItem={({ item }) => (
               <MeditationSessionCard
+                variant="profile"
                 session_length={item.session_length_in_mins ?? 0}
                 session_title={item.session_title}
                 image_url={item.image_url ?? undefined}
@@ -861,27 +1043,40 @@ const Profile = () => {
               />
             )}
             ListEmptyComponent={
-              <Text style={styles.recentlyPlayedEmptyText}>No recently played sessions yet.</Text>
+              <Text style={styles.recentlyPlayedEmptyText} maxFontSizeMultiplier={maxFontSizeMultiplier}>
+                No recently played sessions yet.
+              </Text>
             }
           />
         </View>
 
-        <View style={styles.profileMenuSection}>
+        <GradientDivider style={styles.divider} />
+
+        <View style={[styles.section, styles.profileMenuSection]}>
           {menuItems.map((item) => (
             <TouchableOpacity
               key={item.label}
               activeOpacity={0.85}
+              accessibilityRole="button"
+              accessibilityLabel={item.label}
+              hitSlop={{ top: 2, bottom: 2 }}
               onPress={() => handleProfileMenuItemPress(item.id)}
-              style={[styles.profileMenuItem, !item.icon && styles.profileMenuItemTextOnly]}
+              style={styles.profileMenuItem}
             >
               {item.icon ? <Image source={item.icon} style={styles.profileMenuIcon} /> : null}
-              <Text style={styles.profileMenuText}>{item.label}</Text>
+              <Text style={styles.profileMenuText} numberOfLines={1} maxFontSizeMultiplier={maxFontSizeMultiplier}>
+                {item.label}
+              </Text>
             </TouchableOpacity>
           ))}
         </View>
 
-        <View style={styles.followSection}>
-          <Text style={styles.followTitle}>Follow OmMind</Text>
+        <GradientDivider style={styles.divider} />
+
+        <View style={[styles.section, styles.followSection]}>
+          <Text style={styles.followTitle} maxFontSizeMultiplier={maxFontSizeMultiplier}>
+            Follow OmMind
+          </Text>
           <View style={styles.socialButtonRow}>
             {socialItems.map((item) => (
               <TouchableOpacity
@@ -889,15 +1084,23 @@ const Profile = () => {
                 activeOpacity={0.85}
                 accessibilityRole="button"
                 accessibilityLabel={item.label}
-                hitSlop={8}
+                hitSlop={4}
                 onPress={() => handleSocialButtonPress(item.label)}
-                style={styles.socialButton}
               >
-                <Image source={item.icon} style={styles.socialIcon} />
+                <Image
+                  source={item.icon}
+                  style={[styles.socialIcon, { width: item.width, height: item.height }]}
+                />
               </TouchableOpacity>
             ))}
           </View>
         </View>
+
+        {IS_DEVELOPMENT_ENVIRONMENT ? (
+          <View style={styles.devTools}>
+            <TestButtons />
+          </View>
+        ) : null}
       </ScrollView>
 
       <ProfilePhotoUploadModal
@@ -949,280 +1152,274 @@ const Profile = () => {
 
 export default Profile;
 
+const { page, header, stats: statsUi, focus, recent, menu, follow } = PROFILE_UI;
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F7F2EA",
+    backgroundColor: page.background,
   },
   contentContainer: {
     flexGrow: 1,
-    paddingHorizontal: 16,
-    paddingTop: 48,
   },
   loadingWrap: {
     position: "absolute",
-    top: 32,
-    right: 24,
+    right: page.gutter,
     zIndex: 1,
+  },
+  // Every non-list section applies the gutter itself and stops growing on
+  // wide screens (width 100% so alignSelf: center doesn't shrink-wrap it).
+  section: {
+    width: "100%",
+    maxWidth: page.maxContentWidth,
+    alignSelf: "center",
+    paddingHorizontal: page.gutter,
+  },
+  divider: {
+    marginTop: page.sectionGap,
+    marginHorizontal: page.gutter,
+  },
+  dividerAfterFocus: {
+    marginTop: page.focusGap,
+    marginHorizontal: page.gutter,
   },
   headerSection: {
     alignItems: "center",
   },
-  avatarBorder: {
-    width: 148,
-    height: 148,
-    borderRadius: 74,
-    borderWidth: 1.5,
-    borderColor: "#E1AE2D",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#FBF8F2",
+  avatarRing: {
+    width: header.avatarSize,
+    height: header.avatarSize,
+    borderRadius: header.avatarSize / 2,
+    borderWidth: header.avatarRingWidth,
+    borderColor: header.avatarRingColor,
+    backgroundColor: header.avatarFill,
+    overflow: "hidden",
   },
   avatarImage: {
-    width: 122,
-    height: 122,
-    borderRadius: 61,
+    width: "100%",
+    height: "100%",
     resizeMode: "cover",
   },
   nameRow: {
-    marginTop: 18,
+    marginTop: header.nameTopGap,
     flexDirection: "row",
     alignItems: "center",
+    alignSelf: "center",
+  },
+  nameSpacer: {
+    width: header.pencilWidth + header.pencilGap,
   },
   nameText: {
-    fontFamily: FONTS.figtreeSemiBold,
-    fontSize: 22,
-    lineHeight: 28,
-    color: "#111111",
+    flexShrink: 1,
+    fontFamily: FONTS.figtreeMedium500,
+    fontSize: header.nameFontSize,
+    lineHeight: header.nameLineHeight,
+    color: header.nameColor,
+    includeFontPadding: false,
   },
   pencilIcon: {
-    width: 22,
-    height: 22,
-    marginLeft: 8,
+    width: header.pencilWidth,
+    height: header.pencilHeight,
+    marginLeft: header.pencilGap,
     resizeMode: "contain",
   },
-  emailText: {
-    marginTop: 6,
-    fontFamily: FONTS.inter,
-    fontSize: 13,
-    lineHeight: 18,
-    color: "#6D6965",
-  },
   errorText: {
-    marginTop: 10,
+    marginTop: 6,
     textAlign: "center",
     fontFamily: FONTS.inter,
     fontSize: 13,
     lineHeight: 18,
     color: "#B73A45",
+    includeFontPadding: false,
   },
   statsRow: {
-    marginTop: 34,
+    marginTop: statsUi.topGap,
     flexDirection: "row",
     justifyContent: "space-between",
+    gap: statsUi.cardGap,
   },
   statCard: {
     flex: 1,
-    minHeight: 156,
-    borderRadius: 24,
-    backgroundColor: "#B6B6B8",
-    paddingHorizontal: 10,
-    paddingTop: 18,
-    paddingBottom: 14,
+    maxWidth: statsUi.cardMaxWidth,
+    minHeight: statsUi.cardMinHeight,
+    borderRadius: statsUi.cardRadius,
+    backgroundColor: statsUi.cardBackground,
+    paddingVertical: statsUi.cardPaddingV,
     justifyContent: "space-between",
-    marginHorizontal: 3,
+  },
+  statTitleBox: {
+    minHeight: statsUi.titleBoxMinHeight,
+    justifyContent: "center",
   },
   statTitle: {
-    fontFamily: FONTS.inter,
-    fontSize: 13,
-    lineHeight: 17,
-    color: "#FFFFFF",
+    fontFamily: FONTS.afacadRegular,
+    fontSize: statsUi.titleFontSize,
+    lineHeight: statsUi.titleLineHeight,
+    color: statsUi.textColor,
+    textAlign: "left",
+    includeFontPadding: false,
   },
   statFooter: {
     flexDirection: "row",
-    alignItems: "flex-end",
-    justifyContent: "space-evenly",
-    marginTop: 10,
-  },
-  statIconWrap: {
-    width: 34,
-    alignItems: "flex-start",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   statBadgeImage: {
-    width: 34,
-    height: 34,
+    flexShrink: 0,
     resizeMode: "contain",
   },
   statValueWrap: {
+    flexShrink: 1,
     alignItems: "flex-end",
     marginLeft: 4,
   },
   statValue: {
-    fontFamily: FONTS.figtreeSemiBold,
-    fontSize: 18,
-    lineHeight: 22,
-    color: "#FFFFFF",
+    fontFamily: FONTS.afacadBold,
+    fontSize: statsUi.valueFontSize,
+    lineHeight: statsUi.valueLineHeight,
+    color: statsUi.textColor,
+    textAlign: "right",
+    includeFontPadding: false,
   },
   statUnit: {
-    marginTop: 2,
-    fontFamily: FONTS.figtreeSemiBold,
-    fontSize: 10,
-    lineHeight: 12,
-    color: "#FFFFFF",
+    fontFamily: FONTS.afacadBold,
+    fontSize: statsUi.unitFontSize,
+    lineHeight: statsUi.unitLineHeight,
+    color: statsUi.textColor,
     textAlign: "right",
+    includeFontPadding: false,
   },
   focusSection: {
-    marginTop: 18,
-    paddingTop: 28,
-    paddingBottom: 8,
-    borderTopWidth: 1,
-    borderTopColor: "#E7E0D7",
+    marginTop: page.focusGap,
     alignItems: "center",
-  },
-  focusIconWrap: {
-    width: 58,
-    height: 58,
-    borderRadius: 29,
-    backgroundColor: "#F1ECE4",
-    alignItems: "center",
-    justifyContent: "center",
   },
   focusIcon: {
-    width: 34,
-    height: 34,
+    width: focus.iconSize,
+    height: focus.iconSize,
     resizeMode: "contain",
   },
   focusTitle: {
-    marginTop: 16,
+    marginTop: focus.titleGap,
     fontFamily: FONTS.figtreeSemiBold,
-    fontSize: 18,
-    lineHeight: 24,
-    color: "#111111",
+    fontSize: focus.titleFontSize,
+    lineHeight: focus.titleLineHeight,
+    color: focus.titleColor,
     textAlign: "center",
+    includeFontPadding: false,
   },
   focusValue: {
-    marginTop: 6,
-    fontFamily: FONTS.inter,
-    fontSize: 15,
-    lineHeight: 22,
-    color: "#999999",
+    marginTop: focus.valueGap,
+    maxWidth: focus.valueMaxWidth,
+    fontFamily: FONTS.figtreeSemiBoldItalic,
+    fontSize: focus.valueFontSize,
+    lineHeight: focus.valueLineHeight,
+    color: focus.valueColor,
     textAlign: "center",
-    fontStyle: "italic",
+    includeFontPadding: false,
   },
   changeFocusButton: {
-    marginTop: 18,
-    minWidth: 186,
-    minHeight: 44,
-    paddingHorizontal: 24,
-    borderRadius: 999,
-    backgroundColor: "#595959",
+    marginTop: focus.buttonGap,
+    minWidth: focus.buttonMinWidth,
+    minHeight: focus.buttonMinHeight,
+    paddingHorizontal: focus.buttonPaddingH,
+    borderRadius: focus.buttonMinHeight / 2,
+    backgroundColor: focus.buttonBackground,
     alignItems: "center",
     justifyContent: "center",
   },
   changeFocusButtonText: {
-    fontFamily: FONTS.figtreeSemiBold,
-    fontSize: 16,
-    lineHeight: 20,
+    fontFamily: FONTS.interSemiBold,
+    fontSize: focus.buttonFontSize,
+    lineHeight: focus.buttonLineHeight,
+    letterSpacing: focus.buttonLetterSpacing,
     color: "#FFFFFF",
+    includeFontPadding: false,
   },
   recentlyPlayedSection: {
-    marginTop: 18,
-    paddingTop: 28,
-    borderTopWidth: 1,
-    borderTopColor: "#E7E0D7",
+    marginTop: page.sectionGap,
   },
   recentlyPlayedHeader: {
+    paddingHorizontal: page.gutter,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
   },
   recentlyPlayedTitle: {
     fontFamily: FONTS.figtreeSemiBold,
-    fontSize: 18,
-    lineHeight: 24,
-    color: "#111111",
+    fontSize: recent.titleFontSize,
+    lineHeight: recent.titleLineHeight,
+    letterSpacing: recent.titleLetterSpacing,
+    color: recent.titleColor,
+    includeFontPadding: false,
   },
-  recentlyPlayedArrow: {
-    fontFamily: FONTS.interSemiBold,
-    fontSize: 28,
-    lineHeight: 28,
-    color: "#6D6965",
+  recentlyPlayedList: {
+    marginTop: recent.listGap,
   },
+  // Gutter on the content (not the ScrollView) so the cards start at 23 but
+  // scroll to the screen edge.
   recentlyPlayedRow: {
-    gap: 12,
-    paddingTop: 16,
-    paddingRight: 12,
+    paddingHorizontal: page.gutter,
+    gap: recent.cardGap,
   },
   recentlyPlayedEmptyText: {
-    fontFamily: FONTS.inter,
-    fontSize: 14,
-    lineHeight: 20,
-    color: "#8B8B8B",
+    fontFamily: FONTS.figtreeMedium,
+    fontSize: recent.emptyFontSize,
+    lineHeight: recent.emptyLineHeight,
+    color: recent.emptyColor,
+    includeFontPadding: false,
   },
   profileMenuSection: {
-    marginTop: 28,
-    paddingTop: 24,
-    borderTopWidth: 1,
-    borderTopColor: "#E7E0D7",
-    gap: 12,
+    marginTop: page.sectionGap,
+    gap: menu.rowGap,
   },
   profileMenuItem: {
-    minHeight: 56,
-    borderRadius: 10,
-    backgroundColor: "#E4E4E8",
-    paddingHorizontal: 20,
-    paddingVertical: 12,
+    minHeight: menu.rowMinHeight,
+    borderRadius: menu.rowRadius,
+    backgroundColor: menu.rowBackground,
+    paddingHorizontal: menu.rowPaddingH,
     flexDirection: "row",
     alignItems: "center",
-  },
-  profileMenuItemTextOnly: {
-    paddingLeft: 24,
+    gap: menu.iconGap,
   },
   profileMenuIcon: {
-    width: 30,
-    height: 30,
-    marginRight: 16,
+    width: menu.iconSize,
+    height: menu.iconSize,
     resizeMode: "contain",
   },
   profileMenuText: {
     flex: 1,
     fontFamily: FONTS.figtreeSemiBold,
-    fontSize: 18,
-    lineHeight: 28,
-    color: "#686B72",
+    fontSize: menu.labelFontSize,
+    lineHeight: menu.labelLineHeight,
+    color: menu.labelColor,
+    includeFontPadding: false,
   },
   followSection: {
-    marginTop: 36,
-    paddingTop: 28,
-    marginBottom: 0,
-    borderTopWidth: 1,
-    borderTopColor: "#E7E0D7",
+    marginTop: page.sectionGap,
     alignItems: "center",
   },
   followTitle: {
     fontFamily: FONTS.figtreeSemiBold,
-    fontSize: 22,
-    lineHeight: 28,
-    color: "#686B72",
+    fontSize: follow.titleFontSize,
+    lineHeight: follow.titleLineHeight,
+    letterSpacing: follow.titleLetterSpacing,
+    color: follow.titleColor,
     textAlign: "center",
+    includeFontPadding: false,
   },
   socialButtonRow: {
-    marginTop: 24,
+    marginTop: follow.iconsGap,
     flexDirection: "row",
     justifyContent: "center",
-    gap: 30,
-  },
-  socialButton: {
-    width: 50,
-    height: 50,
-    borderRadius: 18,
-    alignItems: "center",
-    justifyContent: "center",
+    gap: follow.iconGap,
   },
   socialIcon: {
-    width: 64,
-    height: 64,
+    borderRadius: follow.iconRadius,
     resizeMode: "contain",
+  },
+  devTools: {
+    marginTop: 24,
+    alignItems: "center",
   },
 });
 

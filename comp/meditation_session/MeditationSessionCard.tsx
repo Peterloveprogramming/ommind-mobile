@@ -1,5 +1,5 @@
 import { images } from "@/constants/images";
-import { FONTS } from "@/theme";
+import { COLORS, FONTS } from "@/theme";
 import React, { useMemo } from "react";
 import {
   DimensionValue,
@@ -17,6 +17,7 @@ type MeditationSessionCardProps = {
   session_progress?: number | null;
   generated_meditation?:number | null;
   onPress: () => void;
+  variant?: "default" | "profile";
 };
 
 const clampProgress = (value: number) => Math.max(0, Math.min(value, 1));
@@ -28,7 +29,13 @@ const MeditationSessionCard = ({
   session_progress,
   onPress,
   generated_meditation,
+  variant = "default",
 }: MeditationSessionCardProps) => {
+  // "profile" restyles the card for Profile's Recently Played (spec 07);
+  // "default" (Home) keeps the base styles untouched.
+  const isProfile = variant === "profile";
+  const maxFontSizeMultiplier = isProfile ? 1.2 : undefined;
+
   const progressWidth = useMemo<DimensionValue>(() => {
     const sessionLengthInSeconds = Math.max(session_length * 60, 0);
     if (!sessionLengthInSeconds || !session_progress) {
@@ -40,21 +47,21 @@ const MeditationSessionCard = ({
 
   return (
     <TouchableOpacity activeOpacity={0.86} onPress={onPress}>
-      <View style={styles.card}>
+      <View style={[styles.card, isProfile && profileStyles.card]}>
         <ImageBackground
           source={image_url ? { uri: image_url } : images.meditation_test}
           style={styles.image}
           imageStyle={styles.imageInner}
         />
 
-        <View style={styles.rightPanel}>
-          {generated_meditation?"":<Text style={styles.lengthText}>{session_length} min</Text>}
-          <Text style={styles.titleText} numberOfLines={3}>{session_title}</Text>
-          <Text style={styles.typeText}>{generated_meditation?"Generated Guided Meditation":"Guided Meditation"}</Text>
+        <View style={[styles.rightPanel, isProfile && profileStyles.rightPanel]}>
+          {generated_meditation?"":<Text style={[styles.lengthText, isProfile && profileStyles.metaText]} maxFontSizeMultiplier={maxFontSizeMultiplier}>{session_length} min</Text>}
+          <Text style={[styles.titleText, isProfile && profileStyles.titleText]} numberOfLines={3} maxFontSizeMultiplier={maxFontSizeMultiplier}>{session_title}</Text>
+          <Text style={[styles.typeText, isProfile && profileStyles.metaText]} maxFontSizeMultiplier={maxFontSizeMultiplier}>{generated_meditation?"Generated Guided Meditation":"Guided Meditation"}</Text>
         </View>
 
-        <View style={styles.progressTrack}>
-          <View style={[styles.progressFill, { width: progressWidth }]} />
+        <View style={[styles.progressTrack, isProfile && profileStyles.progressTrack]}>
+          <View style={[styles.progressFill, isProfile && profileStyles.progressFill, { width: progressWidth }]} />
         </View>
       </View>
     </TouchableOpacity>
@@ -120,5 +127,47 @@ const styles = StyleSheet.create({
   progressFill: {
     height: "100%",
     backgroundColor: "#E6AA18",
+  },
+});
+
+// Figma Profile "Recently Played" card (2931:10904). Merged over `styles`.
+const profileStyles = StyleSheet.create({
+  card: {
+    width: 300,
+    borderColor: "#E8E8E8",
+  },
+  rightPanel: {
+    paddingHorizontal: 10,
+    paddingTop: 0,
+    paddingBottom: 0,
+    justifyContent: "center",
+    gap: 7,
+  },
+  // Shared by the length and type texts.
+  metaText: {
+    marginTop: 0,
+    fontFamily: FONTS.figtreeMedium,
+    fontSize: 12,
+    lineHeight: 13,
+    letterSpacing: 0.6,
+    color: "#8B8B8B",
+    includeFontPadding: false,
+  },
+  titleText: {
+    marginTop: 0,
+    fontFamily: FONTS.figtreeSemiBold,
+    fontSize: 16,
+    lineHeight: 17,
+    letterSpacing: 0.32,
+    color: "rgba(15, 9, 9, 0.74)",
+    textTransform: "capitalize",
+    includeFontPadding: false,
+  },
+  progressTrack: {
+    height: 1,
+    backgroundColor: "transparent",
+  },
+  progressFill: {
+    backgroundColor: COLORS.brandYellow,
   },
 });

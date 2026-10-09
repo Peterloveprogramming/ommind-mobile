@@ -28,6 +28,10 @@ const DEBUG = true
 // an EAS environment variable/secret for cloud builds.
 export const SENTRY_DSN = process.env.EXPO_PUBLIC_SENTRY_DSN ?? ""
 
+// "development" shows dev-only UI (e.g. Profile's Test Buttons).
+export const APP_ENVIRONMENT = process.env.EXPO_PUBLIC_APP_ENVIRONMENT ?? ""
+export const IS_DEVELOPMENT_ENVIRONMENT = APP_ENVIRONMENT === "development"
+
 //mode constants
 export const GENERAL = "general"
 export const MEDITATION = "meditation"

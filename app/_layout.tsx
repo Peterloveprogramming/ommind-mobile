@@ -8,6 +8,7 @@ import MoreButton from "@/comp/headers/MoreButton";
 import * as SplashScreen from "expo-splash-screen";
 import { useFonts as useFigtree, Figtree_400Regular, Figtree_500Medium, Figtree_600SemiBold, Figtree_600SemiBold_Italic, Figtree_700Bold } from "@expo-google-fonts/figtree";
 import { useFonts as useInter, Inter_400Regular, Inter_600SemiBold, Inter_500Medium } from "@expo-google-fonts/inter";
+import { Afacad_400Regular, Afacad_700Bold } from "@expo-google-fonts/afacad";
 import GlobalProviders from "@/context/GlobalProviders";
 import { getAuthInfo } from "@/utils/helper";
 import { KeyboardProvider } from "react-native-keyboard-controller";
@@ -59,6 +60,8 @@ function RootLayout() {
     Figtree_600SemiBold_Italic,
     Figtree_700Bold,
     Inter_500Medium,
+    Afacad_400Regular,
+    Afacad_700Bold,
   });
   const [interLoaded] = useInter({
     Inter_400Regular,

@@ -1681,6 +1681,11 @@
     "@eslint/core" "^0.17.0"
     levn "^0.4.1"
 
+"@expo-google-fonts/afacad@^0.4.1":
+  version "0.4.1"
+  resolved "https://registry.yarnpkg.com/@expo-google-fonts/afacad/-/afacad-0.4.1.tgz#3f9831cb9f6b78511886d5665bc1a53da4b55d2f"
+  integrity sha512-V4n0fMtT26AlWbpSL6SR0MxSDFmscQOWGJjUDqDhOfReA0Ar1E/o6NYQxTnTzuFEGiq3xszuXHw+17L4rqHXFA==
+
 "@expo-google-fonts/figtree@^0.4.1":
   version "0.4.1"
   resolved "https://registry.npmjs.org/@expo-google-fonts/figtree/-/figtree-0.4.1.tgz"

@@ -5,10 +5,140 @@ change.
 
 ## Current Phase
 
+- Complete (code) — awaiting the manual test matrix on simulators/devices
+  and a pixel overlay against Figma `2875:9496` on a 393 pt iPhone.
+
+## Current Goal
+
+- 07-fix-profile-page: restyle the Profile tab (`app/(tabs)/profile.tsx`)
+  to Figma "Profile" `2875:9496` (Pro copy `37GSSpgSU44KPNvLuVKAOw`).
+  Fixed Figma pt values, one 23 pt gutter per section, safe-area top
+  (`insets.top + 41`), one width breakpoint (< 390, stat cards only).
+  Plus the confirmed changes: Afacad font, Test Buttons dev-only, email line
+  removed, `MeditationSessionCard` `variant="profile"`, two Figma copy
+  tweaks.
+
+## Completed
+
+- Baseline: `npx tsc --noEmit` 32 errors; `npx expo lint` 0 errors /
+  41 warnings (profile.tsx: 1 pre-existing `exhaustive-deps` warning).
+- Dependency: `npx expo install @expo-google-fonts/afacad` → `^0.4.1`
+  (only `package.json` / `yarn.lock` change).
+- `theme.js` (additive): `FONTS.afacadRegular = "Afacad_400Regular"`,
+  `FONTS.afacadBold = "Afacad_700Bold"`.
+- `app/_layout.tsx` (additive): `Afacad_400Regular` / `Afacad_700Bold`
+  imported and added to the `useFigtree` map (splash already waits on it).
+- `comp/meditation_session/MeditationSessionCard.tsx`: optional
+  `variant?: "default" | "profile"` (default `"default"`). A
+  `profileStyles` sheet is merged over the base styles only when
+  `isProfile`: card 300 / `#E8E8E8`; right panel padding H 10, V 0,
+  centered, gap 7; meta texts (length + type share `metaText`) Figtree
+  Regular 12/13 ls 0.6 `#8B8B8B`; title SemiBold 16/17 ls 0.32
+  `rgba(15,9,9,0.74)` `capitalize`; progress 1 pt `brandYellow`, no track.
+  `includeFontPadding: false` and `maxFontSizeMultiplier` 1.2 in the
+  profile variant only (`undefined` for default). Props contract,
+  progress logic, `generated_meditation` handling and `onPress` unchanged.
+- `app/(tabs)/profile.tsx`:
+  - `PROFILE_UI` tokens (`page`, `header`, `stats`, `statsCompact`,
+    `focus`, `recent`, `menu`, `follow`) with every Figma value.
+  - `useSafeAreaInsets()` → content `paddingTop: insets.top + 41`;
+    spinner at `insets.top + 8`, right 23. `useWindowDimensions()` →
+    `isCompactWidth` (< 390) swaps in `statsCompact` (padding H 10, badge
+    34). Background `#FAFAFA`, no vertical scroll indicator.
+  - Gutter removed from the ScrollView content. Shared `section` style
+    (`width: "100%"`, `maxWidth` 480, `alignSelf: center`, padding H 23)
+    on header, stats, focus, menu and follow. `width: "100%"` is needed so
+    `alignSelf: center` doesn't shrink-wrap the section (and collapse the
+    `flex: 1` stat cards). Recently Played header has padding H 23; the
+    list puts the 23 in `contentContainerStyle` (gap 20) so it bleeds to
+    the screen edge.
+  - Dividers: `GradientDivider` with `marginHorizontal` 23, `marginTop` 15
+    (20 after the focus block); focus block `marginTop` 20.
+  - Header: 120 avatar ring drawn in code (1 pt `brandYellow`, `#FBFAF6`,
+    `overflow: hidden`, image 100% cover). Name row: 27 spacer + name
+    (Figtree 500 24/28 `#000`, 1 line, tail ellipsis, `flexShrink: 1`) +
+    22 × 23 pencil (`marginLeft` 5), `maxWidth: windowWidth − 46`,
+    `hitSlop` 8. Email line and style removed. Avatar / name row are
+    buttons labelled "Change profile photo" / "Edit profile details".
+  - Stats: row gap 9 `space-between`; cards `flex: 1`, max 110, min height
+    130, radius 20, `rgba(37,37,37,0.4)` (no blur), padding V 15. Title box
+    min height 45, Afacad Regular 14/15, 3 lines. Footer `space-between`
+    centered; badge `flexShrink: 0`; value Afacad Bold 36/36, 1 line,
+    `adjustsFontSizeToFit` (min 0.6), column `flexShrink: 1`; unit Afacad
+    Bold 12/14. Each card `accessible` with "title, value unit". First
+    title now "Average Meditation Time".
+  - Focus: 44 icon with no wrapper circle; title SemiBold 20/20; value
+    `figtreeSemiBoldItalic` 16/20 `#8F8F8F` max 265 (no `fontStyle`);
+    button min 145 × 36, radius 18, padding H 14, Inter SemiBold 13/22
+    ls −0.408, `hitSlop` top/bottom 4, `accessibilityRole="button"`.
+    Separator `" · "`; split regex `/[•·,]/`.
+  - Recently Played: title SemiBold 16/28 ls 0.35 `#000`; Feather
+    `arrow-right` 24 `#595959` (wrapper, `hitSlop`, a11y unchanged); list
+    `marginTop` 4; cards `variant="profile"`. Empty text Figtree Regular
+    14/20.
+  - Menu: gap 8; rows min height 44, radius 5, `#E5E5EA`, padding H 10,
+    gap 8, `hitSlop` top/bottom 2, button role + label; icon 25; label
+    SemiBold 16/20 `#636366`, 1 line. `!item.icon` fallback kept,
+    `profileMenuItemTextOnly` removed.
+  - Follow: title SemiBold 16/28 ls 0.35 `#636366`; icons `marginTop` 12,
+    gap 19, sizes from `socialItems` (`width`/`height`, Instagram 40 × 42),
+    radius 12, `hitSlop` 4. Old 50 pt `socialButton` wrapper style removed.
+  - Follow-up (user request): the guard is now
+    `IS_DEVELOPMENT_ENVIRONMENT` (`constant.js`,
+    `EXPO_PUBLIC_APP_ENVIRONMENT === "development"`) instead of `__DEV__`.
+    Added the key to `.env.example`. EAS builds don't get the gitignored
+    `.env`, so the pill shows there only if the EAS environment sets it.
+  - `TestButtons` only in the development environment, moved below Follow OmMind
+    (`marginTop` 24, centered). Component unchanged.
+  - Every text: explicit `lineHeight`, `includeFontPadding: false`,
+    `maxFontSizeMultiplier` 1.2. Both `console.log` calls in
+    `loadAccountDetails` removed (`console.error` kept).
+  - Removed styles: `avatarBorder`, `emailText`, `focusIconWrap`,
+    `recentlyPlayedArrow`, `profileMenuItemTextOnly`, `statIconWrap`,
+    `socialButton`, all `borderTop*` divider styles and the old
+    margins/paddings.
+  - Untouched: all handlers and state, data loading, modals, feedback /
+    contact forms, `formatStatValue`, `formatHoursFromMinutes`,
+    `getAverageDailyMeditationMinutes`, navigation.
+- `npx tsc --noEmit`: 32 errors, identical set to baseline. `npx expo
+  lint`: 0 errors / 41 warnings (unchanged). No `console.log` in
+  `profile.tsx`.
+
+## In Progress
+
+- None.
+
+## Next Up
+
+- Run the spec 07 "Test Matrix" (iPhone SE / 13 mini / 16 / 16 Pro Max,
+  360 × 640 Android, Galaxy 384 dp, Pixel 8 gesture + 3-button) against the
+  Acceptance Criteria, including "12.5" hours / "100" sessions, 0 / 1 / 3
+  focuses, 0 / 1 / 5+ sessions, a 40-character name, largest standard font
+  size, and Home's "Your practice today" cards before/after.
+- Pixel overlay against Figma `2875:9496` on a 393 pt iPhone.
+- Cold start needed once so `expo-font` picks up Afacad (no native
+  rebuild).
+
+## Open Questions
+
+- Dividers follow the spec literally (`marginHorizontal` 23, no 480 cap),
+  so on foldables they are wider than the capped sections. Tablets and
+  foldables are out of scope; cap them if that matters later.
+
+## Session Notes
+
+- Changes are uncommitted on `main`.
+
+---
+
+# Previous Goal: 06-fix-home-page
+
+### Phase
+
 - Complete (code) — awaiting manual test matrix on simulators/devices and a
   pixel overlay against Figma `2958:10054` on a 393 pt iPhone.
 
-## Current Goal
+### Current Goal
 
 - 06-fix-home-page: restyle the Home tab's Lhamo hero card, mood check-in
   and Today's Intention (`app/(tabs)/index.tsx`) to Figma `2958:10054`
@@ -16,7 +146,7 @@ change.
   the hero artwork and intention card, one width breakpoint (< 390).
   Style/layout only plus the confirmed Today's Intention copy changes.
 
-## Completed
+### Completed
 
 - Baseline: `npx tsc --noEmit` 32 errors; `npx expo lint` 0 errors /
   41 warnings.
@@ -87,11 +217,11 @@ change.
 - `npx tsc --noEmit`: 32 errors, identical set to baseline. `npx expo
   lint`: 0 errors / 41 warnings (unchanged). No `console.log` added.
 
-## In Progress
+### In Progress
 
 - None.
 
-## Next Up
+### Next Up
 
 - Run the spec 06 "Test Matrix" (iPhone SE / 13 mini / 16 / 16 Pro Max,
   360 × 640 Android, Galaxy 384 dp, Pixel 8) against the Acceptance
@@ -101,13 +231,13 @@ change.
 - Pixel overlay of the three sections against Figma `2958:10054` on a
   393 pt iPhone.
 
-## Open Questions
+### Open Questions
 
 - None.
 
-## Session Notes
+### Session Notes
 
-- Changes are uncommitted on `main`.
+- Committed in `2be4b44`.
 
 ---
 
