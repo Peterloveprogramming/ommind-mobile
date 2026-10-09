@@ -13,8 +13,10 @@ export const COLORS = {
 
 export const FONTS = {
   figtreeMedium: "Figtree_400Regular",
+  figtreeMedium500: "Figtree_500Medium",
   figtreeSemiBold: "Figtree_600SemiBold",
   figtreeBold: "Figtree_700Bold",
+  figtreeSemiBoldItalic: "Figtree_600SemiBold_Italic",
   interThin: "Inter_100Thin",
   interRegular: "Inter_400Regular",
   inter: "Inter_500Medium",

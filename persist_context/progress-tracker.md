@@ -5,17 +5,127 @@ change.
 
 ## Current Phase
 
+- Complete (code) — awaiting manual test matrix on simulators/devices and a
+  pixel overlay against Figma `2958:10054` on a 393 pt iPhone.
+
+## Current Goal
+
+- 06-fix-home-page: restyle the Home tab's Lhamo hero card, mood check-in
+  and Today's Intention (`app/(tabs)/index.tsx`) to Figma `2958:10054`
+  (Pro copy `37GSSpgSU44KPNvLuVKAOw`). Fixed Figma pt values, fluid only for
+  the hero artwork and intention card, one width breakpoint (< 390).
+  Style/layout only plus the confirmed Today's Intention copy changes.
+
+## Completed
+
+- Baseline: `npx tsc --noEmit` 32 errors; `npx expo lint` 0 errors /
+  41 warnings.
+- `theme.js` (additive): `FONTS.figtreeMedium500 = "Figtree_500Medium"`,
+  `FONTS.figtreeSemiBoldItalic = "Figtree_600SemiBold_Italic"`.
+  `FONTS.figtreeMedium` unchanged (still Regular 400).
+- `app/_layout.tsx` (additive): `Figtree_500Medium` and
+  `Figtree_600SemiBold_Italic` added to `useFigtree`.
+- New `comp/home/SpeechBubble.tsx`: measures itself with `onLayout`
+  (rounded, only updates on change) and draws the spec path (tail 6,
+  radius 12, half-stroke 0.5) in an absolute-fill `Svg`, `#FAF9F2` fill at
+  38% + 1 pt stroke. Root `minHeight` 61, centered, padding L 13 (tail + 7)
+  / R 6 / V 5. Exports `TAIL_WIDTH`, `RADIUS`. SVG `accessible={false}`.
+- New `comp/home/GradientDivider.tsx`: 1 pt `View` (`alignSelf: stretch`)
+  with an SVG `#D9D9D9` 20% → 100% (0.51) → 20% gradient. Gradient id from
+  `useId()` with non-alphanumerics stripped. Hidden from accessibility.
+- `app/(tabs)/index.tsx`:
+  - `HOME_UI` token object (`hero`, `heroCompact`, `mood`, `intention`
+    groups + `screenGutter` 12, `maxCardWidth` 480, breakpoint 390,
+    `maxFontSizeMultiplier` 1.2, text colour `#4D4949`).
+    `contentContainer.paddingHorizontal` now references
+    `HOME_UI.screenGutter`.
+  - `useWindowDimensions()` drives `isCompactWidth` (< 390),
+    `heroWidth = min(w − 24, 480)`, `heroMinHeight = heroWidth / (1473 /
+    856)` and `intentionCardWidth = min(w − 46, 480)`.
+  - Hero: `ImageBackground` `resizeMode="stretch"`, no radius / clipping,
+    content in normal flow (padding top 24 / 18 compact, left 13, bottom
+    12). Column `58%` / max 195. Guiding row right-aligned, moon 22, gap 4,
+    Figtree 500 14/20 ls −0.8 `#F8C63E` with nested Bold "Lhamo".
+    `SpeechBubble` with Figtree 500 13/17 `#4D4949`, 3 lines max. Buttons in
+    169-max slots, height 36 / 32 compact, radius h/2, padding 10, icons 22,
+    13 pt text with lh 20 / ls −0.24 via `textStyle`, 78% backgrounds.
+    Create Meditation no longer gets `isLoading` (spinner only on Chat).
+  - Mood: divider between hero and mood removed; section `marginTop` 16.
+    Title Figtree Bold 14/20, subtitle Figtree 500 13/20 `#8E8E93`
+    (3 gap, padding H 24), copy unchanged. `MOOD_OPTIONS` typed with
+    optional `iconSize` (Focused 37); `MOOD_ROWS` chunks into 3s. Rows
+    centered, gap 11 / row gap 6; pills `flex: 1`, max 100, min height 40,
+    transparent, 1 pt `#ECE0D7` border → `COLORS.brandYellow` when
+    selected/pending (no fill, same label colour). Icon `marginLeft` 3,
+    label one line with `adjustsFontSizeToFit` (min 0.85), `paddingRight`
+    11. `accessibilityRole="button"`, label, `hitSlop` top/bottom 3. Muted
+    0.55 kept. Status message moved below the grid (`marginTop` 10).
+  - Today's Intention: `GradientDivider` (marginTop 15, inset 11 + 12 = 23)
+    replaces the solid divider; section `paddingTop` 15. Title
+    "💫 Today’s Intention" Bold 14/20. Card width from the 23 gutter,
+    `minHeight` 232, radius 12 with `overflow: hidden` on the container,
+    `cover`, padding 11/12, gap 15, top-aligned. Two 270-max text blocks
+    (gap 4): leads Figtree SemiBold Italic 13/20 `#8E8E8E` (no
+    `fontStyle`), values SemiBold 16/20 `#000000`, intention 2 lines /
+    affirmation 4 lines. Spinner placeholders 20 / 40 tall. Inner
+    `GradientDivider` at full content width. Refresh Guidance: min height
+    36, radius 18, padding 10, `rgba(140,140,138,0.64)`, lotus 22, gap 4,
+    13/20 white, `accessibilityRole="button"`, `busy` state, `hitSlop` 4.
+    Copy uses real `…` and curly apostrophes (no `&apos;`).
+  - All texts in the three sections: explicit `lineHeight`,
+    `includeFontPadding: false` (new styles), `maxFontSizeMultiplier` 1.2.
+  - Removed: `HOME_BACKGROUND_ASPECT_RATIO`, `heroCardImage`,
+    `heroContentColumn`, `heroTextGroup`, `messageBubble`, `primaryButton`,
+    `secondaryButton`, `feelingLabelSelected`, `intentionCardImage`,
+    `intentionDivider`, `intentionLoadingWrap`, `affirmationLoadingWrap`,
+    `intentionWord`, `affirmationLead`, `affirmationText` (the two value
+    texts share `intentionValue`).
+  - Untouched: state, effects, API / cache logic, mood confirm flow,
+    refresh handler, navigation, header, Log out pill, Your Practice Today
+    (incl. its top border), the final `bottomDivider`, modals,
+    `BaseButton`, assets.
+- `npx tsc --noEmit`: 32 errors, identical set to baseline. `npx expo
+  lint`: 0 errors / 41 warnings (unchanged). No `console.log` added.
+
+## In Progress
+
+- None.
+
+## Next Up
+
+- Run the spec 06 "Test Matrix" (iPhone SE / 13 mini / 16 / 16 Pro Max,
+  360 × 640 Android, Galaxy 384 dp, Pixel 8) against the Acceptance
+  Criteria, including largest standard font size, short and very long
+  `home_page_text`, mood check-in (cancel + confirm), Refresh Guidance with
+  a 4+ line affirmation.
+- Pixel overlay of the three sections against Figma `2958:10054` on a
+  393 pt iPhone.
+
+## Open Questions
+
+- None.
+
+## Session Notes
+
+- Changes are uncommitted on `main`.
+
+---
+
+# Previous Goal: 05-fix-starter-question-ui
+
+### Phase
+
 - Complete (code) — awaiting Figma measurement and manual test matrix on
   simulators/devices.
 
-## Current Goal
+### Current Goal
 
 - 05-fix-starter-question-ui: restyle `app/authentication/registration_questions.tsx`
   (fixed 24 gutter, fluid cards, pinned footer, disabled grey Continue until
   an option is picked, one compact height breakpoint at 740). Style/layout
   only.
 
-## Completed
+### Completed
 
 - Baseline: `npx tsc --noEmit` 44 errors; `npx expo lint` 0 errors /
   42 warnings.
@@ -124,11 +234,11 @@ change.
       "Inter_400Regular"` (already loaded in `_layout`).
     - tsc 32 / lint 0 errors, 41 warnings (unchanged).
 
-## In Progress
+### In Progress
 
 - None.
 
-## Next Up
+### Next Up
 
 - Measure Figma frames `2277:10741` / `2113:9725` once the MCP limit
   resets, update the spec's values table, and adjust every **(confirm)**
@@ -138,7 +248,7 @@ change.
   Android, Pixel 8 gesture + 3-button) against the Acceptance Criteria,
   including largest standard font size and the full save flow.
 
-## Open Questions
+### Open Questions
 
 - Android hardware back on the welcome screen still pops to whatever is
   below it in the stack (same as before, when the questions screen
@@ -149,9 +259,9 @@ change.
   `2277:10741` / `2113:9725` still haven't been measured, so all
   **(confirm)** values use the spec defaults.
 
-## Session Notes
+### Session Notes
 
-- Changes are uncommitted on `main`.
+- Committed in `8ee2a70`.
 
 ---
 

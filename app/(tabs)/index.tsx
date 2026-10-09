@@ -10,6 +10,7 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { useFocusEffect, usePathname, useRouter } from "expo-router";
@@ -40,10 +41,12 @@ import {
   storeProfilePhotoUri,
 } from "@/utils/helper";
 import BaseButton from "@/comp/base/BaseButton";
-import { FONTS } from "@/theme";
+import { COLORS, FONTS } from "@/theme";
 import ProfilePhotoUploadModal from "@/comp/modals/ProfilePhotoUploadModal";
 import PersonalisedMeditationModal, { PersonalisedMeditationSelection } from "@/comp/modals/PersonalisedMeditationModal";
 import MeditationSessionCard from "@/comp/meditation_session/MeditationSessionCard";
+import SpeechBubble from "@/comp/home/SpeechBubble";
+import GradientDivider from "@/comp/home/GradientDivider";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
   clearHomePageInfo,
@@ -71,15 +74,123 @@ const INSPIRED_ICON = require("@/assets/images/home/feelings/inspired.png");
 const TIRED_ICON = require("@/assets/images/home/feelings/tired.png");
 const DRAINED_ICON = require("@/assets/images/home/feelings/drained.png");
 const ANXIOUS_ICON = require("@/assets/images/home/feelings/anxious.png");
-const HOME_BACKGROUND_ASPECT_RATIO = 1473 / 900;
+const HERO_ASPECT_RATIO = 1473 / 856;
 const MAX_PROFILE_PHOTO_SIZE_BYTES = 5 * 1024 * 1024;
 const ACCEPTED_PROFILE_PHOTO_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const ACCEPTED_PROFILE_PHOTO_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp"];
 
-const MOOD_OPTIONS = [
+// Figma "Home Day 7 / 14" (node 2958:10054, 393 pt wide). Fixed pt values on
+// every device; only the hero artwork and the intention card are fluid.
+const HOME_UI = {
+  screenGutter: 12,
+  maxCardWidth: 480,
+  compactWidthBreakpoint: 390,
+  maxFontSizeMultiplier: 1.2,
+  textColor: "#4D4949",
+  hero: {
+    paddingTop: 24,
+    paddingLeft: 13,
+    paddingBottom: 12,
+    columnWidth: "58%",
+    columnMaxWidth: 195,
+    moonSize: 22,
+    guidingGap: 4,
+    guidingFontSize: 14,
+    guidingLineHeight: 20,
+    guidingLetterSpacing: -0.8,
+    guidingColor: "#F8C63E",
+    rowToBubble: 8,
+    bubbleToButtons: 8,
+    bubbleFontSize: 13,
+    bubbleLineHeight: 17,
+    bubbleMaxLines: 3,
+    buttonHeight: 36,
+    buttonMaxWidth: 169,
+    buttonPaddingHorizontal: 10,
+    buttonIconSize: 22,
+    buttonGap: 4,
+    buttonFontSize: 13,
+    buttonLineHeight: 20,
+    buttonLetterSpacing: -0.24,
+    createMeditationBackground: "rgba(248, 198, 62, 0.78)",
+    chatBackground: "rgba(255, 255, 255, 0.78)",
+  },
+  heroCompact: {
+    paddingTop: 18,
+    rowToBubble: 6,
+    bubbleToButtons: 6,
+    buttonHeight: 32,
+  },
+  mood: {
+    sectionMarginTop: 16,
+    titleFontSize: 14,
+    titleLineHeight: 20,
+    letterSpacing: -0.24,
+    titleToSubtitle: 3,
+    subtitleFontSize: 13,
+    subtitleLineHeight: 20,
+    subtitleColor: "#8E8E93",
+    subtitlePaddingHorizontal: 24,
+    subtitleToGrid: 15,
+    columns: 3,
+    columnGap: 11,
+    rowGap: 6,
+    pillWidth: 100,
+    pillHeight: 40,
+    pillBorderColor: "#ECE0D7",
+    iconSize: 35,
+    iconMarginLeft: 3,
+    labelFontSize: 13,
+    labelLineHeight: 20,
+    labelPaddingRight: 11,
+    labelMinimumFontScale: 0.85,
+    statusMarginTop: 10,
+  },
+  intention: {
+    gutter: 23,
+    dividerMarginTop: 15,
+    sectionPaddingTop: 15,
+    titleFontSize: 14,
+    titleLineHeight: 20,
+    letterSpacing: -0.24,
+    titleToCard: 15,
+    cardMinHeight: 232,
+    cardRadius: 12,
+    cardPaddingVertical: 11,
+    cardPaddingHorizontal: 12,
+    itemGap: 15,
+    textBlockMaxWidth: 270,
+    textBlockGap: 4,
+    leadFontSize: 13,
+    leadLineHeight: 20,
+    leadColor: "#8E8E8E",
+    valueFontSize: 16,
+    valueLineHeight: 20,
+    valueColor: "#000000",
+    intentionMaxLines: 2,
+    affirmationMaxLines: 4,
+    intentionPlaceholderHeight: 20,
+    affirmationPlaceholderHeight: 40,
+    refreshHeight: 36,
+    refreshPaddingHorizontal: 10,
+    refreshBackground: "rgba(140, 140, 138, 0.64)",
+    refreshIconSize: 22,
+    refreshGap: 4,
+    refreshFontSize: 13,
+    refreshLineHeight: 20,
+  },
+} as const;
+
+type MoodOption = {
+  label: string;
+  icon: ImageSourcePropType;
+  iconSize?: number;
+};
+
+const MOOD_OPTIONS: MoodOption[] = [
   { label: "Calm", icon: CALM_ICON },
   { label: "Peaceful", icon: PEACEFUL_ICON },
-  { label: "Focused", icon: FOCUSED_ICON },
+  { label: "Focused", icon: FOCUSED_ICON, iconSize: 37 },
   { label: "Neutral", icon: NEUTRAL_ICON },
   { label: "Unsure", icon: UNSURE_ICON },
   { label: "Inspired", icon: INSPIRED_ICON },
@@ -87,6 +198,15 @@ const MOOD_OPTIONS = [
   { label: "Drained", icon: DRAINED_ICON },
   { label: "Anxious", icon: ANXIOUS_ICON },
 ];
+
+const MOOD_ROWS = Array.from(
+  { length: Math.ceil(MOOD_OPTIONS.length / HOME_UI.mood.columns) },
+  (_, rowIndex) =>
+    MOOD_OPTIONS.slice(
+      rowIndex * HOME_UI.mood.columns,
+      (rowIndex + 1) * HOME_UI.mood.columns
+    )
+);
 
 const getFirstName = (userName: string | undefined) => {
   const trimmedName = (userName ?? "").trim();
@@ -132,6 +252,7 @@ type HomepageInfoLoadOptions = {
 const Home = () => {
   const router = useRouter();
   const tabBarHeight = useBottomTabBarHeight();
+  const { width: windowWidth } = useWindowDimensions();
   const pathname = usePathname();
   const dispatch = useAppDispatch();
   const cachedHomePageInfo = useAppSelector(getHomePageInfoState);
@@ -772,6 +893,22 @@ const Home = () => {
       } check-in. Please wait before choosing another mood.`
     : moodCheckInMessage;
   const recommendedSessions = recommendedSession ? [recommendedSession] : [];
+  const isCompactWidth = windowWidth < HOME_UI.compactWidthBreakpoint;
+  const heroSpacing = isCompactWidth ? HOME_UI.heroCompact : HOME_UI.hero;
+  const heroWidth = Math.min(
+    windowWidth - 2 * HOME_UI.screenGutter,
+    HOME_UI.maxCardWidth
+  );
+  const heroMinHeight = heroWidth / HERO_ASPECT_RATIO;
+  const heroButtonStyle = {
+    borderRadius: heroSpacing.buttonHeight / 2,
+    paddingHorizontal: HOME_UI.hero.buttonPaddingHorizontal,
+    marginVertical: 0,
+  };
+  const intentionCardWidth = Math.min(
+    windowWidth - 2 * HOME_UI.intention.gutter,
+    HOME_UI.maxCardWidth
+  );
 
   return (
     <>
@@ -815,148 +952,226 @@ const Home = () => {
 
         <ImageBackground
           source={HOME_BACKGROUND}
-          style={styles.heroCard}
-          imageStyle={styles.heroCardImage}
+          resizeMode="stretch"
+          style={[
+            styles.heroCard,
+            {
+              width: heroWidth,
+              minHeight: heroMinHeight,
+              paddingTop: heroSpacing.paddingTop,
+            },
+          ]}
         >
-          <View style={styles.heroContentColumn}>
-            <View style={styles.heroTextGroup}>
-              <View style={styles.guidingRow}>
-                <Image source={MOON_ICON} style={styles.moonIcon} />
-                <Text style={styles.guidingText}>
-                  <Text style={styles.guidingName}>Lhamo</Text> is guiding you today
-                </Text>
-              </View>
-
-              <View style={styles.messageBubble}>
-                <Text style={styles.messageText} numberOfLines={6}>
-                  {homePageText}
-                </Text>
-              </View>
+          <View style={styles.heroColumn}>
+            <View style={styles.guidingRow}>
+              <Image source={MOON_ICON} style={styles.moonIcon} />
+              <Text
+                style={styles.guidingText}
+                maxFontSizeMultiplier={HOME_UI.maxFontSizeMultiplier}
+              >
+                <Text style={styles.guidingName}>Lhamo</Text> is guiding you today
+              </Text>
             </View>
 
-            <View style={styles.buttonStack}>
-              <BaseButton
-                text="Create Meditation"
-                height={28}
-                fontSize={12}
-                onPress={handleCreateMeditationPress}
-                useIcon={true}
-                icon={<Image source={CREATE_MEDITATION_ICON} style={styles.buttonIcon} />}
-                isLoading={isNavigating}
-                style={styles.primaryButton}
-              />
-              <BaseButton
-                text="Chat with Lhamo"
-                height={28}
-                fontSize={12}
-                onPress={handleChatWithLhamoPress}
-                useIcon={true}
-                icon={<Image source={CHAT_ICON} style={styles.buttonIcon} />}
-                isLoading={isNavigating}
-                backgroundColor="#FFFFFF"
-                fontColor="#4B4748"
-                style={styles.secondaryButton}
-              />
+            <SpeechBubble style={[styles.speechBubble, { marginTop: heroSpacing.rowToBubble }]}>
+              <Text
+                style={styles.messageText}
+                numberOfLines={HOME_UI.hero.bubbleMaxLines}
+                maxFontSizeMultiplier={HOME_UI.maxFontSizeMultiplier}
+              >
+                {homePageText}
+              </Text>
+            </SpeechBubble>
+
+            <View style={[styles.buttonStack, { marginTop: heroSpacing.bubbleToButtons }]}>
+              <View style={styles.buttonSlot}>
+                <BaseButton
+                  text="Create Meditation"
+                  height={heroSpacing.buttonHeight}
+                  fontSize={HOME_UI.hero.buttonFontSize}
+                  onPress={handleCreateMeditationPress}
+                  useIcon={true}
+                  icon={<Image source={CREATE_MEDITATION_ICON} style={styles.buttonIcon} />}
+                  backgroundColor={HOME_UI.hero.createMeditationBackground}
+                  style={heroButtonStyle}
+                  textStyle={styles.heroButtonText}
+                />
+              </View>
+              <View style={styles.buttonSlot}>
+                <BaseButton
+                  text="Chat with Lhamo"
+                  height={heroSpacing.buttonHeight}
+                  fontSize={HOME_UI.hero.buttonFontSize}
+                  onPress={handleChatWithLhamoPress}
+                  useIcon={true}
+                  icon={<Image source={CHAT_ICON} style={styles.buttonIcon} />}
+                  isLoading={isNavigating}
+                  backgroundColor={HOME_UI.hero.chatBackground}
+                  fontColor={HOME_UI.textColor}
+                  style={heroButtonStyle}
+                  textStyle={styles.heroButtonText}
+                />
+              </View>
             </View>
           </View>
         </ImageBackground>
 
-        <View style={styles.bottomDivider} />
-
         <View style={styles.feelingsSection}>
-          <Text style={styles.feelingsTitle}>🍃 How are you feeling today?</Text>
-          <Text style={styles.feelingsSubtitle}>
+          <Text
+            style={styles.feelingsTitle}
+            maxFontSizeMultiplier={HOME_UI.maxFontSizeMultiplier}
+          >
+            🍃 How are you feeling today?
+          </Text>
+          <Text
+            style={styles.feelingsSubtitle}
+            maxFontSizeMultiplier={HOME_UI.maxFontSizeMultiplier}
+          >
             Choose what feels closest - this will be your check-in for today
           </Text>
+
+          <View style={styles.feelingsGrid}>
+            {MOOD_ROWS.map((row) => (
+              <View key={row[0].label} style={styles.feelingsRow}>
+                {row.map((feeling) => {
+                  const isSelectedMood = selectedMood === feeling.label;
+                  const isPendingMood = pendingMoodCheckIn === feeling.label;
+                  const shouldMuteMood =
+                    isMoodCheckInLoading && pendingMoodCheckIn !== feeling.label;
+                  const iconSize = feeling.iconSize ?? HOME_UI.mood.iconSize;
+
+                  return (
+                    <TouchableOpacity
+                      key={feeling.label}
+                      activeOpacity={0.85}
+                      style={[
+                        styles.feelingPill,
+                        (isSelectedMood || isPendingMood) && styles.feelingPillSelected,
+                        shouldMuteMood && styles.feelingPillMuted,
+                      ]}
+                      accessibilityRole="button"
+                      accessibilityLabel={feeling.label}
+                      accessibilityState={{
+                        busy: isPendingMood,
+                        disabled: isMoodCheckInLoading || hasMoodCheckedInToday,
+                        selected: isSelectedMood,
+                      }}
+                      hitSlop={{ top: 3, bottom: 3 }}
+                      onPress={() => handleMoodPress(feeling.label)}
+                    >
+                      <Image
+                        source={feeling.icon}
+                        style={[styles.feelingIcon, { width: iconSize, height: iconSize }]}
+                      />
+                      <Text
+                        style={styles.feelingLabel}
+                        numberOfLines={1}
+                        adjustsFontSizeToFit
+                        minimumFontScale={HOME_UI.mood.labelMinimumFontScale}
+                        maxFontSizeMultiplier={HOME_UI.maxFontSizeMultiplier}
+                      >
+                        {feeling.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            ))}
+          </View>
 
           {moodCheckInStatusText ? (
             <View style={styles.moodCheckInStatusRow}>
               {isMoodCheckInLoading ? (
                 <ActivityIndicator size="small" color="#7A756E" />
               ) : null}
-              <Text style={styles.moodCheckInStatusText}>{moodCheckInStatusText}</Text>
+              <Text
+                style={styles.moodCheckInStatusText}
+                maxFontSizeMultiplier={HOME_UI.maxFontSizeMultiplier}
+              >
+                {moodCheckInStatusText}
+              </Text>
             </View>
           ) : null}
-
-          <View style={styles.feelingsGrid}>
-            {MOOD_OPTIONS.map((feeling) => {
-              const isSelectedMood = selectedMood === feeling.label;
-              const isPendingMood = pendingMoodCheckIn === feeling.label;
-              const shouldMuteMood =
-                isMoodCheckInLoading && pendingMoodCheckIn !== feeling.label;
-
-              return (
-                <TouchableOpacity
-                  key={feeling.label}
-                  activeOpacity={0.85}
-                  style={[
-                    styles.feelingPill,
-                    (isSelectedMood || isPendingMood) && styles.feelingPillSelected,
-                    shouldMuteMood && styles.feelingPillMuted,
-                  ]}
-                  accessibilityState={{
-                    busy: isPendingMood,
-                    disabled: isMoodCheckInLoading || hasMoodCheckedInToday,
-                    selected: isSelectedMood,
-                  }}
-                  onPress={() => handleMoodPress(feeling.label)}
-                >
-                  <Image source={feeling.icon} style={styles.feelingIcon} />
-                  <Text
-                    style={[
-                      styles.feelingLabel,
-                      (isSelectedMood || isPendingMood) && styles.feelingLabelSelected,
-                    ]}
-                  >
-                    {feeling.label}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
         </View>
 
-        <View style={styles.bottomDivider} />
+        <GradientDivider style={styles.sectionDivider} />
 
         <View style={styles.intentionSection}>
-          <Text style={styles.intentionTitle}>✨ Today&apos;s Intention</Text>
+          <Text
+            style={styles.intentionTitle}
+            maxFontSizeMultiplier={HOME_UI.maxFontSizeMultiplier}
+          >
+            💫 Today’s Intention
+          </Text>
 
           <ImageBackground
             source={SKY_BACKGROUND}
-            style={styles.intentionCard}
-            imageStyle={styles.intentionCardImage}
+            resizeMode="cover"
+            style={[styles.intentionCard, { width: intentionCardWidth }]}
           >
-            <Text style={styles.intentionLead}>
-              Lhamo senses how you&apos;re feeling...{"\n"}and gently suggests:
-            </Text>
+            <View style={styles.intentionTextBlock}>
+              <Text
+                style={styles.intentionLead}
+                maxFontSizeMultiplier={HOME_UI.maxFontSizeMultiplier}
+              >
+                Lhamo senses how you’re feeling…{"\n"}and gently suggests:
+              </Text>
 
-            {isGuidanceLoading ? (
-              <View style={styles.intentionLoadingWrap}>
-                <ActivityIndicator size="small" color="#4B4748" />
-              </View>
-            ) : (
-              <Text style={styles.intentionWord}>{intention}</Text>
-            )}
+              {isGuidanceLoading ? (
+                <View style={styles.intentionPlaceholder}>
+                  <ActivityIndicator size="small" color={HOME_UI.textColor} />
+                </View>
+              ) : (
+                <Text
+                  style={styles.intentionValue}
+                  numberOfLines={HOME_UI.intention.intentionMaxLines}
+                  maxFontSizeMultiplier={HOME_UI.maxFontSizeMultiplier}
+                >
+                  {intention}
+                </Text>
+              )}
+            </View>
 
-            <View style={styles.intentionDivider} />
+            <GradientDivider />
 
-            <Text style={styles.affirmationLead}>Lhamo&apos;s Affirmation for you</Text>
+            <View style={styles.intentionTextBlock}>
+              <Text
+                style={styles.intentionLead}
+                maxFontSizeMultiplier={HOME_UI.maxFontSizeMultiplier}
+              >
+                Lhamo’s Affirmation for you
+              </Text>
 
-            {isGuidanceLoading ? (
-              <View style={styles.affirmationLoadingWrap}>
-                <ActivityIndicator size="small" color="#4B4748" />
-              </View>
-            ) : (
-              <Text style={styles.affirmationText}>{affirmation}</Text>
-            )}
+              {isGuidanceLoading ? (
+                <View style={styles.affirmationPlaceholder}>
+                  <ActivityIndicator size="small" color={HOME_UI.textColor} />
+                </View>
+              ) : (
+                <Text
+                  style={styles.intentionValue}
+                  numberOfLines={HOME_UI.intention.affirmationMaxLines}
+                  maxFontSizeMultiplier={HOME_UI.maxFontSizeMultiplier}
+                >
+                  {affirmation}
+                </Text>
+              )}
+            </View>
 
             <TouchableOpacity
               activeOpacity={0.85}
               style={styles.refreshButton}
+              accessibilityRole="button"
+              accessibilityState={{ busy: isGuidanceLoading }}
+              hitSlop={{ top: 4, bottom: 4 }}
               onPress={handleRefreshGuidancePress}
             >
               <Image source={LOTUS_ICON} style={styles.refreshIcon} />
-              <Text style={styles.refreshButtonText}>Refresh Guidance</Text>
+              <Text
+                style={styles.refreshButtonText}
+                maxFontSizeMultiplier={HOME_UI.maxFontSizeMultiplier}
+              >
+                Refresh Guidance
+              </Text>
             </TouchableOpacity>
           </ImageBackground>
         </View>
@@ -1054,7 +1269,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#FCFCFB",
   },
   contentContainer: {
-    paddingHorizontal: 12,
+    paddingHorizontal: HOME_UI.screenGutter,
     paddingTop: 100,
   },
   headerRow: {
@@ -1128,85 +1343,63 @@ const styles = StyleSheet.create({
   },
   heroCard: {
     marginTop: 28,
-    width: "100%",
-    aspectRatio: HOME_BACKGROUND_ASPECT_RATIO,
-    minHeight: 238,
-    borderRadius: 28,
-    overflow: "hidden",
-    position: "relative",
+    alignSelf: "center",
+    paddingLeft: HOME_UI.hero.paddingLeft,
+    paddingBottom: HOME_UI.hero.paddingBottom,
   },
-  heroCardImage: {
-    borderRadius: 28,
-    resizeMode: "stretch",
-  },
-  heroContentColumn: {
-    position: "absolute",
-    left: "5%",
-    top: "8%",
-    width: "44%",
-    bottom: "8%",
-    justifyContent: "space-between",
-  },
-  heroTextGroup: {
-    flexShrink: 1,
+  heroColumn: {
+    width: HOME_UI.hero.columnWidth,
+    maxWidth: HOME_UI.hero.columnMaxWidth,
   },
   guidingRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 4,
+    alignSelf: "flex-end",
+    gap: HOME_UI.hero.guidingGap,
   },
   moonIcon: {
-    width: 22,
-    height: 22,
+    width: HOME_UI.hero.moonSize,
+    height: HOME_UI.hero.moonSize,
     resizeMode: "contain",
-    marginRight: 6,
   },
   guidingText: {
-    flex: 1,
-    fontFamily: FONTS.inter,
-    fontSize: 12,
-    lineHeight: 17,
-    color: "#4B4748",
+    flexShrink: 1,
+    fontFamily: FONTS.figtreeMedium500,
+    fontSize: HOME_UI.hero.guidingFontSize,
+    lineHeight: HOME_UI.hero.guidingLineHeight,
+    letterSpacing: HOME_UI.hero.guidingLetterSpacing,
+    color: HOME_UI.hero.guidingColor,
+    includeFontPadding: false,
   },
   guidingName: {
-    fontFamily: FONTS.figtreeSemiBold,
-    color: "#333132",
+    fontFamily: FONTS.figtreeBold,
   },
-  messageBubble: {
-    borderWidth: 1.5,
-    borderColor: "rgba(255,255,255,0.92)",
-    borderRadius: 17,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    backgroundColor: "rgba(255,255,255,0.12)",
+  speechBubble: {
+    width: "100%",
   },
   messageText: {
-    fontFamily: FONTS.inter,
-    fontSize: 12,
-    lineHeight: 13,
-    color: "#4E4A4C",
+    fontFamily: FONTS.figtreeMedium500,
+    fontSize: HOME_UI.hero.bubbleFontSize,
+    lineHeight: HOME_UI.hero.bubbleLineHeight,
+    color: HOME_UI.textColor,
+    includeFontPadding: false,
   },
   buttonStack: {
-    marginTop: 8,
-    gap: 7,
+    gap: HOME_UI.hero.buttonGap,
+  },
+  buttonSlot: {
     width: "100%",
+    maxWidth: HOME_UI.hero.buttonMaxWidth,
   },
   buttonIcon: {
-    width: 14,
-    height: 14,
+    width: HOME_UI.hero.buttonIconSize,
+    height: HOME_UI.hero.buttonIconSize,
     resizeMode: "contain",
   },
-  primaryButton: {
-    borderRadius: 999,
-    width: "100%",
-    alignSelf: "flex-start",
-    marginVertical: 0,
-  },
-  secondaryButton: {
-    borderRadius: 999,
-    width: "100%",
-    alignSelf: "flex-start",
-    marginVertical: 0,
+  heroButtonText: {
+    lineHeight: HOME_UI.hero.buttonLineHeight,
+    letterSpacing: HOME_UI.hero.buttonLetterSpacing,
+    includeFontPadding: false,
   },
   bottomDivider: {
     marginTop: 26,
@@ -1215,26 +1408,32 @@ const styles = StyleSheet.create({
     marginHorizontal: 6,
   },
   feelingsSection: {
-    paddingTop: 38,
-    paddingHorizontal: 20,
+    marginTop: HOME_UI.mood.sectionMarginTop,
+    width: "100%",
+    alignItems: "center",
   },
   feelingsTitle: {
     textAlign: "center",
-    fontFamily: FONTS.figtreeSemiBold,
-    fontSize: 18,
-    lineHeight: 24,
-    color: "#4B4748",
+    fontFamily: FONTS.figtreeBold,
+    fontSize: HOME_UI.mood.titleFontSize,
+    lineHeight: HOME_UI.mood.titleLineHeight,
+    letterSpacing: HOME_UI.mood.letterSpacing,
+    color: HOME_UI.textColor,
+    includeFontPadding: false,
   },
   feelingsSubtitle: {
-    marginTop: 12,
+    marginTop: HOME_UI.mood.titleToSubtitle,
+    paddingHorizontal: HOME_UI.mood.subtitlePaddingHorizontal,
     textAlign: "center",
-    fontFamily: FONTS.inter,
-    fontSize: 13,
-    lineHeight: 18,
-    color: "#9A9593",
+    fontFamily: FONTS.figtreeMedium500,
+    fontSize: HOME_UI.mood.subtitleFontSize,
+    lineHeight: HOME_UI.mood.subtitleLineHeight,
+    letterSpacing: HOME_UI.mood.letterSpacing,
+    color: HOME_UI.mood.subtitleColor,
+    includeFontPadding: false,
   },
   moodCheckInStatusRow: {
-    marginTop: 10,
+    marginTop: HOME_UI.mood.statusMarginTop,
     minHeight: 20,
     flexDirection: "row",
     alignItems: "center",
@@ -1251,138 +1450,130 @@ const styles = StyleSheet.create({
     color: "#7A756E",
   },
   feelingsGrid: {
-    marginTop: 24,
+    marginTop: HOME_UI.mood.subtitleToGrid,
+    width: "100%",
+    gap: HOME_UI.mood.rowGap,
+  },
+  feelingsRow: {
     flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
-    rowGap: 16,
+    justifyContent: "center",
+    gap: HOME_UI.mood.columnGap,
   },
   feelingPill: {
-    width: "31%",
-    minHeight: 54,
+    flex: 1,
+    maxWidth: HOME_UI.mood.pillWidth,
+    minHeight: HOME_UI.mood.pillHeight,
+    borderRadius: HOME_UI.mood.pillHeight / 2,
     borderWidth: 1,
-    borderColor: "#E9D9C9",
-    borderRadius: 999,
-    backgroundColor: "#FFFEFC",
-    paddingHorizontal: 10,
+    borderColor: HOME_UI.mood.pillBorderColor,
+    backgroundColor: "transparent",
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
   },
   feelingPillSelected: {
-    backgroundColor: "#F7C648",
-    borderColor: "#F7C648",
+    borderColor: COLORS.brandYellow,
   },
   feelingPillMuted: {
     opacity: 0.55,
   },
   feelingIcon: {
-    width: 28,
-    height: 28,
+    marginLeft: HOME_UI.mood.iconMarginLeft,
     resizeMode: "contain",
-    marginRight: 2,
   },
   feelingLabel: {
-    fontFamily: FONTS.figtreeSemiBold,
-    fontSize: 14,
-    lineHeight: 17,
-    color: "#4B4748",
+    flex: 1,
+    textAlign: "center",
+    paddingRight: HOME_UI.mood.labelPaddingRight,
+    fontFamily: FONTS.figtreeMedium500,
+    fontSize: HOME_UI.mood.labelFontSize,
+    lineHeight: HOME_UI.mood.labelLineHeight,
+    letterSpacing: HOME_UI.mood.letterSpacing,
+    color: HOME_UI.textColor,
+    includeFontPadding: false,
   },
-  feelingLabelSelected: {
-    color: "#4B4748",
+  sectionDivider: {
+    marginTop: HOME_UI.intention.dividerMarginTop,
+    // 11 + the 12 scroll padding = 23 from the screen edge.
+    marginHorizontal: HOME_UI.intention.gutter - HOME_UI.screenGutter,
   },
   intentionSection: {
-    paddingTop: 28,
+    paddingTop: HOME_UI.intention.sectionPaddingTop,
+    alignItems: "center",
   },
   intentionTitle: {
     textAlign: "center",
-    fontFamily: FONTS.figtreeSemiBold,
-    fontSize: 17,
-    lineHeight: 22,
-    color: "#4B4748",
+    fontFamily: FONTS.figtreeBold,
+    fontSize: HOME_UI.intention.titleFontSize,
+    lineHeight: HOME_UI.intention.titleLineHeight,
+    letterSpacing: HOME_UI.intention.letterSpacing,
+    color: HOME_UI.textColor,
+    includeFontPadding: false,
   },
   intentionCard: {
-    marginTop: 22,
-    height: 250,
-    paddingHorizontal: 18,
-    paddingVertical: 14,
+    marginTop: HOME_UI.intention.titleToCard,
+    alignSelf: "center",
+    minHeight: HOME_UI.intention.cardMinHeight,
+    borderRadius: HOME_UI.intention.cardRadius,
+    overflow: "hidden",
+    paddingTop: HOME_UI.intention.cardPaddingVertical,
+    paddingBottom: HOME_UI.intention.cardPaddingVertical,
+    paddingHorizontal: HOME_UI.intention.cardPaddingHorizontal,
     alignItems: "center",
-    justifyContent: "center",
+    gap: HOME_UI.intention.itemGap,
   },
-  intentionCardImage: {
-    borderRadius: 28,
-    resizeMode: "cover",
+  intentionTextBlock: {
+    width: "100%",
+    maxWidth: HOME_UI.intention.textBlockMaxWidth,
+    gap: HOME_UI.intention.textBlockGap,
   },
   intentionLead: {
     textAlign: "center",
-    fontFamily: FONTS.figtreeMedium,
-    fontSize: 13,
-    lineHeight: 18,
-    color: "#98938F",
+    fontFamily: FONTS.figtreeSemiBoldItalic,
+    fontSize: HOME_UI.intention.leadFontSize,
+    lineHeight: HOME_UI.intention.leadLineHeight,
+    color: HOME_UI.intention.leadColor,
+    includeFontPadding: false,
   },
-  intentionWord: {
-    marginTop: 6,
+  intentionValue: {
     textAlign: "center",
     fontFamily: FONTS.figtreeSemiBold,
-    fontSize: 22,
-    lineHeight: 28,
-    color: "#111111",
+    fontSize: HOME_UI.intention.valueFontSize,
+    lineHeight: HOME_UI.intention.valueLineHeight,
+    color: HOME_UI.intention.valueColor,
+    includeFontPadding: false,
   },
-  intentionLoadingWrap: {
-    marginTop: 6,
-    minHeight: 28,
+  intentionPlaceholder: {
+    minHeight: HOME_UI.intention.intentionPlaceholderHeight,
     alignItems: "center",
     justifyContent: "center",
   },
-  intentionDivider: {
-    marginTop: 14,
-    width: "115%",
-    height: 1,
-    backgroundColor: "rgba(222, 216, 208, 0.9)",
-  },
-  affirmationLead: {
-    marginTop: 12,
-    textAlign: "center",
-    fontFamily: FONTS.figtreeMedium,
-    fontSize: 12,
-    lineHeight: 16,
-    color: "#98938F",
-  },
-  affirmationText: {
-    marginTop: 10,
-    textAlign: "center",
-    fontFamily: FONTS.figtreeSemiBold,
-    fontSize: 18,
-    lineHeight: 24,
-    color: "#111111",
-  },
-  affirmationLoadingWrap: {
-    marginTop: 10,
-    minHeight: 24,
+  affirmationPlaceholder: {
+    minHeight: HOME_UI.intention.affirmationPlaceholderHeight,
     alignItems: "center",
     justifyContent: "center",
   },
   refreshButton: {
-    marginTop: 16,
-    minHeight: 42,
-    borderRadius: 999,
-    backgroundColor: "rgba(175, 171, 169, 0.95)",
-    paddingHorizontal: 22,
+    minHeight: HOME_UI.intention.refreshHeight,
+    borderRadius: HOME_UI.intention.refreshHeight / 2,
+    paddingHorizontal: HOME_UI.intention.refreshPaddingHorizontal,
+    backgroundColor: HOME_UI.intention.refreshBackground,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
+    gap: HOME_UI.intention.refreshGap,
   },
   refreshIcon: {
-    width: 20,
-    height: 20,
+    width: HOME_UI.intention.refreshIconSize,
+    height: HOME_UI.intention.refreshIconSize,
     resizeMode: "contain",
-    marginRight: 8,
   },
   refreshButtonText: {
     fontFamily: FONTS.figtreeSemiBold,
-    fontSize: 12,
-    lineHeight: 16,
+    fontSize: HOME_UI.intention.refreshFontSize,
+    lineHeight: HOME_UI.intention.refreshLineHeight,
+    letterSpacing: HOME_UI.intention.letterSpacing,
     color: "#FFFFFF",
+    includeFontPadding: false,
   },
   recommendationSection: {
     marginTop: 18,
