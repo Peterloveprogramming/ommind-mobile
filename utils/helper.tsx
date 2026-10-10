@@ -1,5 +1,5 @@
 import { LambdaResult } from "@/api/types";
-import { getLambdaServiceHeaders } from "@/api/lambdaService";
+import { getLambdaServiceHeaders, runInLambdaQueue } from "@/api/lambdaService";
 import { Router } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LAMBDA_SERVICE_URL } from "@/constant";
@@ -190,17 +190,19 @@ export const addRecentlyAccessedSession = async (
     authInfo
   );
 
-  const response = await fetch(LAMBDA_SERVICE_URL, {
-    method: "POST",
-    headers: getLambdaServiceHeaders(LAMBDA_SERVICE_URL),
-    body: JSON.stringify(requestBody),
+  return runInLambdaQueue(LAMBDA_SERVICE_URL, async () => {
+    const response = await fetch(LAMBDA_SERVICE_URL, {
+      method: "POST",
+      headers: getLambdaServiceHeaders(LAMBDA_SERVICE_URL),
+      body: JSON.stringify(requestBody),
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to add recently accessed session");
+    }
+
+    return response.json();
   });
-
-  if (!response.ok) {
-    throw new Error("Failed to add recently accessed session");
-  }
-
-  return response.json();
 };
 
 export const updateSessionProgress = async (
@@ -220,17 +222,19 @@ export const updateSessionProgress = async (
     authInfo
   );
 
-  const response = await fetch(LAMBDA_SERVICE_URL, {
-    method: "POST",
-    headers: getLambdaServiceHeaders(LAMBDA_SERVICE_URL),
-    body: JSON.stringify(requestBody),
+  return runInLambdaQueue(LAMBDA_SERVICE_URL, async () => {
+    const response = await fetch(LAMBDA_SERVICE_URL, {
+      method: "POST",
+      headers: getLambdaServiceHeaders(LAMBDA_SERVICE_URL),
+      body: JSON.stringify(requestBody),
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to update session progress");
+    }
+
+    return response.json();
   });
-
-  if (!response.ok) {
-    throw new Error("Failed to update session progress");
-  }
-
-  return response.json();
 };
 
 export const updateFavourite = async (
@@ -250,15 +254,17 @@ export const updateFavourite = async (
     authInfo
   );
 
-  const response = await fetch(LAMBDA_SERVICE_URL, {
-    method: "POST",
-    headers: getLambdaServiceHeaders(LAMBDA_SERVICE_URL),
-    body: JSON.stringify(requestBody),
+  return runInLambdaQueue(LAMBDA_SERVICE_URL, async () => {
+    const response = await fetch(LAMBDA_SERVICE_URL, {
+      method: "POST",
+      headers: getLambdaServiceHeaders(LAMBDA_SERVICE_URL),
+      body: JSON.stringify(requestBody),
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to update favourite");
+    }
+
+    return response.json();
   });
-
-  if (!response.ok) {
-    throw new Error("Failed to update favourite");
-  }
-
-  return response.json();
 };

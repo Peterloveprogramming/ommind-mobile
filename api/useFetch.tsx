@@ -1,5 +1,5 @@
 import { deleteFromCache,getAuthInfo } from "@/utils/helper";
-import { getLambdaServiceHeaders } from "@/api/lambdaService";
+import { acquireLambdaTurn, getLambdaServiceHeaders } from "@/api/lambdaService";
 import { buildLambdaRequestPayload } from "@/utils/requestContext";
 import { useRouter } from "expo-router"; // Import useRouter for navigation
 import * as Sentry from "@sentry/react-native";
@@ -44,10 +44,15 @@ export function useFetch <ResultType> ({
     }:CommonFetch)=>{
         console.log("lambda request:", input?.route, input);
 
+        const callerSignal = fetchOptions?.signal;
+        // In development, wait for the previous Lambda request to finish (the
+        // local runtime can't handle overlapping invocations). The timeout
+        // below only starts once it's this request's turn.
+        const releaseLambdaTurn = await acquireLambdaTurn(url, callerSignal);
+
         // Compose an internal timeout with any caller-supplied AbortSignal (e.g.
         // a superseded request) so either can cancel the underlying fetch.
         const timeoutController = new AbortController();
-        const callerSignal = fetchOptions?.signal;
         const timeoutId = setTimeout(() => timeoutController.abort(), timeoutMs);
         if (callerSignal) {
             if (callerSignal.aborted) {
@@ -121,6 +126,7 @@ export function useFetch <ResultType> ({
             throw e;
         } finally {
             clearTimeout(timeoutId);
+            releaseLambdaTurn();
         }
     }
     return {commonFetch};
