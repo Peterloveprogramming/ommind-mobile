@@ -8,6 +8,10 @@ export type DreamLogContextInput = {
   recurrence?: string | null;
   recent_life_connection?: string | null;
   stress_level?: string | null;
+  sleep_quality?: string | null;
+  season?: string | null;
+  body_sensation_after_waking?: string | null;
+  health_or_wellness_context?: string | null;
 };
 
 export type GetDreamLogsInput = {
@@ -56,6 +60,10 @@ export type DreamLogItem = {
   recurrence?: string | null;
   recent_life_connection?: string | null;
   stress_level?: string | null;
+  sleep_quality?: string | null;
+  season?: string | null;
+  body_sensation_after_waking?: string | null;
+  health_or_wellness_context?: string | null;
   created_at?: string | null;
   updated_at?: string | null;
   [key: string]: unknown;

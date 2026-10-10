@@ -34,6 +34,10 @@ type JournalEntry = {
   recurrence?: string | null;
   recentLifeConnection?: string | null;
   stressLevel?: string | null;
+  sleepQuality?: string | null;
+  season?: string | null;
+  bodySensationAfterWaking?: string | null;
+  healthOrWellnessContext?: string | null;
 };
 
 const FALLBACK_EMPTY_DATE = {
@@ -105,6 +109,10 @@ const mapDreamLogToJournalEntry = (
     recurrence: dreamLog.recurrence ?? null,
     recentLifeConnection: dreamLog.recent_life_connection ?? null,
     stressLevel: dreamLog.stress_level ?? null,
+    sleepQuality: dreamLog.sleep_quality ?? null,
+    season: dreamLog.season ?? null,
+    bodySensationAfterWaking: dreamLog.body_sensation_after_waking ?? null,
+    healthOrWellnessContext: dreamLog.health_or_wellness_context ?? null,
   };
 };
 
@@ -252,6 +260,10 @@ const Journal = () => {
               recurrence: entry.recurrence ?? "",
               recentLifeConnection: entry.recentLifeConnection ?? "",
               stressLevel: entry.stressLevel ?? "",
+              sleepQuality: entry.sleepQuality ?? "",
+              season: entry.season ?? "",
+              bodySensationAfterWaking: entry.bodySensationAfterWaking ?? "",
+              healthOrWellnessContext: entry.healthOrWellnessContext ?? "",
             }
           : {}),
       },

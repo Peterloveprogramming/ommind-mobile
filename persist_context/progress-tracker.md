@@ -5,10 +5,159 @@ change.
 
 ## Current Phase
 
+- Complete (code, backend tests, lint) — awaiting backend deploy +
+  migration, then the spec 09 manual matrix on iOS / Android / small screen.
+
+## Current Goal
+
+- 09-dream-journal-figma-redesign: rebuild the dream branch of
+  `app/journal/write.tsx` to Figma `3128:9986` / `2631:10316` /
+  `2631:10494` (Pro copy `37GSSpgSU44KPNvLuVKAOw`); add 4 optional dream
+  details (`sleep_quality`, `season`, `body_sensation_after_waking`,
+  `health_or_wellness_context`) end to end: `dream_logs` columns, API,
+  `DreamInput`, dream prompts. Autosave on back, Delete with confirm,
+  Get AI Reflection in the header, no "Other" chips, fix duplicate-create
+  and the backend COALESCE clear bug. Awareness branch unchanged.
+
+## Completed
+
+- Backend (`/Users/zimingyan/PycharmProjects/lhamo`):
+  - B1 `db/database_migration.py`: 4 nullable `VARCHAR(256)` columns
+    (`sleep_quality`, `season`, `body_sensation_after_waking`,
+    `health_or_wellness_context`) in `CREATE TABLE` and the idempotent
+    `ALTER TABLE … ADD COLUMN IF NOT EXISTS` block. `db/set_up_query.py`
+    seed row has sample values.
+  - B2 `controllers/database/dream_logs.py`: `DREAM_LOG_DETAIL_COLUMNS`
+    (9) drives `DREAM_LOG_SELECT_COLUMNS` (`created_at` last) and the
+    insert. `format_dream_log_row` reads details from `row[3:-1]` and pads
+    short (old 9-col / 4-col) rows with `None`. `update_dream_log_by_id(log_id,
+    user_id, log, **details)` builds `SET` only from passed columns,
+    whitelisted against `DREAM_LOG_DETAIL_COLUMNS` (`ValueError` otherwise);
+    `None` clears, absent = unchanged. COALESCE removed (clear bug fixed).
+  - B3 `controllers/api/dream_logs.py`: 4 keys in `DREAM_LOG_CONTEXT_FIELDS`;
+    `_dream_log_context_for_database(event, only_present=False)` — update
+    passes `only_present=True` (presence = any alias key in event or
+    `user_context`); blank/whitespace → `None`; > 256 chars → 400
+    `"<field> must be 256 characters or fewer"` on add and update
+    (`MAX_DREAM_DETAIL_CHARS` imported from `llm/workflows/dream/inputs.py`).
+  - B4 `llm/workflows/dream/inputs.py`: 4 fields in `DREAM_DETAIL_FIELDS`,
+    `DREAM_DETAIL_LABELS`, `DreamInput`. `services/dream_analysis.py`
+    unchanged; its log line joins dict keys (field names only) — now
+    covered by a test.
+  - B5 `llm/workflows/dream/prompts.py`: understanding + guidance prompts
+    list the 4 details; body sensation → `emotions`/`energy_signals`,
+    sleep/season/health → `life_context`; season/sleep inform Tibetan
+    energy only when the dream supports it; body sensation = first-person
+    evidence; health context never diagnosed or tied to illness predictions.
+    `DreamUnderstanding` JSON unchanged.
+  - B6 tests: rewrote `controllers/database/test_dream_logs.py`; new
+    `controllers/api/test_dream_logs.py` (round-trip, present-key update,
+    old-client 5-key update leaves new columns out, null clears, 256/257
+    boundary → 400); added to `llm/workflows/dream/test_inputs.py`,
+    `services/test_dream_analysis.py`, `llm/orchestration/test_models.py`;
+    updated `controllers/api/test_chat_jobs.py` expected payloads (4 new
+    `None` keys). Spec-listed tests: 123 passed. Full suite
+    (`--continue-on-collection-errors`): 555 passed; 1 failure + 2
+    collection errors pre-existing (meditation guidance wording,
+    `test_jwt_valid.py` / `utils/test_auth_helper.py`).
+
+- Mobile:
+  - M1 `api/dreamLogs/types.ts`: 4 keys on `DreamLogContextInput` and
+    `DreamLogItem` (`requests.ts` already spreads the context).
+  - M2 `app/(tabs)/journal.tsx`: `JournalEntry` / `mapDreamLogToJournalEntry`
+    carry the 4 fields; `handleEntryPress` passes `sleepQuality`, `season`,
+    `bodySensationAfterWaking`, `healthOrWellnessContext`. List already
+    refetches in `useFocusEffect`.
+  - M3 `app/journal/write.tsx` now only routes: `type === "dreams"` →
+    `comp/journal/DreamJournalEditor.tsx`; otherwise `AwarenessJournalWriter`
+    (same file) with the previous awareness markup/styles verbatim (dream-only
+    code removed; awareness behaviour unchanged).
+    - `comp/journal/dreamDetails.ts`: 9-section config (`kind` chips/text,
+      icon size, Season `contain` + gap 5), `DREAM_DETAIL_TEXT_MAX_LENGTH =
+      256`, case-insensitive chip matching with `Moderate` → `Medium` alias,
+      `buildDreamLogPayload` (trimmed `log` + all 9 keys, explicit `null`).
+      "Other" chip/input and its helpers are gone.
+    - `comp/journal/DreamDetailsCard.tsx`: collapsed row (40 high, ✨ title,
+      chevron-down 20 from right) / expanded card (7/9 insets, groups with
+      `paddingVertical: 3` + gap 10 = uniform 16, chips 27 high, only text
+      colour changes on select, free-text inputs `maxLength` 256, centred
+      collapse caret 5 above / 15 below).
+    - `comp/journal/ReflectionPromptsFooter.tsx`: Show pill ↔ prompts card
+      (bulb 20×20 in 22 frame @ 0.84, yellow dots, `DREAM_INSTRUCTIONS`,
+      Hide pill).
+    - `DreamJournalEditor`: header (52 back arrow / Get AI Reflection pill /
+      Delete), en-US `Dream on Month D, YYYY` title, auto-growing input,
+      `KeyboardAwareScrollView` (`bottomOffset` = footer + 23) with
+      `paddingBottom` = inset + 15 + measured footer + 16, footer in an
+      absolute `KeyboardStickyView` (`bottom` = inset + 15, `opened` offset =
+      inset). `useSafeAreaInsets` top, `#FAFAFA`, `StatusBar style="dark"`,
+      `maxFontSizeMultiplier` 1.3 on header/chips/pills,
+      `includeFontPadding: false`.
+    - Behaviour: `usePreventRemove` (from `@react-navigation/native`) is on
+      while dirty and (text or existing entry); header back calls the same
+      `handleLeave`. Empty new → leave; empty existing → toast "Dream text
+      can't be empty — changes not saved" + leave; clean → leave; dirty →
+      create/update → toast saved/updated → `router.replace("/journal",
+      dreams)`; failure stays. `allowRemoveRef` lets programmatic exits
+      through; `isBusyRef` blocks double triggers. `savedLogId` is set from
+      the create response (duplicate-create bug fixed); Get AI Reflection
+      saves only when dirty or unsaved, then pushes `/chat/new_index`.
+      Delete → `Alert` → `deleteDreamLog` (hook toasts only on failure, so
+      the screen toasts "Dream log deleted") or discard for unsaved drafts.
+    - Legacy values: chip groups hold the raw stored value; untouched groups
+      send it back unchanged; unmatched values select no chip. An untouched
+      alias like `Moderate` shows `Medium` selected and the first tap stores
+      `"Medium"` (spec edge case); a further tap deselects.
+  - M5 assets: `assets/svg/journal/` — `DreamBackButton` (3128:10003,
+    52×52), `MagicStick` (3128:10010, 33×31 clipped in a 22×22 frame at
+    2/-9), `ChevronDown` (3079:10389), `CollapseChevron` (3130:10217,
+    334×15 frame, centred so narrow cards only clip empty edges),
+    `PromptDot` (2631:10687). New PNGs (512px Figma exports):
+    `sleep_quality`, `season`, `body_sensation`, `health_context`.
+    `stress_level.png` replaced (old one was a different glyph, RGB, no
+    alpha). `magic_bulb.png` and the other 4 group icons match Figma
+    visually and were kept. No Figma URLs in code.
+  - `npm run lint`: 0 errors, 41 pre-existing warnings (none in touched
+    files). `tsc --noEmit`: 32 errors, all pre-existing elsewhere (baseline
+    36; the old `write.tsx` accounted for 4).
+
+## In Progress
+
+- None.
+
+## Next Up
+
+- Deploy backend first and run the migration; `\d dream_logs` shows the 4
+  new columns. Ship the app only after (old backend drops the new keys).
+- Spec 09 manual verification 1–6 on an iOS simulator, an Android emulator
+  and a small screen (360 pt / iPhone SE): the screen was not rendered in
+  this session (no booted simulator; screen needs a logged-in session).
+  Specifically check: swipe-back / Android back autosave with
+  `usePreventRemove` on native-stack, 0.5 chip borders on low-density
+  Android, footer position above keyboard, chat → back → back creates no
+  duplicate.
+- Trigger an analysis with new fields set and confirm
+  `chat_jobs.request_payload.workflowSpecificInput` contains them.
+
+## Open Questions
+
+- None.
+
+## Session Notes
+
+- Work is uncommitted on `main` in both repos (the lhamo `text_to_audio`
+  change predates this work).
+
+---
+
+# Previous Goal: 08-feedback-email-notifications
+
+### Phase
+
 - Complete (backend code + tests) — awaiting deploy and the spec 08 manual
   verification against staging/prod.
 
-## Current Goal
+### Current Goal
 
 - 08-feedback-email-notifications: every feedback path (chat 4–5★ tap,
   chat 1–3★ `FeedBackModal`, chat `ReportProblem`, Profile bug /
@@ -18,7 +167,7 @@ change.
   with the row in `data`. All changes are in the backend
   (`/Users/zimingyan/PycharmProjects/lhamo`); no mobile code changes.
 
-## Completed
+### Completed
 
 - Baseline (backend): `controllers/api/test_feedback.py` +
   `controllers/database/test_chat_messages.py` 12 passed.
@@ -76,11 +225,11 @@ change.
 - Routes, payloads, success status codes, DB schema and `config/config.py`
   untouched. Mobile app untouched.
 
-## In Progress
+### In Progress
 
 - None.
 
-## Next Up
+### Next Up
 
 - Deploy the backend; confirm `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`,
   `SMTP_PASSWORD` are set in the deployed Lambda/container env.
@@ -90,12 +239,12 @@ change.
 - Separately: check and revoke the non-placeholder-looking `SMTP_PASSWORD`
   in the backend's tracked `.env.example` (out of scope for spec 08).
 
-## Open Questions
+### Open Questions
 
 - None. Accepted per spec: duplicate rows if the user retries after an
   email failure.
 
-## Session Notes
+### Session Notes
 
 - Backend changes are uncommitted on `main` in
   `/Users/zimingyan/PycharmProjects/lhamo` (its `text_to_audio` change was
