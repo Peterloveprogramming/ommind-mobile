@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Keyboard, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { NativeSyntheticEvent, StyleSheet, TextInput, TextInputKeyPressEventData, View } from 'react-native';
 import { FONTS } from '@/theme';
 
 interface OTPInputProps {
@@ -10,9 +10,13 @@ interface OTPInputProps {
     autoFocus?: boolean;
 }
 
-// A single hidden TextInput drives all the boxes. This avoids the per-box
-// focus/backspace quirks that differ between iOS and Android, and lets the
-// OS one-time-code autofill / paste fill the whole code at once.
+const toCells = (value: string, length: number) =>
+    Array.from({ length }, (_, index) => value[index] ?? '');
+
+// One real TextInput per box (like the original OTP screen): tapping a box
+// focuses exactly that box, typing a digit jumps to the next one and
+// backspace on an empty box steps back. Pasting / OS autofill of the whole
+// code into any box spreads it across the boxes from there.
 export const OTPInput: React.FC<OTPInputProps> = ({
     value,
     onChange,
@@ -20,64 +24,102 @@ export const OTPInput: React.FC<OTPInputProps> = ({
     disabled = false,
     autoFocus = true,
 }) => {
-    const inputRef = useRef<TextInput>(null);
-    const [isFocused, setIsFocused] = useState(false);
+    const inputRefs = useRef<(TextInput | null)[]>([]);
+    const [cells, setCells] = useState<string[]>(() => toCells(value, length));
+    const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
+
+    // Follow outside resets (e.g. "Send code again" clears the code).
+    useEffect(() => {
+        if (value !== cells.join('')) setCells(toCells(value, length));
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [value, length]);
 
     useEffect(() => {
         if (!autoFocus || disabled) return;
         // Android often ignores autoFocus during the screen transition.
-        const timer = setTimeout(() => inputRef.current?.focus(), 350);
+        const timer = setTimeout(() => inputRefs.current[0]?.focus(), 350);
         return () => clearTimeout(timer);
     }, [autoFocus, disabled]);
 
-    useEffect(() => {
-        // Android's back button hides the keyboard but keeps the input focused,
-        // so a later focus() would not reopen it. Blur so tapping a box works again.
-        const subscription = Keyboard.addListener('keyboardDidHide', () => {
-            inputRef.current?.blur();
-        });
-        return () => subscription.remove();
-    }, []);
-
-    const handleChangeText = (text: string) => {
-        onChange(text.replace(/\D/g, '').slice(0, length));
+    const focusInput = (index: number) => {
+        inputRefs.current[Math.max(0, Math.min(index, length - 1))]?.focus();
     };
 
-    const activeIndex = Math.min(value.length, length - 1);
+    const updateCells = (next: string[]) => {
+        setCells(next);
+        onChange(next.join(''));
+    };
+
+    const handleChangeText = (text: string, index: number) => {
+        const digits = text.replace(/\D/g, '');
+        const current = cells[index];
+        const next = [...cells];
+
+        if (!digits) {
+            next[index] = '';
+            updateCells(next);
+            return;
+        }
+
+        // Typing into a box that already has a digit gives two characters;
+        // keep the one the user just typed.
+        if (current && digits.length === 2) {
+            next[index] = digits.startsWith(current) ? digits[1] : digits[0];
+            updateCells(next);
+            focusInput(index + 1);
+            return;
+        }
+
+        // Paste / autofill: spread the digits from this box onwards.
+        const pasted = digits.slice(0, length - index).split('');
+        pasted.forEach((digit, offset) => {
+            next[index + offset] = digit;
+        });
+        updateCells(next);
+
+        const lastFilled = index + pasted.length - 1;
+        if (lastFilled < length - 1) {
+            focusInput(lastFilled + 1);
+        } else {
+            inputRefs.current[lastFilled]?.blur();
+        }
+    };
+
+    const handleKeyPress = (
+        event: NativeSyntheticEvent<TextInputKeyPressEventData>,
+        index: number
+    ) => {
+        if (event.nativeEvent.key !== 'Backspace' || cells[index] || index === 0) return;
+        const next = [...cells];
+        next[index - 1] = '';
+        updateCells(next);
+        focusInput(index - 1);
+    };
 
     return (
-        <Pressable
-            style={styles.row}
-            onPress={() => inputRef.current?.focus()}
-            disabled={disabled}
-            accessibilityRole="none"
-        >
-            {Array.from({ length }).map((_, index) => {
-                const isActive = isFocused && index === activeIndex;
-                return (
-                    <View key={index} style={[styles.box, isActive && styles.boxActive]}>
-                        <Text style={styles.digit} allowFontScaling={false}>
-                            {value[index] ?? ''}
-                        </Text>
-                    </View>
-                );
-            })}
-            <TextInput
-                ref={inputRef}
-                value={value}
-                onChangeText={handleChangeText}
-                onFocus={() => setIsFocused(true)}
-                onBlur={() => setIsFocused(false)}
-                maxLength={length}
-                keyboardType="number-pad"
-                textContentType="oneTimeCode"
-                autoComplete="one-time-code"
-                editable={!disabled}
-                caretHidden
-                style={styles.hiddenInput}
-                accessibilityLabel="Verification code"
-            />
-        </Pressable>
+        <View style={styles.row}>
+            {cells.map((digit, index) => (
+                <TextInput
+                    key={index}
+                    ref={(ref) => {
+                        inputRefs.current[index] = ref;
+                    }}
+                    value={digit}
+                    onChangeText={(text) => handleChangeText(text, index)}
+                    onKeyPress={(event) => handleKeyPress(event, index)}
+                    onFocus={() => setFocusedIndex(index)}
+                    onBlur={() => setFocusedIndex((prev) => (prev === index ? null : prev))}
+                    keyboardType="number-pad"
+                    textContentType="oneTimeCode"
+                    autoComplete={index === 0 ? 'one-time-code' : 'off'}
+                    editable={!disabled}
+                    caretHidden
+                    allowFontScaling={false}
+                    style={[styles.box, focusedIndex === index && styles.boxActive]}
+                    accessibilityLabel={`Verification code digit ${index + 1}`}
+                />
+            ))}
+        </View>
     );
 };
 
@@ -96,24 +138,16 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: '#D1D1D6',
         borderRadius: 10,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    boxActive: {
-        borderColor: '#000000',
-    },
-    digit: {
+        padding: 0,
+        textAlign: 'center',
+        textAlignVertical: 'center',
+        includeFontPadding: false,
         fontFamily: FONTS.interSemiBold,
         fontSize: 24,
         color: '#000000',
-        includeFontPadding: false,
-        textAlignVertical: 'center',
     },
-    hiddenInput: {
-        position: 'absolute',
-        width: 1,
-        height: 1,
-        opacity: 0,
+    boxActive: {
+        borderColor: '#000000',
     },
 });
 

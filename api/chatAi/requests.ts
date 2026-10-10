@@ -3,9 +3,9 @@ import {LAMBDA_SERVICE_URL} from "@/constant"
 import { LambdaRequest } from "@/api/types";
 import { ActiveChatJobResult, AnalyzeDreamInput, ChatAiInput, ChatJobResult, ChatResult } from "./types";
 
-// Submit / status / active-job calls never wait on the LLM, so they get a
-// short timeout instead of useFetch's 45s default.
-const CHAT_JOB_TIMEOUT_MS = 30000;
+// Submit / status / active-job calls. Matches useFetch's 45s default so a
+// slow submit (e.g. inline dispatch on the local Lambda runtime) has room to finish.
+const CHAT_JOB_TIMEOUT_MS = 45000;
 
 export const useChatAi = () => {
     const {commonFetch} = useFetch<ChatResult>({
