@@ -17,7 +17,7 @@ type MeditationSessionCardProps = {
   session_progress?: number | null;
   generated_meditation?:number | null;
   onPress: () => void;
-  variant?: "default" | "profile";
+  variant?: "default" | "profile" | "list";
 };
 
 const clampProgress = (value: number) => Math.max(0, Math.min(value, 1));
@@ -32,8 +32,13 @@ const MeditationSessionCard = ({
   variant = "default",
 }: MeditationSessionCardProps) => {
   // "profile" restyles the card for Profile's Recently Played (spec 07);
+  // "list" is the same card stretched full width for the Saved / Recently Played screens;
   // "default" (Home) keeps the base styles untouched.
-  const isProfile = variant === "profile";
+  const isList = variant === "list";
+  const isProfile = variant === "profile" || isList;
+  const lengthLabel = isList
+    ? `${session_length} ${session_length === 1 ? "min" : "mins"}`
+    : `${session_length} min`;
   const maxFontSizeMultiplier = isProfile ? 1.2 : undefined;
 
   const progressWidth = useMemo<DimensionValue>(() => {
@@ -47,7 +52,7 @@ const MeditationSessionCard = ({
 
   return (
     <TouchableOpacity activeOpacity={0.86} onPress={onPress}>
-      <View style={[styles.card, isProfile && profileStyles.card]}>
+      <View style={[styles.card, isProfile && profileStyles.card, isList && listStyles.card]}>
         <ImageBackground
           source={image_url ? { uri: image_url } : images.meditation_test}
           style={styles.image}
@@ -55,14 +60,16 @@ const MeditationSessionCard = ({
         />
 
         <View style={[styles.rightPanel, isProfile && profileStyles.rightPanel]}>
-          {generated_meditation?"":<Text style={[styles.lengthText, isProfile && profileStyles.metaText]} maxFontSizeMultiplier={maxFontSizeMultiplier}>{session_length} min</Text>}
-          <Text style={[styles.titleText, isProfile && profileStyles.titleText]} numberOfLines={3} maxFontSizeMultiplier={maxFontSizeMultiplier}>{session_title}</Text>
+          {generated_meditation ? null : <Text style={[styles.lengthText, isProfile && profileStyles.metaText]} maxFontSizeMultiplier={maxFontSizeMultiplier}>{lengthLabel}</Text>}
+          <Text style={[styles.titleText, isProfile && profileStyles.titleText, isList && listStyles.titleText]} numberOfLines={3} maxFontSizeMultiplier={maxFontSizeMultiplier}>{session_title}</Text>
           <Text style={[styles.typeText, isProfile && profileStyles.metaText]} maxFontSizeMultiplier={maxFontSizeMultiplier}>{generated_meditation?"Generated Guided Meditation":"Guided Meditation"}</Text>
         </View>
 
-        <View style={[styles.progressTrack, isProfile && profileStyles.progressTrack]}>
-          <View style={[styles.progressFill, isProfile && profileStyles.progressFill, { width: progressWidth }]} />
-        </View>
+        {isList ? null : (
+          <View style={[styles.progressTrack, isProfile && profileStyles.progressTrack]}>
+            <View style={[styles.progressFill, isProfile && profileStyles.progressFill, { width: progressWidth }]} />
+          </View>
+        )}
       </View>
     </TouchableOpacity>
   );
@@ -169,5 +176,17 @@ const profileStyles = StyleSheet.create({
   },
   progressFill: {
     backgroundColor: COLORS.brandYellow,
+  },
+});
+
+// Figma Saved (2919:11898) / Recently Played (2931:10960) card: the profile card at full row width.
+// Merged over `profileStyles`.
+const listStyles = StyleSheet.create({
+  card: {
+    width: "100%",
+  },
+  // Figma reserves three title lines, which pins the type text to the bottom of the column.
+  titleText: {
+    minHeight: 51,
   },
 });

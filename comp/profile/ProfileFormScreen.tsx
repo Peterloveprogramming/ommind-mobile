@@ -1,5 +1,5 @@
-import ChevronLeft from "@/assets/svg/profile/ChevronLeft";
 import Send from "@/assets/svg/profile/Send";
+import ProfileScreenHeader, { PROFILE_HEADER_UI } from "@/comp/profile/ProfileScreenHeader";
 import { COLORS, FONTS } from "@/theme";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { useFocusEffect } from "expo-router";
@@ -14,7 +14,6 @@ import {
   View,
 } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 // Shared geometry for the Figma "Report a bug" (2919:11978), "Suggest an improvement"
 // (2919:12163) and "Contact us" (2919:12250) frames, all 394 x 852.
@@ -22,14 +21,9 @@ export const PROFILE_FORM_UI = {
   background: "#FAFAFA",
   designHeight: 852,
   minVerticalScale: 0.75,      // vertical gaps shrink on short phones, never below 75%
-  gutter: 23,
-  maxContentWidth: 480,
-  maxFontSizeMultiplier: 1.2,
-  headerTopOffset: -7,         // header top 52 vs 59 status bar
-  headerMinTop: 12,
-  headerHeight: 48,
-  backButtonSize: 48,
-  backButtonColor: "rgba(71, 71, 71, 0.3)",
+  gutter: PROFILE_HEADER_UI.gutter,
+  maxContentWidth: PROFILE_HEADER_UI.maxContentWidth,
+  maxFontSizeMultiplier: PROFILE_HEADER_UI.maxFontSizeMultiplier,
   contentTopBias: 16,          // Figma content sits 16 below the centre of the free space
   keyboardBottomOffset: 24,
   placeholderColor: "#8E8E93",
@@ -63,7 +57,6 @@ const ProfileFormScreen = ({
   onBackPress,
   children,
 }: ProfileFormScreenProps) => {
-  const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
 
   // The form is rendered inside the Profile tab, so the Android back button closes it.
@@ -80,37 +73,7 @@ const ProfileFormScreen = ({
 
   return (
     <View style={styles.container}>
-      <View
-        style={[
-          styles.header,
-          {
-            paddingTop: Math.max(
-              insets.top + PROFILE_FORM_UI.headerTopOffset,
-              PROFILE_FORM_UI.headerMinTop,
-            ),
-          },
-        ]}
-      >
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Go back"
-          hitSlop={8}
-          onPress={onBackPress}
-          style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}
-        >
-          <ChevronLeft />
-        </Pressable>
-        <Text
-          accessibilityRole="header"
-          adjustsFontSizeToFit
-          maxFontSizeMultiplier={PROFILE_FORM_UI.maxFontSizeMultiplier}
-          numberOfLines={1}
-          style={[styles.title, titleVariant === "regular" ? styles.titleRegular : styles.titleSemiBold]}
-        >
-          {title}
-        </Text>
-        <View style={styles.headerSpacer} />
-      </View>
+      <ProfileScreenHeader title={title} titleVariant={titleVariant} onBackPress={onBackPress} />
 
       <KeyboardAwareScrollView
         bottomOffset={PROFILE_FORM_UI.keyboardBottomOffset}
@@ -206,43 +169,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: PROFILE_FORM_UI.background,
-  },
-  header: {
-    width: "100%",
-    maxWidth: PROFILE_FORM_UI.maxContentWidth,
-    alignSelf: "center",
-    paddingHorizontal: PROFILE_FORM_UI.gutter,
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  backButton: {
-    width: PROFILE_FORM_UI.backButtonSize,
-    height: PROFILE_FORM_UI.backButtonSize,
-    borderRadius: PROFILE_FORM_UI.backButtonSize / 2,
-    backgroundColor: PROFILE_FORM_UI.backButtonColor,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  title: {
-    flex: 1,
-    marginHorizontal: 8,
-    fontSize: 17,
-    textAlign: "center",
-  },
-  titleRegular: {
-    fontFamily: FONTS.figtreeMedium,
-    lineHeight: 22,
-    color: "#383838",
-  },
-  titleSemiBold: {
-    fontFamily: FONTS.figtreeSemiBold,
-    lineHeight: 28,
-    letterSpacing: -1,
-    color: "#000000",
-  },
-  headerSpacer: {
-    width: PROFILE_FORM_UI.backButtonSize,
-    height: PROFILE_FORM_UI.headerHeight,
   },
   scroll: {
     flex: 1,
