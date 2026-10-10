@@ -3,7 +3,7 @@ import { View, StyleSheet } from "react-native";
 import { Platform } from "react-native";
 import * as SplashScreen from "expo-splash-screen";
 import { useFonts as useFigtree, Figtree_400Regular, Figtree_500Medium, Figtree_600SemiBold, Figtree_600SemiBold_Italic, Figtree_700Bold } from "@expo-google-fonts/figtree";
-import { useFonts as useInter, Inter_400Regular, Inter_600SemiBold, Inter_500Medium, Inter_700Bold } from "@expo-google-fonts/inter";
+import { useFonts as useInter, Inter_400Regular, Inter_600SemiBold, Inter_500Medium, Inter_700Bold, Inter_800ExtraBold, Inter_900Black } from "@expo-google-fonts/inter";
 import { Afacad_400Regular, Afacad_700Bold } from "@expo-google-fonts/afacad";
 import GlobalProviders from "@/context/GlobalProviders";
 import { KeyboardProvider } from "react-native-keyboard-controller";
@@ -36,6 +36,8 @@ function RootLayout() {
     Inter_400Regular,
     Inter_600SemiBold,
     Inter_700Bold,
+    Inter_800ExtraBold,
+    Inter_900Black,
   });
 
   // The splash screen is hidden by app/index.tsx once the auth redirect is

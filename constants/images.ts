@@ -1,4 +1,4 @@
-import welcome_background from "@/assets/images/backgrounds/welcome_background.png";
+import welcome_background from "@/assets/images/backgrounds/welcome_background.jpg";
 import welcome_image from "@/assets/images/welcome_image.png";
 import ommind_logo from "@/assets/images/logos/ommind_logo.png";
 import google_icon from "@/assets/images/icons/google_icon.png";

@@ -156,6 +156,8 @@ const HOME_UI = {
     titleToCard: 15,
     cardMinHeight: 232,
     cardRadius: 12,
+    cardBackground: "#FFFFFF",
+    cardImageOpacity: 0.55,
     cardPaddingVertical: 11,
     cardPaddingHorizontal: 12,
     itemGap: 15,
@@ -1108,6 +1110,7 @@ const Home = () => {
             source={SKY_BACKGROUND}
             resizeMode="cover"
             style={[styles.intentionCard, { width: intentionCardWidth }]}
+            imageStyle={styles.intentionCardImage}
           >
             <View style={styles.intentionTextBlock}>
               <Text
@@ -1515,11 +1518,15 @@ const styles = StyleSheet.create({
     minHeight: HOME_UI.intention.cardMinHeight,
     borderRadius: HOME_UI.intention.cardRadius,
     overflow: "hidden",
+    backgroundColor: HOME_UI.intention.cardBackground,
     paddingTop: HOME_UI.intention.cardPaddingVertical,
     paddingBottom: HOME_UI.intention.cardPaddingVertical,
     paddingHorizontal: HOME_UI.intention.cardPaddingHorizontal,
     alignItems: "center",
     gap: HOME_UI.intention.itemGap,
+  },
+  intentionCardImage: {
+    opacity: HOME_UI.intention.cardImageOpacity,
   },
   intentionTextBlock: {
     width: "100%",

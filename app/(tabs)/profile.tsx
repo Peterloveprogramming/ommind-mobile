@@ -19,6 +19,7 @@ import {
 } from "@/utils/helper";
 import { Feather } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
+import * as WebBrowser from "expo-web-browser";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import React from "react";
@@ -755,8 +756,13 @@ const Profile = () => {
     }
   };
 
-  const handleSocialButtonPress = (_label: string) => {
-    // Social links will be wired up later.
+  const handleSocialButtonPress = async (url?: string) => {
+    if (!url) return;
+    try {
+      await WebBrowser.openBrowserAsync(url);
+    } catch (error) {
+      console.error("Failed to open social link", error);
+    }
   };
 
   const profileImageSource: ImageSourcePropType = pendingProfilePhotoUri
@@ -779,10 +785,10 @@ const Profile = () => {
     { id: "suggest-improvement", label: "Suggest an improvement", icon: SUGGEST_AN_IMPROVEMENT_ICON },
     { id: "contact-us", label: "Contact us", icon: CONTACT_US_ICON },
   ];
-  const socialItems: { label: string; icon: ImageSourcePropType; width: number; height: number }[] = [
-    { label: "YouTube", icon: YOUTUBE_ICON, width: 42, height: 42 },
-    { label: "TikTok", icon: TIKTOK_ICON, width: 42, height: 42 },
-    { label: "Instagram", icon: INSTAGRAM_ICON, width: 40, height: 42 },
+  const socialItems: { label: string; icon: ImageSourcePropType; width: number; height: number; url?: string }[] = [
+    { label: "YouTube", icon: YOUTUBE_ICON, width: 42, height: 42, url: "https://www.youtube.com/@OmMind-Official" },
+    { label: "TikTok", icon: TIKTOK_ICON, width: 42, height: 42, url: "https://www.tiktok.com/@ommindapp" },
+    { label: "Instagram", icon: INSTAGRAM_ICON, width: 40, height: 42, url: "https://www.instagram.com/ommind_meditation?vrfl=MW9rbnNjN2VtNmcwNQ==" },
   ];
 
   const feedbackFormContent = {
@@ -1062,7 +1068,7 @@ const Profile = () => {
                 accessibilityRole="button"
                 accessibilityLabel={item.label}
                 hitSlop={4}
-                onPress={() => handleSocialButtonPress(item.label)}
+                onPress={() => handleSocialButtonPress(item.url)}
               >
                 <Image
                   source={item.icon}

@@ -22,6 +22,8 @@ export const FONTS = {
   inter: "Inter_500Medium",
   interSemiBold: "Inter_600SemiBold",
   interBold: "Inter_700Bold",
+  interExtraBold: "Inter_800ExtraBold",
+  interBlack: "Inter_900Black",
   afacadRegular: "Afacad_400Regular",
   afacadBold: "Afacad_700Bold",
 };

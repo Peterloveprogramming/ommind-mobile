@@ -235,7 +235,7 @@ export const styles = StyleSheet.create({
     backgroundColor: "#000000",
   },
   backgroundDim: {
-    backgroundColor: "rgba(0, 0, 0, 0.4)",
+    backgroundColor: "rgba(0, 0, 0, 0.1)",
   },
   content: {
     flex: 1,
