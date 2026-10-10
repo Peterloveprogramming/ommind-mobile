@@ -1,6 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
+  BackHandler,
+  FlatList,
   Image,
   ImageBackground,
   Modal,
@@ -8,15 +11,23 @@ import {
   StyleSheet,
   Text,
   View,
+  type LayoutChangeEvent,
 } from "react-native";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
 import useAwarenessLogs from "@/api/awarenessLogs/useAwarenessLogs";
 import useDreamLogs from "@/api/dreamLogs/useDreamLogs";
 import { AwarenessLogItem } from "@/api/awarenessLogs/types";
 import { DreamLogItem } from "@/api/dreamLogs/types";
+import JournalMoon from "@/assets/svg/journal/JournalMoon";
+import JournalSun from "@/assets/svg/journal/JournalSun";
+import SelectedCheck from "@/assets/svg/journal/SelectedCheck";
+import TrashIcon from "@/assets/svg/journal/TrashIcon";
+import ExportIcon from "@/assets/svg/journal/ExportIcon";
+import PlusIcon from "@/assets/svg/journal/PlusIcon";
 import { COLORS, FONTS } from "@/theme.js";
 
 type JournalTab = "dreams" | "awareness";
@@ -40,6 +51,26 @@ type JournalEntry = {
   healthOrWellnessContext?: string | null;
 };
 
+// Figma "Journal" 2586:9040 (Awareness) / "Journal long press" 2571:8646
+// (Dreams, selection mode). Pro copy 37GSSpgSU44KPNvLuVKAOw.
+const JOURNAL_UI = {
+  TOP_OFFSET: 15,          // status bar bottom (59) -> tabs top (74)
+  GUTTER: 23,
+  TAB_MAX_WIDTH: 180,
+  TAB_ROW_PADDING: 16,     // keeps the two 180 tabs on-screen down to 360 wide
+  SECTION_GAP: 20,         // tabs -> first entry, and between entries
+  BOTTOM_SLOT_HEIGHT: 44,  // Start Writing (44) and the 36 action pills share a centre line
+  BOTTOM_SLOT_GAP: 13,     // slot bottom -> top of the tab bar container
+  TEXT_GREY: "#8C8C8A",
+  TAB_INACTIVE: "#8E8E93",
+  BADGE_INACTIVE_BG: "#E5E5EA",
+  BADGE_INACTIVE_TEXT: "#636366",
+  INDICATOR_BORDER: "#C4C4C4",
+  BACKGROUND: "#FAFAFA",
+} as const;
+
+const MAX_FONT_SCALE = 1.2;
+
 const FALLBACK_EMPTY_DATE = {
   day: "--",
   month: "Unknown",
@@ -59,10 +90,11 @@ const getJournalEntryDateParts = (createdAt?: string | null) => {
   return {
     day: new Intl.DateTimeFormat("en-GB", { day: "2-digit" }).format(createdDate),
     month: new Intl.DateTimeFormat("en-GB", { month: "long" }).format(createdDate),
-    time: new Intl.DateTimeFormat("en-GB", {
+    // Figma shows "09:30 AM".
+    time: new Intl.DateTimeFormat("en-US", {
       hour: "2-digit",
       minute: "2-digit",
-      hour12: false,
+      hour12: true,
     }).format(createdDate),
   };
 };
@@ -134,14 +166,24 @@ const mapAwarenessLogToJournalEntry = (
   };
 };
 
-const TAB_CONFIG: Array<{
-  key: JournalTab;
-  label: string;
-  icon: keyof typeof Ionicons.glyphMap;
-}> = [
-  { key: "dreams", label: "Dreams", icon: "moon" },
-  { key: "awareness", label: "Awareness", icon: "sunny-outline" },
+const getDateLabelKey = (entry: JournalEntry) => `${entry.day} ${entry.month}`;
+
+const TAB_CONFIG: { key: JournalTab; label: string }[] = [
+  { key: "dreams", label: "Dreams" },
+  { key: "awareness", label: "Awareness" },
 ];
+
+const TabIcon = ({ tab, isActive }: { tab: JournalTab; isActive: boolean }) => {
+  if (tab === "dreams") {
+    return isActive ? (
+      <JournalMoon />
+    ) : (
+      <JournalMoon fillColor={JOURNAL_UI.TAB_INACTIVE} strokeColor={JOURNAL_UI.TAB_INACTIVE} />
+    );
+  }
+
+  return <JournalSun color={isActive ? "#000000" : JOURNAL_UI.TAB_INACTIVE} />;
+};
 
 const DREAM_JOURNAL_BACKGROUND = require("@/assets/images/journal/dream_background.png");
 const AWARENESS_JOURNAL_BACKGROUND = require("@/assets/images/journal/awareness_background.png");
@@ -149,6 +191,7 @@ const CLOSE_BUTTON_IMAGE = require("@/assets/images/journal/close_button.png");
 const MAX_SELECTED_ENTRIES = 3;
 
 const Journal = () => {
+  const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
   const { activeTab: activeTabParam } = useLocalSearchParams<{
     activeTab?: JournalTab;
@@ -157,6 +200,10 @@ const Journal = () => {
   const [isJournalPickerVisible, setIsJournalPickerVisible] = useState(false);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedEntryIds, setSelectedEntryIds] = useState<string[]>([]);
+  // Natural width of each "07 / July" label, keyed by its text. The date
+  // column uses the widest one so every divider lines up even when month
+  // names differ in length ("May" vs "September").
+  const [dateLabelWidths, setDateLabelWidths] = useState<Record<string, number>>({});
   const {
     dreamLogs,
     isLoading,
@@ -187,20 +234,16 @@ const Journal = () => {
     [awarenessLogs]
   );
 
-  const activeEntries = useMemo(() => {
-    if (activeTab === "dreams") {
-      return dreamEntries;
-    }
+  const activeEntries = activeTab === "dreams" ? dreamEntries : awarenessEntries;
 
-    return awarenessEntries;
-  }, [activeTab, awarenessEntries, dreamEntries]);
+  const journalCounts = {
+    dreams: dreamEntries.length,
+    awareness: awarenessEntries.length,
+  };
 
-  const journalCounts = useMemo(
-    () => ({
-      dreams: dreamEntries.length,
-      awareness: awarenessEntries.length,
-    }),
-    [awarenessEntries.length, dreamEntries.length]
+  const dateColumnWidth = activeEntries.reduce(
+    (maxWidth, entry) => Math.max(maxWidth, dateLabelWidths[getDateLabelKey(entry)] ?? 0),
+    0
   );
 
   useEffect(() => {
@@ -209,40 +252,55 @@ const Journal = () => {
     }
   }, [activeTabParam]);
 
+  const handleExitSelectionMode = useCallback(() => {
+    setIsSelectionMode(false);
+    setSelectedEntryIds([]);
+  }, []);
+
+  // Both lists load on focus so both tab badges show real counts.
   useFocusEffect(
     useCallback(() => {
       setIsJournalPickerVisible(false);
-
-      const loadJournalLogs = async () => {
-        if (activeTab === "dreams") {
-          const dreamLogs = await fetchDreamLogs();
-          console.log("dream logs:", dreamLogs);
-          return;
-        }
-
-        const awarenessLogs = await fetchAwarenessLogs();
-        console.log("awareness logs:", awarenessLogs);
-      };
-
-      void loadJournalLogs();
-    }, [activeTab])
+      handleExitSelectionMode();
+      void Promise.all([fetchDreamLogs(), fetchAwarenessLogs()]);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
   );
+
+  // Android back leaves selection mode instead of the screen.
+  useFocusEffect(
+    useCallback(() => {
+      if (!isSelectionMode) {
+        return;
+      }
+
+      const backSubscription = BackHandler.addEventListener("hardwareBackPress", () => {
+        handleExitSelectionMode();
+        return true;
+      });
+
+      return () => backSubscription.remove();
+    }, [handleExitSelectionMode, isSelectionMode])
+  );
+
+  const toggleEntrySelection = (entryId: string) => {
+    const nextIds = selectedEntryIds.includes(entryId)
+      ? selectedEntryIds.filter((currentId) => currentId !== entryId)
+      : selectedEntryIds.length >= MAX_SELECTED_ENTRIES
+        ? selectedEntryIds
+        : [...selectedEntryIds, entryId];
+
+    if (nextIds.length === 0) {
+      handleExitSelectionMode();
+      return;
+    }
+
+    setSelectedEntryIds(nextIds);
+  };
 
   const handleEntryPress = (entry: JournalEntry) => {
     if (isSelectionMode) {
-      setSelectedEntryIds((currentIds) => {
-        const nextIds = currentIds.includes(entry.id)
-          ? currentIds.filter((currentId) => currentId !== entry.id)
-          : currentIds.length >= MAX_SELECTED_ENTRIES
-            ? currentIds
-            : [...currentIds, entry.id];
-
-        if (nextIds.length === 0) {
-          setIsSelectionMode(false);
-        }
-
-        return nextIds;
-      });
+      toggleEntrySelection(entry.id);
       return;
     }
 
@@ -271,32 +329,29 @@ const Journal = () => {
   };
 
   const handleEntryLongPress = (entry: JournalEntry) => {
+    if (isSelectionMode) {
+      toggleEntrySelection(entry.id);
+      return;
+    }
+
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setIsSelectionMode(true);
-    setSelectedEntryIds((currentIds) =>
-      currentIds.includes(entry.id)
-        ? currentIds
-        : currentIds.length >= MAX_SELECTED_ENTRIES
-          ? currentIds
-          : [...currentIds, entry.id]
-    );
+    setSelectedEntryIds([entry.id]);
   };
 
   const handleTabPress = (tab: JournalTab) => {
     setActiveTab(tab);
-    setIsSelectionMode(false);
-    setSelectedEntryIds([]);
+    handleExitSelectionMode();
   };
 
-  const handleExitSelectionMode = () => {
-    setIsSelectionMode(false);
-    setSelectedEntryIds([]);
+  const handleDateLabelLayout = (key: string, event: LayoutChangeEvent) => {
+    const width = Math.ceil(event.nativeEvent.layout.width);
+    setDateLabelWidths((currentWidths) =>
+      currentWidths[key] === width ? currentWidths : { ...currentWidths, [key]: width }
+    );
   };
 
-  const handleDeleteSelectedPress = async () => {
-    if (selectedEntryIds.length === 0) {
-      return;
-    }
-
+  const deleteSelectedEntries = async () => {
     if (activeTab === "dreams") {
       const isDeleted = await bulkDeleteDreamLogs({ log_ids: selectedEntryIds });
       if (!isDeleted) {
@@ -316,7 +371,32 @@ const Journal = () => {
     handleExitSelectionMode();
   };
 
-  // Reflection is disabled for now.
+  const handleDeleteSelectedPress = () => {
+    if (selectedEntryIds.length === 0) {
+      return;
+    }
+
+    const count = selectedEntryIds.length;
+    const noun = activeTab === "dreams" ? "dream" : "awareness";
+
+    Alert.alert(
+      count === 1 ? `Delete this ${noun} log?` : `Delete ${count} ${noun} logs?`,
+      "This can't be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: () => {
+            void deleteSelectedEntries();
+          },
+        },
+      ]
+    );
+  };
+
+  // Reflection is disabled for now (the Reflect pill from Figma 2571:8759 is
+  // intentionally not shown).
   // const handleReflectPress = async () => {
   //   if (isAnalyzingDreamLogs || isAnalyzingAwarenessLogs || selectedEntryIds.length === 0) {
   //     return;
@@ -357,197 +437,187 @@ const Journal = () => {
     });
   };
 
-  const isDeleteDisabled =
-    selectedEntryIds.length === 0 || isDeletingDreamLogs || isDeletingAwarenessLogs;
-  // Reflection is disabled for now.
-  // const isReflectDisabled =
-  //   selectedEntryIds.length === 0 || isAnalyzingDreamLogs || isAnalyzingAwarenessLogs;
+  const isDeleting = isDeletingDreamLogs || isDeletingAwarenessLogs;
+  const isDeleteDisabled = selectedEntryIds.length === 0 || isDeleting;
+  const isActiveTabLoading = activeTab === "dreams" ? isLoading : isLoadingAwarenessLogs;
+  const bottomSlotBottom = tabBarHeight + JOURNAL_UI.BOTTOM_SLOT_GAP;
 
-  return (
-    <SafeAreaView style={styles.safeArea} edges={["top"]}>
-      <View style={styles.container}>
-        <View style={styles.tabRow}>
-          {TAB_CONFIG.map((tab) => {
-            const isActive = tab.key === activeTab;
+  const renderEntry = ({ item: entry }: { item: JournalEntry }) => {
+    const isSelected = selectedEntryIds.includes(entry.id);
 
-            return (
-              <Pressable
-                key={tab.key}
-                onPress={() => handleTabPress(tab.key)}
-                style={styles.tabButton}
-              >
-                <View style={styles.tabLabelRow}>
-                  <Ionicons
-                    name={tab.icon}
-                    size={18}
-                    color={isActive ? "#151515" : "#A8A8AF"}
-                  />
-                  <Text style={[styles.tabLabel, isActive && styles.tabLabelActive]}>
-                    {tab.label}
-                  </Text>
-                  <View style={[styles.countBadge, isActive && styles.countBadgeActive]}>
-                    <Text
-                      style={[
-                        styles.countText,
-                        isActive && styles.countTextActive,
-                      ]}
-                    >
-                      {journalCounts[tab.key]}
-                    </Text>
-                  </View>
-                </View>
-                <View style={[styles.tabUnderline, isActive && styles.tabUnderlineActive]} />
-              </Pressable>
-            );
-          })}
+    return (
+      <Pressable
+        onLongPress={() => handleEntryLongPress(entry)}
+        onPress={() => handleEntryPress(entry)}
+        accessibilityRole={isSelectionMode ? "checkbox" : "button"}
+        accessibilityState={isSelectionMode ? { checked: isSelected } : undefined}
+        accessibilityLabel={`${entry.day} ${entry.month}, ${entry.time}, ${entry.title}`}
+        accessibilityHint={isSelectionMode ? undefined : "Long press to select"}
+        style={({ pressed }) => [styles.entryRow, pressed && styles.entryRowPressed]}
+      >
+        <View style={{ minWidth: dateColumnWidth }}>
+          <View
+            onLayout={(event) => handleDateLabelLayout(getDateLabelKey(entry), event)}
+            style={styles.dateLabel}
+          >
+            <Text style={styles.dayText} maxFontSizeMultiplier={MAX_FONT_SCALE}>
+              {entry.day}
+            </Text>
+            <Text style={styles.monthText} maxFontSizeMultiplier={MAX_FONT_SCALE}>
+              {entry.month}
+            </Text>
+          </View>
         </View>
 
-        <View style={styles.listArea}>
-          {activeEntries.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyStateTitle}>
-                {activeTab === "dreams"
-                  ? isLoading
-                    ? "Loading dream logs..."
-                    : "No dream logs yet"
-                  : isLoadingAwarenessLogs
-                    ? "Loading awareness logs..."
-                    : "No awareness logs yet"}
-              </Text>
-              <Text style={styles.emptyStateText}>
-                {activeTab === "dreams"
-                  ? "Your saved dreams will appear here once you start writing."
-                  : "Your saved awareness logs will appear here once you start writing."}
-              </Text>
-            </View>
-          ) : (
-            activeEntries.map((entry) => (
-              <Pressable
-                key={entry.id}
-                onLongPress={() => handleEntryLongPress(entry)}
-                onPress={() => handleEntryPress(entry)}
-                style={({ pressed }) => [
-                  styles.entryRow,
-                  isSelectionMode && styles.entryRowSelectionMode,
-                  pressed && styles.entryRowPressed,
-                ]}
-              >
-                <View style={styles.dateColumn}>
-                  <Text style={styles.dayText}>{entry.day}</Text>
-                  <Text style={styles.monthText}>{entry.month}</Text>
-                </View>
+        <View style={styles.entryDivider} />
 
-                <View style={styles.entryDivider} />
-
-                <View style={styles.entryContent}>
-                  <Text style={styles.timeText}>{entry.time}</Text>
-                  <Text style={styles.entryTitle}>{entry.title}</Text>
-                  <Text numberOfLines={1} ellipsizeMode="tail" style={styles.previewText}>
-                    {entry.preview}
-                  </Text>
-                </View>
-
-                {isSelectionMode ? (
-                  <View
-                    style={[
-                      styles.selectionIndicator,
-                      selectedEntryIds.includes(entry.id) && styles.selectionIndicatorActive,
-                    ]}
-                  >
-                    {selectedEntryIds.includes(entry.id) ? (
-                      <Ionicons name="checkmark" size={16} color="#FFFFFF" />
-                    ) : null}
-                  </View>
-                ) : null}
-              </Pressable>
-            ))
-          )}
+        <View style={styles.entryContent}>
+          <Text style={styles.timeText} maxFontSizeMultiplier={MAX_FONT_SCALE}>
+            {entry.time}
+          </Text>
+          <Text numberOfLines={1} style={styles.entryTitle} maxFontSizeMultiplier={MAX_FONT_SCALE}>
+            {entry.title}
+          </Text>
+          <Text
+            numberOfLines={1}
+            ellipsizeMode="tail"
+            style={styles.previewText}
+            maxFontSizeMultiplier={MAX_FONT_SCALE}
+          >
+            {entry.preview}
+          </Text>
         </View>
 
         {isSelectionMode ? (
-          <View style={[styles.selectionActionsWrap, { paddingBottom: tabBarHeight + 16 }]}>
-            <View style={styles.selectionHeaderRow}>
-              <Text style={styles.selectionCountText}>
-                {selectedEntryIds.length}/{MAX_SELECTED_ENTRIES} selected
-              </Text>
-              <Pressable
-                onPress={handleExitSelectionMode}
-                hitSlop={12}
-                style={({ pressed }) => [
-                  styles.selectionCloseButton,
-                  pressed && styles.selectionActionButtonPressed,
-                ]}
-              >
-                <Ionicons name="close" size={18} color="#171717" />
-              </Pressable>
-            </View>
-            <View style={styles.selectionActionsRow}>
-              {/* Reflection is disabled for now.
-              <Pressable
-                onPress={() => {
-                  void handleReflectPress();
-                }}
-                disabled={isReflectDisabled}
-                style={({ pressed }) => [
-                  styles.selectionActionButton,
-                  isReflectDisabled && styles.selectionActionButtonDisabled,
-                  pressed && !isReflectDisabled && styles.selectionActionButtonPressed,
-                ]}
-              >
-                {isAnalyzingDreamLogs || isAnalyzingAwarenessLogs ? (
-                  <ActivityIndicator size="small" color="#FFFFFF" />
-                ) : (
-                  <>
-                    <Ionicons name="sparkles-outline" size={18} color="#FFFFFF" />
-                    <Text style={styles.selectionActionText}>Reflect</Text>
-                  </>
-                )}
-              </Pressable>
-              */}
-
-              <Pressable
-                onPress={handleDeleteSelectedPress}
-                disabled={isDeleteDisabled}
-                style={({ pressed }) => [
-                  styles.selectionActionButton,
-                  isDeleteDisabled && styles.selectionActionButtonDisabled,
-                  pressed && styles.selectionActionButtonPressed,
-                ]}
-              >
-                {isDeletingDreamLogs || isDeletingAwarenessLogs ? (
-                  <ActivityIndicator size="small" color="#FFFFFF" />
-                ) : (
-                  <Ionicons name="trash-outline" size={18} color="#FFFFFF" />
-                )}
-                <Text style={styles.selectionActionText}>Delete</Text>
-              </Pressable>
-
-              <Pressable
-                style={({ pressed }) => [
-                  styles.selectionActionButton,
-                  pressed && styles.selectionActionButtonPressed,
-                ]}
-              >
-                <Ionicons name="document-outline" size={18} color="#FFFFFF" />
-                <Text style={styles.selectionActionText}>Export</Text>
-              </Pressable>
-            </View>
+          <View style={styles.selectionIndicatorWrap}>
+            {isSelected ? <SelectedCheck /> : <View style={styles.selectionIndicator} />}
           </View>
-        ) : (
-          <View style={[styles.ctaWrap, { paddingBottom: tabBarHeight + 16 }]}>
+        ) : null}
+      </Pressable>
+    );
+  };
+
+  return (
+    <View style={[styles.screen, { paddingTop: insets.top + JOURNAL_UI.TOP_OFFSET }]}>
+      <View style={styles.tabRow} accessibilityRole="tablist">
+        {TAB_CONFIG.map((tab) => {
+          const isActive = tab.key === activeTab;
+
+          return (
             <Pressable
-              onPress={handleStartWritingPress}
+              key={tab.key}
+              onPress={() => handleTabPress(tab.key)}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: isActive }}
+              accessibilityLabel={`${tab.label}, ${journalCounts[tab.key]} entries`}
+              style={styles.tabButton}
+            >
+              <View style={styles.tabLabelRow}>
+                <TabIcon tab={tab.key} isActive={isActive} />
+                <Text
+                  numberOfLines={1}
+                  maxFontSizeMultiplier={MAX_FONT_SCALE}
+                  style={[styles.tabLabel, isActive && styles.tabLabelActive]}
+                >
+                  {tab.label}
+                </Text>
+                <View style={[styles.countBadge, isActive && styles.countBadgeActive]}>
+                  <Text
+                    maxFontSizeMultiplier={MAX_FONT_SCALE}
+                    style={[styles.countText, isActive && styles.countTextActive]}
+                  >
+                    {journalCounts[tab.key]}
+                  </Text>
+                </View>
+              </View>
+              <View style={[styles.tabUnderline, isActive && styles.tabUnderlineActive]} />
+            </Pressable>
+          );
+        })}
+      </View>
+
+      <FlatList
+        data={activeEntries}
+        keyExtractor={(entry) => entry.id}
+        renderItem={renderEntry}
+        extraData={[isSelectionMode, selectedEntryIds, dateColumnWidth]}
+        ItemSeparatorComponent={EntrySeparator}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={[
+          styles.listContent,
+          {
+            paddingBottom:
+              bottomSlotBottom + JOURNAL_UI.BOTTOM_SLOT_HEIGHT + JOURNAL_UI.SECTION_GAP,
+          },
+        ]}
+        ListEmptyComponent={
+          <View style={styles.emptyState}>
+            {isActiveTabLoading ? (
+              <ActivityIndicator color={JOURNAL_UI.TEXT_GREY} />
+            ) : (
+              <>
+                <Text style={styles.emptyStateTitle} maxFontSizeMultiplier={MAX_FONT_SCALE}>
+                  {activeTab === "dreams" ? "No dream logs yet" : "No awareness logs yet"}
+                </Text>
+                <Text style={styles.emptyStateText} maxFontSizeMultiplier={MAX_FONT_SCALE}>
+                  {activeTab === "dreams"
+                    ? "Your saved dreams will appear here once you start writing."
+                    : "Your saved awareness logs will appear here once you start writing."}
+                </Text>
+              </>
+            )}
+          </View>
+        }
+      />
+
+      <View style={[styles.bottomSlot, { bottom: bottomSlotBottom }]}>
+        {isSelectionMode ? (
+          <View style={styles.selectionActionsRow}>
+            {/* Reflection is disabled for now: no Reflect pill here. */}
+            <Pressable
+              onPress={handleDeleteSelectedPress}
+              disabled={isDeleteDisabled}
+              accessibilityRole="button"
+              accessibilityState={{ disabled: isDeleteDisabled, busy: isDeleting }}
               style={({ pressed }) => [
-                styles.ctaButton,
-                pressed && styles.ctaButtonPressed,
+                styles.selectionActionButton,
+                isDeleteDisabled && styles.selectionActionButtonDisabled,
+                pressed && styles.buttonPressed,
               ]}
             >
-              <>
-                <Ionicons name="add" size={24} color="#FFFFFF" />
-                <Text style={styles.ctaText}>Start Writing</Text>
-              </>
+              <View style={styles.selectionActionIcon}>
+                {isDeleting ? <ActivityIndicator size="small" color="#FFFFFF" /> : <TrashIcon />}
+              </View>
+              <Text style={styles.selectionActionText} maxFontSizeMultiplier={MAX_FONT_SCALE}>
+                Delete
+              </Text>
+            </Pressable>
+
+            <Pressable
+              accessibilityRole="button"
+              style={({ pressed }) => [styles.selectionActionButton, pressed && styles.buttonPressed]}
+            >
+              <View style={styles.selectionActionIcon}>
+                <ExportIcon />
+              </View>
+              <Text style={styles.selectionActionText} maxFontSizeMultiplier={MAX_FONT_SCALE}>
+                Export
+              </Text>
             </Pressable>
           </View>
+        ) : (
+          <Pressable
+            onPress={handleStartWritingPress}
+            accessibilityRole="button"
+            style={({ pressed }) => [styles.ctaButton, pressed && styles.buttonPressed]}
+          >
+            <View style={styles.ctaIcon}>
+              <PlusIcon />
+            </View>
+            <Text style={styles.ctaText} maxFontSizeMultiplier={MAX_FONT_SCALE}>
+              Start Writing
+            </Text>
+          </Pressable>
         )}
       </View>
 
@@ -605,246 +675,254 @@ const Journal = () => {
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 };
+
+const EntrySeparator = () => <View style={styles.entrySeparator} />;
 
 export default Journal;
 
 const styles = StyleSheet.create({
-  safeArea: {
+  screen: {
     flex: 1,
-    backgroundColor: "#FBFBF8",
-  },
-  container: {
-    flex: 1,
-    backgroundColor: "#FBFBF8",
-    paddingHorizontal: 25,
-    paddingTop: 50,
-    paddingBottom:25
+    backgroundColor: JOURNAL_UI.BACKGROUND,
   },
   tabRow: {
     flexDirection: "row",
-    gap: 24,
+    justifyContent: "center",
+    paddingHorizontal: JOURNAL_UI.TAB_ROW_PADDING,
   },
   tabButton: {
     flex: 1,
+    maxWidth: JOURNAL_UI.TAB_MAX_WIDTH,
+    alignItems: "center",
+    paddingTop: 6,
+    paddingBottom: 5,
   },
   tabLabelRow: {
+    maxWidth: "100%",
+    minHeight: 24,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 8,
+    gap: 10,
   },
   tabLabel: {
+    flexShrink: 1,
     fontFamily: FONTS.figtreeSemiBold,
-    fontSize: 17,
-    color: "#A8A8AF",
+    fontSize: 16,
+    lineHeight: 21,
+    letterSpacing: -0.32,
+    color: JOURNAL_UI.TAB_INACTIVE,
+    includeFontPadding: false,
   },
   tabLabelActive: {
-    color: "#171717",
+    color: "#000000",
   },
   countBadge: {
     minWidth: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: "#ECECF0",
+    backgroundColor: JOURNAL_UI.BADGE_INACTIVE_BG,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 7,
+    paddingHorizontal: 6,
   },
   countBadgeActive: {
-    backgroundColor: "#0F0F10",
+    backgroundColor: "#000000",
   },
   countText: {
-    fontFamily: FONTS.interSemiBold,
+    fontFamily: FONTS.inter,
     fontSize: 12,
-    color: "#8C8C92",
+    lineHeight: 16,
+    color: JOURNAL_UI.BADGE_INACTIVE_TEXT,
+    includeFontPadding: false,
   },
   countTextActive: {
     color: "#FFFFFF",
   },
   tabUnderline: {
-    marginTop: 12,
+    alignSelf: "stretch",
+    marginTop: 7,
     height: 2,
     backgroundColor: "transparent",
-    borderRadius: 999,
   },
   tabUnderlineActive: {
-    backgroundColor: "#191919",
+    backgroundColor: "#000000",
   },
-  listArea: {
-    flex: 1,
-    paddingTop: 18,
+  listContent: {
+    flexGrow: 1,
+    paddingTop: JOURNAL_UI.SECTION_GAP,
+  },
+  entrySeparator: {
+    height: JOURNAL_UI.SECTION_GAP,
   },
   emptyState: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 24,
+    paddingHorizontal: JOURNAL_UI.GUTTER,
   },
   emptyStateTitle: {
     fontFamily: FONTS.figtreeSemiBold,
     fontSize: 18,
-    color: "#171717",
+    lineHeight: 22,
+    color: "#000000",
     textAlign: "center",
+    includeFontPadding: false,
   },
   emptyStateText: {
     marginTop: 8,
-    fontFamily: FONTS.inter,
+    fontFamily: FONTS.figtreeMedium500,
     fontSize: 14,
     lineHeight: 20,
-    color: "#85858B",
+    color: JOURNAL_UI.TEXT_GREY,
     textAlign: "center",
+    includeFontPadding: false,
   },
   entryRow: {
     flexDirection: "row",
     alignItems: "flex-start",
-    borderRadius: 16,
-    paddingVertical: 4,
-  },
-  entryRowSelectionMode: {
-    alignItems: "center",
-    paddingRight: 8,
+    gap: 12,
+    paddingHorizontal: JOURNAL_UI.GUTTER,
   },
   entryRowPressed: {
-    opacity: 0.72,
+    opacity: 0.6,
   },
-  dateColumn: {
-    width: 40,
-    alignItems: "center",
+  dateLabel: {
+    alignSelf: "flex-start",
+    gap: 5,
   },
   dayText: {
-    fontFamily: FONTS.figtreeMedium,
-    fontSize: 22,
-    lineHeight: 26,
-    color: "#161616",
+    fontFamily: FONTS.figtreeMedium500,
+    fontSize: 20,
+    lineHeight: 20,
+    letterSpacing: -0.24,
+    color: "#000000",
+    includeFontPadding: false,
   },
   monthText: {
-    marginTop: 2,
-    fontFamily: FONTS.inter,
-    fontSize: 12,
-    color: "#A8A8AF",
+    fontFamily: FONTS.figtreeMedium500,
+    fontSize: 14,
+    lineHeight: 20,
+    letterSpacing: -0.24,
+    color: JOURNAL_UI.TEXT_GREY,
+    includeFontPadding: false,
   },
   entryDivider: {
+    alignSelf: "stretch",
     width: 1,
-    height: 64,
-    backgroundColor: "#D3D3D8",
-    marginLeft: 12,
-    marginRight: 12,
+    backgroundColor: JOURNAL_UI.TEXT_GREY,
   },
   entryContent: {
     flex: 1,
-    paddingTop: 2,
+    minWidth: 0,
+    gap: 5,
   },
   timeText: {
-    fontFamily: FONTS.inter,
-    fontSize: 12,
-    color: "#9B9BA2",
-  },
-  entryTitle: {
-    marginTop: 4,
-    fontFamily: FONTS.figtreeSemiBold,
-    fontSize: 17,
-    color: "#171717",
-  },
-  previewText: {
-    marginTop: 4,
-    fontFamily: FONTS.inter,
+    fontFamily: FONTS.figtreeMedium500,
     fontSize: 14,
     lineHeight: 20,
-    color: "#85858B",
+    letterSpacing: -0.24,
+    color: JOURNAL_UI.TEXT_GREY,
+    includeFontPadding: false,
+  },
+  entryTitle: {
+    fontFamily: FONTS.figtreeMedium500,
+    fontSize: 16,
+    lineHeight: 20,
+    letterSpacing: -0.24,
+    color: "#000000",
+    includeFontPadding: false,
+  },
+  previewText: {
+    fontFamily: FONTS.figtreeMedium500,
+    fontSize: 14,
+    lineHeight: 20,
+    letterSpacing: -0.24,
+    color: JOURNAL_UI.TEXT_GREY,
+    includeFontPadding: false,
+  },
+  selectionIndicatorWrap: {
+    alignSelf: "stretch",
+    justifyContent: "center",
   },
   selectionIndicator: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    borderWidth: 1.5,
-    borderColor: "#CBCBD1",
-    alignItems: "center",
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 1,
+    borderColor: JOURNAL_UI.INDICATOR_BORDER,
+  },
+  bottomSlot: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    height: JOURNAL_UI.BOTTOM_SLOT_HEIGHT,
     justifyContent: "center",
-    marginLeft: 12,
-    marginTop: 10,
-    backgroundColor: "#FFFFFF",
+    paddingHorizontal: JOURNAL_UI.GUTTER,
   },
-  selectionIndicatorActive: {
-    backgroundColor: COLORS.brandYellow,
-    borderColor: COLORS.brandYellow,
-  },
-  ctaWrap: {
-    paddingTop: 12,
+  buttonPressed: {
+    opacity: 0.82,
   },
   ctaButton: {
-    height: 48,
-    borderRadius: 24,
+    height: 44,
+    borderRadius: 25,
     backgroundColor: COLORS.brandYellow,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 8,
+    gap: 10,
+    paddingHorizontal: 20,
   },
-  ctaButtonPressed: {
-    opacity: 0.82,
+  ctaIcon: {
+    width: 16,
+    height: 16,
+    alignItems: "center",
+    justifyContent: "center",
   },
   ctaText: {
     fontFamily: FONTS.figtreeSemiBold,
-    fontSize: 16,
+    fontSize: 17,
+    lineHeight: 22,
+    letterSpacing: -0.408,
     color: "#FFFFFF",
-  },
-  selectionActionsWrap: {
-    paddingTop: 12,
-  },
-  selectionHeaderRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 12,
-  },
-  selectionCountText: {
-    fontFamily: FONTS.interSemiBold,
-    fontSize: 14,
-    color: "#717178",
-    textAlign: "center",
-  },
-  selectionCloseButton: {
-    position: "absolute",
-    right: 0,
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: "#ECECF0",
-    alignItems: "center",
-    justifyContent: "center",
+    includeFontPadding: false,
   },
   selectionActionsRow: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    gap: 12,
-    // borderWidth:1,
-    width:"100%",
+    justifyContent: "center",
+    gap: 31,
   },
   selectionActionButton: {
-    flex: 1,
-    minHeight: 48,
-    borderRadius: 24,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: COLORS.brandYellow,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 8,
-    paddingHorizontal: 12,
-  },
-  selectionActionButtonPressed: {
-    opacity: 0.82,
+    gap: 5,
+    paddingLeft: 10,
+    paddingRight: 15,
   },
   selectionActionButtonDisabled: {
     opacity: 0.6,
   },
+  selectionActionIcon: {
+    width: 22,
+    height: 22,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   selectionActionText: {
     fontFamily: FONTS.figtreeSemiBold,
-    fontSize: 16,
+    fontSize: 15,
+    lineHeight: 20,
+    letterSpacing: -0.24,
     color: "#FFFFFF",
+    includeFontPadding: false,
   },
   modalOverlay: {
     flex: 1,

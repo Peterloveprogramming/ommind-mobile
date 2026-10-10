@@ -5,8 +5,42 @@ change.
 
 ## Current Phase
 
-- Complete (code, backend tests, lint) — awaiting backend deploy +
-  migration, then the spec 09 manual matrix on iOS / Android / small screen.
+- Complete (code, lint, tsc) — awaiting a visual check on iOS / Android /
+  360-wide screen.
+
+## Current Goal
+
+- Journal list (Dreams / Awareness tabs, `app/(tabs)/journal.tsx`) to Figma
+  `2586:9040` (Awareness) and `2571:8646` (long press). Only deliberate
+  difference: no Reflect pill in selection mode. Bottom nav untouched.
+
+## Completed
+
+- `assets/svg/journal/`: `JournalMoon` (8679), `JournalSun` (8687, Code
+  Connect "Sun" has no code component here), `SelectedCheck` (10309),
+  `TrashIcon` (8769), `ExportIcon` (8778), `PlusIcon` (9066), taken from
+  the Figma SVGs.
+- `journal.tsx`: `JOURNAL_UI` tokens; `useSafeAreaInsets` top + 15; tabs
+  max 180 each (row padding 16), 2 pt black underline, 24 badges (black /
+  `#E5E5EA`); entries in a `FlatList` (23 gutter, gap 12, Figtree 500,
+  1 pt `#8C8C8A` divider, 20 between rows); date column width = widest
+  measured "DD / Month" label so dividers align; time is `09:30 AM`.
+  Start Writing (44) and the Delete / Export pills (36, gap 31) share a
+  44 slot whose bottom is `tabBarHeight + 13`. Selection: long press
+  (haptic) selects, 22 pt indicators, empty selection or Android back
+  exits, "x/3 selected" header + close removed, Delete now confirms with
+  an `Alert`. Both logs fetched on focus so both badge counts are right.
+  Picker modal unchanged.
+
+## Next Up
+
+- Visual check against both Figma frames on iPhone 15 Pro, iPhone SE,
+  a 360-wide Android; long-press → delete / Android back.
+- Export pill is still a no-op (as before).
+
+---
+
+# Previous Goal: 09-dream-journal-figma-redesign
 
 ## Current Goal
 
