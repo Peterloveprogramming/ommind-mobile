@@ -1,17 +1,22 @@
 import React from "react";
 import {
-  Image,
   Modal,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
+import { KeyboardAvoidingView } from "react-native-keyboard-controller";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { FONTS } from "@/theme";
-import { images } from "@/constants/images";
+import RefreshFocusButton from "@/assets/svg/personalised_meditation/RefreshFocusButton";
+import PencilIcon from "@/assets/svg/personalised_meditation/PencilIcon";
+import CheckboxCheckedIcon from "@/assets/svg/personalised_meditation/CheckboxCheckedIcon";
+import LotusSparkleIcon from "@/assets/svg/personalised_meditation/LotusSparkleIcon";
 
 export type PersonalisedMeditationSelection = {
   focus: string;
@@ -46,6 +51,31 @@ const STYLE_OPTIONS = [
   "Mindfulness",
 ];
 
+// Figma "create Meditation" card (node 3138:10666)
+const CARD_MAX_WIDTH = 350;
+const SCREEN_GUTTER = 16;
+
+type ChipProps = {
+  label: string;
+  selected: boolean;
+  onPress: () => void;
+  fontFamily?: string;
+};
+
+const Chip = ({ label, selected, onPress, fontFamily = FONTS.interRegular }: ChipProps) => (
+  <TouchableOpacity
+    activeOpacity={0.85}
+    style={[styles.chip, selected && styles.chipSelected]}
+    onPress={onPress}
+    accessibilityRole="button"
+    accessibilityState={{ selected }}
+  >
+    <Text style={[styles.chipText, { fontFamily }, selected && styles.chipTextSelected]} numberOfLines={1}>
+      {label}
+    </Text>
+  </TouchableOpacity>
+);
+
 const PersonalisedMeditationModal = ({
   visible,
   initialFocus,
@@ -53,6 +83,7 @@ const PersonalisedMeditationModal = ({
   onClose,
   onBegin,
 }: PersonalisedMeditationModalProps) => {
+  const insets = useSafeAreaInsets();
   const trimmedInitialFocus = initialFocus?.trim() ?? "";
   const hasInitialFocus = Boolean(trimmedInitialFocus);
   const [focus, setFocus] = React.useState(FOCUS_OPTIONS[0]);
@@ -73,6 +104,13 @@ const PersonalisedMeditationModal = ({
     }
   }, [hasInitialFocus, showPersonaliseUsingConversation, trimmedInitialFocus, visible]);
 
+  // Steps to the next preset focus; from a custom focus it returns to the first preset.
+  const handleRefreshFocus = () => {
+    const currentIndex = FOCUS_OPTIONS.indexOf(focus);
+    setFocus(FOCUS_OPTIONS[(currentIndex + 1) % FOCUS_OPTIONS.length]);
+    setIsEditingFocus(false);
+  };
+
   const handleBegin = () => {
     onBegin?.({
       focus,
@@ -83,140 +121,170 @@ const PersonalisedMeditationModal = ({
     onClose();
   };
 
-  return (
-    <Modal transparent animationType="fade" visible={visible} onRequestClose={onClose}>
-      <Pressable style={styles.overlay} onPress={onClose}>
-        <Pressable style={styles.card} onPress={() => {}}>
-          <View style={styles.titleRow}>
-            <Text style={[styles.title, styles.titleWithClose]}>Your Personalised Meditation</Text>
-            <TouchableOpacity
-              activeOpacity={0.85}
-              style={styles.closeButton}
-              onPress={onClose}
-              hitSlop={8}
-            >
-              <Ionicons name="close" size={20} color="#FFFFFF" />
-            </TouchableOpacity>
-          </View>
+  const editFocusButton = (
+    <TouchableOpacity
+      activeOpacity={0.85}
+      style={styles.iconButton}
+      onPress={() => setIsEditingFocus((current) => !current)}
+      accessibilityRole="button"
+      accessibilityLabel={isEditingFocus ? "Done editing focus" : "Edit focus"}
+    >
+      {isEditingFocus ? (
+        <Ionicons name="checkmark" size={20} color="#FFFFFF" />
+      ) : (
+        <PencilIcon style={styles.pencilIcon} />
+      )}
+    </TouchableOpacity>
+  );
 
-          <View style={styles.sectionHeaderRow}>
-            <Text style={[styles.sectionLabel, styles.sectionLabelNoMargin]}>Focus</Text>
-            {!hasInitialFocus ? (
-              <TouchableOpacity
-                activeOpacity={0.85}
-                style={styles.iconButton}
-                onPress={() => setIsEditingFocus((current) => !current)}
-              >
-                {isEditingFocus ? (
-                  <Ionicons name="checkmark" size={18} color="#FFFFFF" />
-                ) : (
-                  <Image source={images.pencil_icon} style={styles.pencilIcon} />
-                )}
-              </TouchableOpacity>
-            ) : null}
-          </View>
+  const renderFocus = () => {
+    if (hasInitialFocus || isEditingFocus) {
+      return (
+        <View style={styles.focusEditRow}>
+          <TextInput
+            style={styles.focusInput}
+            value={focus}
+            onChangeText={setFocus}
+            placeholder="Enter your focus"
+            placeholderTextColor="rgba(255,255,255,0.7)"
+            autoFocus={isEditingFocus}
+            returnKeyType="done"
+            onSubmitEditing={() => setIsEditingFocus(false)}
+          />
+          {!hasInitialFocus ? editFocusButton : null}
+        </View>
+      );
+    }
 
-          {hasInitialFocus || isEditingFocus ? (
-            <TextInput
-              style={styles.focusInput}
-              value={focus}
-              onChangeText={setFocus}
-              placeholder="Enter your focus"
-              placeholderTextColor="rgba(255,255,255,0.7)"
-              autoFocus={isEditingFocus}
-              onSubmitEditing={() => setIsEditingFocus(false)}
+    return (
+      <View style={styles.chipsRow}>
+        {isCustomFocus ? (
+          <Chip
+            label={trimmedFocus}
+            selected
+            fontFamily={FONTS.figtreeMedium}
+            onPress={() => setIsEditingFocus(true)}
+          />
+        ) : (
+          FOCUS_OPTIONS.map((option) => (
+            <Chip
+              key={option}
+              label={option}
+              selected={focus === option}
+              fontFamily={FONTS.figtreeMedium}
+              onPress={() => setFocus(option)}
             />
-          ) : isCustomFocus ? (
-            <View style={styles.chipsRow}>
+          ))
+        )}
+        <TouchableOpacity
+          activeOpacity={0.85}
+          onPress={handleRefreshFocus}
+          accessibilityRole="button"
+          accessibilityLabel="Suggest another focus"
+        >
+          <RefreshFocusButton />
+        </TouchableOpacity>
+        {editFocusButton}
+      </View>
+    );
+  };
+
+  return (
+    <Modal
+      transparent
+      animationType="fade"
+      visible={visible}
+      onRequestClose={onClose}
+      statusBarTranslucent
+      navigationBarTranslucent
+    >
+      <KeyboardAvoidingView behavior="padding" style={styles.flex}>
+        <View
+          style={[
+            styles.overlay,
+            {
+              paddingTop: insets.top + SCREEN_GUTTER,
+              paddingBottom: insets.bottom + SCREEN_GUTTER,
+              paddingLeft: insets.left + SCREEN_GUTTER,
+              paddingRight: insets.right + SCREEN_GUTTER,
+            },
+          ]}
+        >
+          <Pressable
+            style={StyleSheet.absoluteFill}
+            onPress={onClose}
+            accessibilityRole="button"
+            accessibilityLabel="Close"
+          />
+
+          <View style={styles.card}>
+            <ScrollView
+              bounces={false}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.cardContent}
+            >
+              <Text style={styles.title}>Your Personalised Meditation</Text>
+
+              <Text style={styles.sectionLabel}>Focus</Text>
+              {renderFocus()}
+
+              <Text style={styles.sectionLabel}>Length</Text>
+              <View style={styles.chipsRow}>
+                {LENGTH_OPTIONS.map((length) => (
+                  <Chip
+                    key={length}
+                    label={length}
+                    selected={selectedLength === length}
+                    onPress={() => setSelectedLength(length)}
+                  />
+                ))}
+              </View>
+
+              <Text style={styles.sectionLabel}>Style</Text>
+              <View style={styles.chipsRow}>
+                {STYLE_OPTIONS.map((style) => (
+                  <Chip
+                    key={style}
+                    label={style}
+                    selected={selectedStyle === style}
+                    onPress={() => setSelectedStyle(style)}
+                  />
+                ))}
+              </View>
+
+              {showPersonaliseUsingConversation ? (
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  style={styles.checkboxRow}
+                  onPress={() => setPersonaliseUsingConversation((current) => !current)}
+                  accessibilityRole="checkbox"
+                  accessibilityState={{ checked: personaliseUsingConversation }}
+                >
+                  {personaliseUsingConversation ? (
+                    <CheckboxCheckedIcon />
+                  ) : (
+                    <View style={styles.checkboxBox} />
+                  )}
+                  <Text style={styles.checkboxLabel}>Personalise using this conversation</Text>
+                </TouchableOpacity>
+              ) : null}
+
               <TouchableOpacity
                 activeOpacity={0.85}
-                style={[styles.chip, styles.chipSelected]}
-                onPress={() => setIsEditingFocus(true)}
+                style={styles.beginButton}
+                onPress={handleBegin}
+                accessibilityRole="button"
               >
-                <Text style={[styles.chipText, styles.chipTextSelected]} numberOfLines={1}>
-                  {trimmedFocus}
-                </Text>
+                <View style={styles.beginIconFrame}>
+                  <LotusSparkleIcon style={styles.beginIcon} />
+                </View>
+                <Text style={styles.beginText}>Begin with Lhamo</Text>
               </TouchableOpacity>
-            </View>
-          ) : (
-            <View style={styles.chipsRow}>
-              {FOCUS_OPTIONS.map((option) => {
-                const isSelected = focus === option;
-                return (
-                  <TouchableOpacity
-                    key={option}
-                    activeOpacity={0.85}
-                    style={[styles.chip, isSelected && styles.chipSelected]}
-                    onPress={() => setFocus(option)}
-                  >
-                    <Text style={[styles.chipText, isSelected && styles.chipTextSelected]}>
-                      {option}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          )}
-
-          <Text style={styles.sectionLabel}>Length</Text>
-          <View style={styles.chipsRow}>
-            {LENGTH_OPTIONS.map((length) => {
-              const isSelected = selectedLength === length;
-              return (
-                <TouchableOpacity
-                  key={length}
-                  activeOpacity={0.85}
-                  style={[styles.chip, isSelected && styles.chipSelected]}
-                  onPress={() => setSelectedLength(length)}
-                >
-                  <Text style={[styles.chipText, isSelected && styles.chipTextSelected]}>
-                    {length}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
+            </ScrollView>
           </View>
-
-          <Text style={styles.sectionLabel}>Style</Text>
-          <View style={styles.chipsRow}>
-            {STYLE_OPTIONS.map((style) => {
-              const isSelected = selectedStyle === style;
-              return (
-                <TouchableOpacity
-                  key={style}
-                  activeOpacity={0.85}
-                  style={[styles.chip, isSelected && styles.chipSelected]}
-                  onPress={() => setSelectedStyle(style)}
-                >
-                  <Text style={[styles.chipText, isSelected && styles.chipTextSelected]}>
-                    {style}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-
-          {showPersonaliseUsingConversation ? (
-            <TouchableOpacity
-              activeOpacity={0.85}
-              style={styles.checkboxRow}
-              onPress={() => setPersonaliseUsingConversation((current) => !current)}
-            >
-              <View style={[styles.checkboxBox, personaliseUsingConversation && styles.checkboxBoxChecked]}>
-                {personaliseUsingConversation ? (
-                  <Ionicons name="checkmark" size={16} color="#8C8C8A" />
-                ) : null}
-              </View>
-              <Text style={styles.checkboxLabel}>Personalise using this conversation</Text>
-            </TouchableOpacity>
-          ) : null}
-
-          <TouchableOpacity activeOpacity={0.85} style={styles.beginButton} onPress={handleBegin}>
-            <Image source={images.magic_stick} style={styles.beginIcon} />
-            <Text style={styles.beginText}>Begin with Lhamo</Text>
-          </TouchableOpacity>
-        </Pressable>
-      </Pressable>
+        </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 };
@@ -224,161 +292,161 @@ const PersonalisedMeditationModal = ({
 export default PersonalisedMeditationModal;
 
 const styles = StyleSheet.create({
+  flex: {
+    flex: 1,
+  },
   overlay: {
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.7)",
+    alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 24,
   },
   card: {
-    borderRadius: 24,
+    width: "100%",
+    maxWidth: CARD_MAX_WIDTH,
+    maxHeight: "100%",
+    borderRadius: 15,
     backgroundColor: "#8C8C8A",
-    paddingHorizontal: 20,
-    paddingTop: 22,
-    paddingBottom: 20,
-    shadowColor: "#000000",
-    shadowOpacity: 0.12,
-    shadowRadius: 20,
-    shadowOffset: { width: 0, height: 10 },
-    elevation: 8,
+    overflow: "hidden",
+  },
+  cardContent: {
+    paddingHorizontal: 12,
+    paddingTop: 16,
+    paddingBottom: 17,
   },
   title: {
     textAlign: "center",
-    fontFamily: FONTS.figtreeBold,
-    fontSize: 18,
-    lineHeight: 24,
-    color: "#FFFFFF",
-    marginBottom: 20,
-  },
-  titleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  titleWithClose: {
-    flex: 1,
-    marginBottom: 0,
-  },
-  closeButton: {
-    position: "absolute",
-    right: 0,
-    top: -2,
-    width: 28,
-    height: 28,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  sectionLabel: {
-    fontFamily: FONTS.figtreeSemiBold,
+    fontFamily: FONTS.interBold,
     fontSize: 15,
     lineHeight: 20,
+    letterSpacing: -0.24,
     color: "#FFFFFF",
-    marginBottom: 10,
+    marginBottom: 13,
   },
-  sectionHeaderRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap:15,
-    // justifyContent: "space-between",
-    marginBottom: 10,
-  },
-  sectionLabelNoMargin: {
-    marginBottom: 0,
-  },
-  focusInput: {
-    borderWidth: 1,
-    borderColor: "#FFFFFF",
-    borderRadius: 20,
-    paddingVertical: 10,
-    paddingHorizontal: 18,
-    marginBottom: 20,
-    fontFamily: FONTS.inter,
-    fontSize: 14,
+  sectionLabel: {
+    fontFamily: FONTS.interBold,
+    fontSize: 15,
+    lineHeight: 20,
+    letterSpacing: -0.24,
     color: "#FFFFFF",
-  },
-  iconButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: "rgba(255, 255, 255, 0.25)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  pencilIcon: {
-    width: 16,
-    height: 16,
-    resizeMode: "contain",
+    marginBottom: 8,
   },
   chipsRow: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 10,
-    marginBottom: 20,
+    alignItems: "center",
+    columnGap: 8,
+    rowGap: 8,
+    marginBottom: 5,
   },
   chip: {
+    height: 33,
+    justifyContent: "center",
     borderWidth: 1,
     borderColor: "#FFFFFF",
-    borderRadius: 20,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    backgroundColor: "transparent",
+    borderRadius: 50,
+    paddingHorizontal: 10,
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    maxWidth: "100%",
   },
   chipSelected: {
     backgroundColor: "#FFFFFF",
   },
   chipText: {
-    fontFamily: FONTS.inter,
-    fontSize: 14,
+    fontSize: 15,
+    lineHeight: 20,
+    letterSpacing: -0.24,
     color: "#FFFFFF",
+    includeFontPadding: false,
   },
   chipTextSelected: {
-    fontFamily: FONTS.interSemiBold,
-    color: "#3A3A38",
+    color: "#474747",
+  },
+  iconButton: {
+    width: 33,
+    height: 33,
+    borderRadius: 16.5,
+    backgroundColor: "#A3A3A1",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  // Figma places the 20px pencil 7.5px from the left and 6px from the top of the 33px button
+  pencilIcon: {
+    position: "absolute",
+    left: 7.5,
+    top: 6,
+  },
+  focusEditRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 5,
+  },
+  focusInput: {
+    flex: 1,
+    height: 33,
+    borderWidth: 1,
+    borderColor: "#FFFFFF",
+    borderRadius: 50,
+    paddingHorizontal: 10,
+    paddingVertical: 0,
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    fontFamily: FONTS.figtreeMedium,
+    fontSize: 15,
+    letterSpacing: -0.24,
+    color: "#FFFFFF",
   },
   checkboxRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
-    marginBottom: 22,
+    gap: 12,
+    minHeight: 32,
+    paddingLeft: 6,
+    marginTop: 2,
   },
   checkboxBox: {
-    width: 22,
-    height: 22,
-    borderRadius: 5,
-    borderWidth: 1,
+    width: 20,
+    height: 20,
+    borderRadius: 2,
+    borderWidth: 1.5,
     borderColor: "#FFFFFF",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "transparent",
-  },
-  checkboxBoxChecked: {
-    backgroundColor: "#FFFFFF",
   },
   checkboxLabel: {
     flexShrink: 1,
-    fontFamily: FONTS.inter,
-    fontSize: 14,
+    fontFamily: FONTS.interRegular,
+    fontSize: 15,
+    lineHeight: 20,
+    letterSpacing: -0.24,
     color: "#FFFFFF",
   },
   beginButton: {
+    alignSelf: "center",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 8,
-    minHeight: 50,
-    borderRadius: 999,
-    backgroundColor: "#D89B4A",
-    paddingHorizontal: 24,
+    gap: 7,
+    height: 36,
+    borderRadius: 50,
+    backgroundColor: "rgba(248, 198, 62, 0.78)",
+    paddingHorizontal: 10,
+    marginTop: 10,
+  },
+  // Figma clips the 27x28 lotus inside a 22px frame, offset 7.5px upward
+  beginIconFrame: {
+    width: 22,
+    height: 22,
+    overflow: "hidden",
   },
   beginIcon: {
-    width: 20,
-    height: 20,
-    resizeMode: "contain",
+    position: "absolute",
+    left: 0,
+    top: -7.5,
   },
   beginText: {
-    fontFamily: FONTS.figtreeSemiBold,
-    fontSize: 16,
+    fontFamily: FONTS.figtreeBold,
+    fontSize: 15,
+    lineHeight: 20,
+    letterSpacing: -0.24,
     color: "#FFFFFF",
   },
 });

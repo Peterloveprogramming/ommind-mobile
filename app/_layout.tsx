@@ -3,10 +3,9 @@ import { View, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
 import { Platform } from "react-native";
 import BackButton from "@/comp/headers/BackButton";
-import MoreButton from "@/comp/headers/MoreButton";
 import * as SplashScreen from "expo-splash-screen";
 import { useFonts as useFigtree, Figtree_400Regular, Figtree_500Medium, Figtree_600SemiBold, Figtree_600SemiBold_Italic, Figtree_700Bold } from "@expo-google-fonts/figtree";
-import { useFonts as useInter, Inter_400Regular, Inter_600SemiBold, Inter_500Medium } from "@expo-google-fonts/inter";
+import { useFonts as useInter, Inter_400Regular, Inter_600SemiBold, Inter_500Medium, Inter_700Bold } from "@expo-google-fonts/inter";
 import { Afacad_400Regular, Afacad_700Bold } from "@expo-google-fonts/afacad";
 import GlobalProviders from "@/context/GlobalProviders";
 import { KeyboardProvider } from "react-native-keyboard-controller";
@@ -24,30 +23,6 @@ Sentry.init({
   enableAutoSessionTracking: true,
 });
 
-const handleMeditationHeaderBackPress = (
-  screenName: string,
-  navigateToExplore: () => void
-) => {
-  const startedAt = Date.now();
-
-  if (__DEV__) {
-    console.log(`[HeaderBack:${screenName}] navigating to explore`, {
-      route: "/explore",
-    });
-  }
-
-  navigateToExplore();
-
-  if (__DEV__) {
-    setTimeout(() => {
-      console.log(`[HeaderBack:${screenName}] after explore navigation dispatch`, {
-        elapsedMs: Date.now() - startedAt,
-      });
-    }, 0);
-  }
-};
-
-
 function RootLayout() {
   const router = useRouter(); // Initialize the router
 
@@ -64,6 +39,7 @@ function RootLayout() {
   const [interLoaded] = useInter({
     Inter_400Regular,
     Inter_600SemiBold,
+    Inter_700Bold,
   });
 
   // The splash screen is hidden by app/index.tsx once the auth redirect is
@@ -133,28 +109,10 @@ function RootLayout() {
 
         <Stack.Screen
           name="meditation_session/session"
-          options={{
-            headerTitle: () => <View />,
-            headerShown: true,
-            headerTransparent: true,
-            headerShadowVisible: false,
-            headerStyle: {
-              backgroundColor: "transparent",
-            },
-            headerLeft:() => (
-              <BackButton
-                debugLabel="HeaderBack:meditation_session/session"
-                onTouch={() =>
-                  handleMeditationHeaderBackPress(
-                    "meditation_session/session",
-                    () => router.dismissTo("/explore")
-                  )
-                }
-              />
-            ),
-            headerRight:()=><MoreButton onTouch={() => console.log("More pressed")} />
-            }}
-          />
+          // The course screen draws its own back/share bar over the hero image
+          // (MeditationSession) so it lines up identically on iOS and Android.
+          options={{ headerShown: false }}
+        />
 
         <Stack.Screen
           name="meditation_session/player"

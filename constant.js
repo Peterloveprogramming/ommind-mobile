@@ -12,7 +12,7 @@ export const DEFAULT_INTENTION = "Compassion"
 export const DEFAULT_AFFIRMATION = "\u201cI am grounded and soft with myself today.\u201d"
 //for audio to text using websocket 
 // if testing locally then use "ipconfig getifaddr en0" to get the actual ip address for testing
-export let TEXT_TO_AUDIO_URL = "ws://192.168.5.29:9001";
+export let TEXT_TO_AUDIO_URL = "ws://192.168.5.98:9001";
 export const setTextToAudioUrl = (url) => {
   TEXT_TO_AUDIO_URL = url;
 };

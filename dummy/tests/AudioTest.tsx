@@ -1,6 +1,7 @@
 import * as Sentry from "@sentry/react-native";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Alert, Button, Text, TextInput, View } from "react-native";
+import { TEXT_TO_AUDIO_URL } from "@/constant";
 import { useWebsocketHexPcmAudio } from "@/services/useWebsocketHexPcmAudio";
 import {
   getAudioServiceWebsocketUrl,
@@ -97,7 +98,7 @@ export default function AudioTest({ logRawData = false }: AudioTestProps) {
       const response = await requestAudioTestingAction("health");
       const wsUrl = getAudioServiceWebsocketUrl(response);
       setActiveTextToAudioUrl(wsUrl);
-      setTextToAudioUrl(wsUrl ?? "Text to audio url unavailable.");
+      setTextToAudioUrl(wsUrl ?? `Using default: ${TEXT_TO_AUDIO_URL}`);
     } catch (error) {
       setTextToAudioUrl(`Text to audio url check failed: ${String(error)}`);
     } finally {
