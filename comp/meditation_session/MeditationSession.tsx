@@ -35,6 +35,44 @@ type TagProps = {
   tag: string;
 };
 
+type PlayerRouteProps = Omit<SessionCardProps, "completed" | "locked">;
+
+const pushSessionPlayer = (
+  router: ReturnType<typeof useRouter>,
+  {
+    title,
+    favourite,
+    messageId,
+    courseUuid,
+    courseNumber,
+    sessionNumber,
+    meditationType,
+    imageUrl,
+    backgroundUrl,
+    sessionTitles,
+    sessionMetadata,
+    progress,
+  }: PlayerRouteProps,
+) => {
+  router.push({
+    pathname: "/meditation_session/player",
+    params: {
+      title,
+      favourite: String(favourite),
+      message_id: messageId == null ? "" : String(messageId),
+      course_uuid: courseUuid,
+      course_number: String(courseNumber),
+      session_number: String(sessionNumber),
+      type: meditationType,
+      image_url: imageUrl,
+      backgroundUrl:backgroundUrl,
+      session_titles: sessionTitles,
+      session_metadata: sessionMetadata,
+      progress: progress == null ? "" : String(progress),
+    },
+  });
+};
+
 const SessionCard = ({
   title,
   completed,
@@ -83,22 +121,20 @@ const SessionCard = ({
   }
 
   const handlePress = () => {
-    router.push({
-      pathname: "/meditation_session/player",
-      params: {
-        title,
-        favourite: String(favourite),
-        message_id: messageId == null ? "" : String(messageId),
-        course_uuid: courseUuid,
-        course_number: String(courseNumber),
-        session_number: String(sessionNumber),
-        type: meditationType,
-        image_url: imageUrl,
-        backgroundUrl:backgroundUrl,
-        session_titles: sessionTitles,
-        session_metadata: sessionMetadata,
-        progress: progress == null ? "" : String(progress),
-      },
+    pushSessionPlayer(router, {
+      title,
+      favourite,
+      messageId,
+      courseUuid,
+      courseNumber,
+      sessionNumber,
+      sessionLengthInMins,
+      meditationType,
+      imageUrl,
+      backgroundUrl,
+      sessionTitles,
+      sessionMetadata,
+      progress,
     });
   };
 
@@ -130,6 +166,7 @@ const renderDescriptionSection = (section: MeditationCourseDescriptionSection) =
 };
 
 const MeditationSession = () => {
+  const router = useRouter();
   const params = useLocalSearchParams<{ uuid?: string; type?: string }>();
   const { courseDetails, detailsStatus, fetchMeditationCourseDetails } = useMeditationCourses({
     courseDetailsUuid: params.uuid,
@@ -217,6 +254,28 @@ const MeditationSession = () => {
       return metadataBySession;
     }, {}),
   );
+  const firstSession = courseDetails.sessions[0];
+  const handlePlay = () => {
+    if (!firstSession) {
+      return;
+    }
+
+    pushSessionPlayer(router, {
+      title: `Session ${firstSession.session_number}: ${firstSession.session_title}`,
+      favourite: firstSession.favourite,
+      messageId: firstSession.message_id,
+      courseUuid: courseDetails.uuid,
+      courseNumber: courseDetails.course_number,
+      sessionNumber: firstSession.session_number,
+      sessionLengthInMins: firstSession.session_length,
+      meditationType: courseDetails.type,
+      imageUrl: courseDetails.image_url,
+      backgroundUrl: courseDetails.background_url,
+      sessionTitles,
+      sessionMetadata,
+      progress: firstSession.progress,
+    });
+  };
   return (
     <View style={styles.container}>
           <ScrollView
@@ -250,7 +309,7 @@ const MeditationSession = () => {
               <Text style={{fontFamily:FONTS.figtreeMedium,color:"#8B8B8B",fontSize:16}}>By OmMind</Text>
 
               <BaseButton
-                onPress={() => console.log("helloman")}
+                onPress={handlePlay}
                 text="Play"
                 style={{marginVertical:10}}
                 height={48}
