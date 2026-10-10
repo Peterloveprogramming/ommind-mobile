@@ -1,4 +1,3 @@
-import FocusSelectionModal from "@/comp/modals/FocusSelectionModal";
 import { useUserApi } from "@/api/api";
 import { RecentlyAccessedSession } from "@/api/types";
 import ProfileDetailsModal, { ProfileDetailsForm } from "@/comp/modals/ProfileDetailsModal";
@@ -248,7 +247,6 @@ const Profile = () => {
     getUserNameAndEmail: { getUserNameAndEmail },
     notifyCustomerFeedback: { notifyCustomerFeedback },
     submitFeedback: { submitFeedback },
-    updateUserCurrentFocus: { updateUserCurrentFocus },
     updateUserNameAndEmail: { updateUserNameAndEmail },
     uploadProfilePic: { uploadProfilePic },
   } = useUserApi();
@@ -268,8 +266,6 @@ const Profile = () => {
   const [pendingProfilePhotoBase64, setPendingProfilePhotoBase64] = React.useState<string | null>(null);
   const [profilePhotoError, setProfilePhotoError] = React.useState("");
   const [isUploadingProfilePhoto, setIsUploadingProfilePhoto] = React.useState(false);
-  const [isFocusModalVisible, setIsFocusModalVisible] = React.useState(false);
-  const [isUpdatingFocus, setIsUpdatingFocus] = React.useState(false);
   const [activeFeedbackForm, setActiveFeedbackForm] = React.useState<
     "report-bug" | "suggest-improvement" | null
   >(null);
@@ -612,37 +608,10 @@ const Profile = () => {
   };
 
   const handleChangeFocusPress = () => {
-    setIsFocusModalVisible(true);
-  };
-
-  const handleCloseFocusModal = () => {
-    setIsFocusModalVisible(false);
-  };
-
-  const handleConfirmFocusPress = async (selectedFocusItems: string[]) => {
-    setIsUpdatingFocus(true);
-
-    try {
-      const updateResult = await updateUserCurrentFocus({
-        current_focus: selectedFocusItems,
-      });
-
-      if (!checkIfLambdaResultIsSuccess(updateResult)) {
-        Alert.alert("Unable to update focus", getLambdaErrorMessage(updateResult));
-        return;
-      }
-
-      setAccountDetails((currentDetails: AccountDetails) => ({
-        ...currentDetails,
-        current_focus: updateResult.data?.current_focus ?? selectedFocusItems,
-      }));
-      setIsFocusModalVisible(false);
-    } catch (error) {
-      console.error("Failed to update current focus", error);
-      Alert.alert("Unable to update focus", "Please try again.");
-    } finally {
-      setIsUpdatingFocus(false);
-    }
+    router.push({
+      pathname: "/focus",
+      params: { current_focus: JSON.stringify(normalizeCurrentFocus(accountDetails.current_focus)) },
+    });
   };
 
   const handleSessionPress = (item: RecentlyAccessedSession) => {
@@ -798,7 +767,6 @@ const Profile = () => {
         ? { uri: accountDetails.profile_pic }
         : DEFAULT_PROFILE_IMAGE;
   const currentFocusText = formatCurrentFocus(accountDetails.current_focus);
-  const selectedFocusItems = normalizeCurrentFocus(accountDetails.current_focus);
   const recentlyPlayedSessions = accountDetails.recently_accessed_sessions ?? [];
   const averageDailyMeditationMinutes = getAverageDailyMeditationMinutes(
     accountDetails.total_meditation_time_in_mins,
@@ -1135,14 +1103,6 @@ const Profile = () => {
           pendingProfilePhotoUri ? handleConfirmProfilePhotoPress : handleChooseProfilePhotoPress
         }
         onSecondaryPress={pendingProfilePhotoUri ? handleChooseProfilePhotoPress : undefined}
-      />
-
-      <FocusSelectionModal
-        visible={isFocusModalVisible}
-        onClose={handleCloseFocusModal}
-        initialSelectedFocusItems={selectedFocusItems}
-        onConfirm={handleConfirmFocusPress}
-        isSubmitting={isUpdatingFocus}
       />
 
       <ProfileDetailsModal

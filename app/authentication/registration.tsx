@@ -1,16 +1,20 @@
 import { Checkbox } from 'expo-checkbox';
-import { useState,useContext } from 'react';
-import { StyleSheet, Text, View, KeyboardAvoidingView, Platform, TouchableOpacity, Image, ScrollView, TouchableWithoutFeedback, Keyboard } from 'react-native';
+import { useEffect, useState } from 'react';
+import { StyleSheet, Text, View, KeyboardAvoidingView as KeyboardAvoidingViewRN, Platform, TouchableOpacity, Image, ScrollView, TouchableWithoutFeedback, Keyboard } from 'react-native';
 import { COLORS, FONTS } from "@/theme.js";
 import BaseTextInput from "@/comp/base/BaseTextInput";
 import OTPInput from '@/comp/OTPInput';
-import { useRouter,Router } from "expo-router";
+import { Stack, useRouter, Router } from "expo-router";
+import { KeyboardAvoidingView, useKeyboardState } from "react-native-keyboard-controller";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { images } from "@/constants/images";
 import { useUserApi } from '@/api/api';
 import { useToast } from '@/context/useToast';
 import { convertFieldNameToReadableFormat,checkIfLambdaResultIsSuccess } from '@/utils/helper';
 import BaseButton from '@/comp/base/BaseButton';
 import { storeAuthInfo } from '@/utils/helper';
 let debugUi = false;
+const VERIFY_BACKGROUND = '#FAFAFA';
 interface RegisterFormProps{
   onPressRegister:() => void
   handleInputChange:(field:keyof UserDetails,newValue:string)=>void
@@ -105,79 +109,132 @@ const RegisterForm = ({
   )
 }
 
+const OTP_LENGTH = 6;
+const RESEND_COOLDOWN_SECONDS = 30;
+
+const formatCountdown = (seconds: number) => {
+  const minutes = Math.floor(seconds / 60);
+  const remainder = seconds % 60;
+  return `${String(minutes).padStart(2, '0')}:${String(remainder).padStart(2, '0')}`;
+};
+
 interface EmailVerificationProps {
   email:string,
   editEmail:()=>void
   router:Router
   showToastMessage: (message: string, success: boolean) => void;
 }
+// UI only for now: any complete code is accepted and "Send code again" just
+// confirms with a toast. Real OTP verification/resend is not wired up yet.
 const EmailVerification = ({
   email,
   editEmail,
   router,
   showToastMessage
 }:EmailVerificationProps) => {
-  const [emailVerificationCode,setEmailVerificationCode] = useState<String>("ok")
-  const [otp, setOtp] = useState<string[]>(new Array(5).fill('')); // Adjust length based on OTP length
-  const [isResendActive, setIsResendActive] = useState(false);
-  const onConfirmCode = async () => {
-    let codeMissing = false;
-    otp.forEach((code,_)=>{
-      if (code.trim().length==0){
-        codeMissing = true
-        return;
-      }
-    })
-    if (codeMissing){
-      console.log("please enter full code")
-      showToastMessage("Please enter the full code",false)
-    } else {
-            await new Promise(resolve => setTimeout(resolve, 700)); // Use await for delay
+  const insets = useSafeAreaInsets();
+  const isKeyboardVisible = useKeyboardState((s) => s.isVisible);
+  const [otp, setOtp] = useState('');
+  const [secondsLeft, setSecondsLeft] = useState(RESEND_COOLDOWN_SECONDS);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const canResend = secondsLeft === 0;
 
-       showToastMessage("OTP Successfully Verified!",true)
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Use await for delay
-       router.replace('/authentication/registration_questions');
+  useEffect(() => {
+    if (secondsLeft === 0) return;
+    const timer = setTimeout(() => setSecondsLeft((prev) => prev - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [secondsLeft]);
+
+  const onConfirmCode = async () => {
+    if (isVerifying) return;
+    if (otp.length < OTP_LENGTH) {
+      showToastMessage("Please enter the full code",false)
+      return;
     }
+    setIsVerifying(true)
+    showToastMessage("OTP Successfully Verified!",true)
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    router.replace('/authentication/registration_questions');
   }
-  
-  const handleOtpChange = (newOtp: string[]) => {
-    setOtp(newOtp);
+
+  const handleResendOtp = () => {
+    if (!canResend) return;
+    showToastMessage("Code sent successfully",true)
+    setOtp('')
+    setSecondsLeft(RESEND_COOLDOWN_SECONDS)
   };
-  console.log(otp)
-    const handleResendOtp = () => {
-    // Your logic to resend OTP
-    console.log("Resending OTP...");
-  };
-  return (<>
-    <View style={emailVerificationStyles.parent}>
-      {/* Email */}
-      <View>
-        <Text style={styles.askEmailText}>Enter Code</Text>
+
+  return (
+    <KeyboardAvoidingView
+      style={emailVerificationStyles.parent}
+      behavior="padding"
+      automaticOffset
+    >
+      <ScrollView
+        style={emailVerificationStyles.scroll}
+        contentContainerStyle={emailVerificationStyles.content}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={emailVerificationStyles.head}>
+          <Text style={emailVerificationStyles.title}>Enter code</Text>
+          <Text style={emailVerificationStyles.subtitle}>
+            We’ve sent an activation code to your email address{' '}
+            <Text style={emailVerificationStyles.subtitleBold}>{email}</Text>
+            {'  •  '}
+            <Text
+              style={[emailVerificationStyles.subtitleBold, emailVerificationStyles.editLink]}
+              onPress={editEmail}
+              suppressHighlighting
+            >
+              Edit
+            </Text>
+          </Text>
+        </View>
+        <OTPInput
+          value={otp}
+          onChange={setOtp}
+          length={OTP_LENGTH}
+          disabled={isVerifying}
+        />
+      </ScrollView>
+
+      <View
+        style={[
+          emailVerificationStyles.commands,
+          { paddingBottom: isKeyboardVisible ? 18 : insets.bottom + 18 },
+        ]}
+      >
+        <TouchableOpacity
+          onPress={handleResendOtp}
+          disabled={!canResend}
+          hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}
+          style={emailVerificationStyles.resend}
+        >
+          <Text
+            style={[
+              emailVerificationStyles.resendText,
+              canResend && emailVerificationStyles.resendTextActive,
+            ]}
+          >
+            Send code again
+          </Text>
+          {!canResend && (
+            <Text style={emailVerificationStyles.countdownText}>
+              {formatCountdown(secondsLeft)}
+            </Text>
+          )}
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={onConfirmCode}
+          disabled={isVerifying}
+          accessibilityRole="button"
+          accessibilityLabel="Verify code"
+        >
+          <Image source={images.next_button_icon} style={emailVerificationStyles.nextButton} />
+        </TouchableOpacity>
       </View>
-      <Text style={{opacity: 0.7}}>
-        We’ve sent an activation code to your email address 
-        <Text style={{fontWeight: 'bold'}}> {email}</Text> 
-      </Text>
-      <TouchableOpacity 
-        style={{marginLeft:10}}
-        onPress={editEmail}
-      > 
-        <Text style={{
-          color:COLORS.brandYellow,
-          marginTop:10
-        }}>
-          Edit Email
-        </Text>
-      </TouchableOpacity>
-      <OTPInput
-        value={otp}
-        onChange={handleOtpChange}
-        length={5} // Length of OTP
-        onResendOTP={handleResendOtp}
-        onConfirmCode={onConfirmCode}
-      />
-    </View>
-  </>
+    </KeyboardAvoidingView>
   )
 }
 
@@ -263,9 +320,24 @@ export default function Registration() {
     }
   }
 
+  if (stage === VERIFY_EMAIL) {
+    return (
+      <>
+        <Stack.Screen options={{ headerStyle: { backgroundColor: VERIFY_BACKGROUND }, headerShadowVisible: false }} />
+        <EmailVerification
+          email={details.email}
+          editEmail={()=>setStage(REGISTER)}
+          router={router}
+          showToastMessage={showToastMessage}
+        />
+      </>
+    )
+  }
+
   return (
     <View style={styles.container}>
-      <KeyboardAvoidingView
+      <Stack.Screen options={{ headerStyle: { backgroundColor: '#FFFFFF' }, headerShadowVisible: true }} />
+      <KeyboardAvoidingViewRN
         style={{ flex: 1 }} 
         behavior="padding"
         keyboardVerticalOffset={Platform.OS === 'ios' ? 20 : 100}
@@ -273,23 +345,15 @@ export default function Registration() {
         {/* Dismissing the keyboard when tapping outside */}
         <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
           <ScrollView contentContainerStyle={styles.scrollViewContainer}>
-            {stage == REGISTER?
-             <RegisterForm
+            <RegisterForm
               onPressRegister={handleRegistration}
               handleInputChange={handleInputChange}
               details={details}
               isLoading={isLoading}
-            />:
-            <EmailVerification
-              email={details.email}
-              editEmail={()=>setStage(REGISTER)}
-              router={router}
-              showToastMessage={showToastMessage}
             />
-          }
           </ScrollView>
         </TouchableWithoutFeedback>
-      </KeyboardAvoidingView>
+      </KeyboardAvoidingViewRN>
     </View>
   )
 }
@@ -344,7 +408,77 @@ const styles = StyleSheet.create({
 const emailVerificationStyles = StyleSheet.create({
   parent:{
     flex:1,
-    paddingVertical:30,
-    paddingHorizontal:5
-  }
+    backgroundColor: VERIFY_BACKGROUND,
+  },
+  scroll:{
+    flex:1,
+  },
+  content:{
+    width:'100%',
+    maxWidth:440,
+    alignSelf:'center',
+    paddingHorizontal:23,
+    paddingTop:24,
+    paddingBottom:24,
+    gap:34,
+  },
+  head:{
+    gap:11,
+  },
+  title:{
+    fontFamily: FONTS.figtreeSemiBold,
+    fontSize: 32,
+    letterSpacing: 0.36,
+    color: '#000000',
+  },
+  subtitle:{
+    fontFamily: FONTS.interRegular,
+    fontSize: 16,
+    lineHeight: 21,
+    letterSpacing: -0.32,
+    color: 'rgba(0,0,0,0.7)',
+  },
+  subtitleBold:{
+    fontFamily: FONTS.interSemiBold,
+  },
+  editLink:{
+    color: COLORS.brandYellow,
+  },
+  commands:{
+    width:'100%',
+    maxWidth:440,
+    alignSelf:'center',
+    flexDirection:'row',
+    alignItems:'center',
+    justifyContent:'space-between',
+    paddingHorizontal:23,
+    paddingTop:8,
+  },
+  resend:{
+    flexDirection:'row',
+    alignItems:'center',
+    gap:13,
+  },
+  resendText:{
+    fontFamily: FONTS.interSemiBold,
+    fontSize: 16,
+    lineHeight: 21,
+    letterSpacing: -0.32,
+    color: 'rgba(0,0,0,0.7)',
+  },
+  resendTextActive:{
+    color: '#000000',
+  },
+  countdownText:{
+    fontFamily: FONTS.interRegular,
+    fontSize: 16,
+    lineHeight: 21,
+    letterSpacing: -0.32,
+    color: 'rgba(0,0,0,0.7)',
+    fontVariant: ['tabular-nums'],
+  },
+  nextButton:{
+    width:48,
+    height:48,
+  },
 })

@@ -6,12 +6,10 @@ import next_button_icon from "@/assets/images/icons/next_button_icon.png";
 import apple_icon from "@/assets/images/icons/apple_logo.png";
 import lhamo_mini from "@/assets/images/rinpoche_mini.png";
 import rinpoche_normal from "@/assets/images/rinpoche_normal.png";
-import lhamo_mini_loading from "@/assets/images/rinpoche_mini_loading.png";
 import lhamo_background_one from "@/assets/images/Lhamo/background_image_one.png";
 import lhamo_background_two from "@/assets/images/Lhamo/background_image_two.png";
 import lhamo_background_three from "@/assets/images/Lhamo/background_image_three.png";
 import meditation_test from "@/assets/images/explore/calm/test.jpg";
-import calm_abiding from "@/assets/images/meditation_session/calm_abiding.jpg";
 import bookmark from "@/assets/images/meditation_session/Bookmark.png";
 import bookmark_white from "@/assets/images/meditation_session/Bookmark_white.png";
 import bookmarked from "@/assets/images/meditation_session/bookmarked.png";
@@ -52,10 +50,8 @@ export const images = {
   lhamo_background_two,
   lhamo_background_three,
   lhamo_mini,
-  lhamo_mini_loading,
   rinpoche_normal,
   meditation_test,
-  calm_abiding,
   bookmark,
   bookmarked,
   unchecked,

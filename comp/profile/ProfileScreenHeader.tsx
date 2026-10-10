@@ -18,7 +18,8 @@ export const PROFILE_HEADER_UI = {
 } as const;
 
 type ProfileScreenHeaderProps = {
-  title: string;
+  // Omit for screens whose nav bar only shows the back button (e.g. Your focus).
+  title?: string;
   // Figma uses Figtree Regular for some Profile titles and SemiBold for others.
   titleVariant?: "regular" | "semibold";
   titleStyle?: StyleProp<TextStyle>;
@@ -49,19 +50,23 @@ const ProfileScreenHeader = ({
       >
         <ChevronLeft />
       </Pressable>
-      <Text
-        accessibilityRole="header"
-        adjustsFontSizeToFit
-        maxFontSizeMultiplier={PROFILE_HEADER_UI.maxFontSizeMultiplier}
-        numberOfLines={1}
-        style={[
-          styles.title,
-          titleVariant === "regular" ? styles.titleRegular : styles.titleSemiBold,
-          titleStyle,
-        ]}
-      >
-        {title}
-      </Text>
+      {title ? (
+        <Text
+          accessibilityRole="header"
+          adjustsFontSizeToFit
+          maxFontSizeMultiplier={PROFILE_HEADER_UI.maxFontSizeMultiplier}
+          numberOfLines={1}
+          style={[
+            styles.title,
+            titleVariant === "regular" ? styles.titleRegular : styles.titleSemiBold,
+            titleStyle,
+          ]}
+        >
+          {title}
+        </Text>
+      ) : (
+        <View style={styles.titleSpacer} />
+      )}
       <View style={styles.spacer} />
     </View>
   );
@@ -91,6 +96,9 @@ const styles = StyleSheet.create({
     marginHorizontal: 8,
     fontSize: 17,
     textAlign: "center",
+  },
+  titleSpacer: {
+    flex: 1,
   },
   titleRegular: {
     fontFamily: FONTS.figtreeMedium,
