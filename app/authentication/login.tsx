@@ -15,6 +15,7 @@ import { useRouter } from "expo-router";
 import { useUserApi } from '@/api/api';
 import BaseTextInput from "@/comp/base/BaseTextInput";
 import BaseButton from '@/comp/base/BaseButton';
+import BackHeader from '@/comp/headers/BackHeader';
 import { FONTS } from '@/theme';
 import { useToast } from '@/context/useToast';
 import { checkIfLambdaResultIsSuccess, convertFieldNameToReadableFormat, storeAuthInfo } from '@/utils/helper';
@@ -97,69 +98,75 @@ export default function Login() {
   };
 
   return (
-    <View style={styles.container}>
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 20 : 100}
-      >
-        <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
-          <ScrollView contentContainerStyle={styles.scrollViewContainer}>
-            <View style={styles.topSection}>
-              <View>
-                <Text style={styles.askEmailText}>Welcome back</Text>
-                <View style={styles.testingVersionBadge}>
-                  <Text style={styles.testingVersionText}>{TESTING_VERSION_LABEL}</Text>
+    <View style={styles.screen}>
+      <BackHeader onBack={() => router.back()} />
+      <View style={styles.container}>
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 20 : 100}
+        >
+          <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
+            <ScrollView contentContainerStyle={styles.scrollViewContainer}>
+              <View style={styles.topSection}>
+                <View>
+                  <Text style={styles.askEmailText}>Welcome back</Text>
+                  <View style={styles.testingVersionBadge}>
+                    <Text style={styles.testingVersionText}>{TESTING_VERSION_LABEL}</Text>
+                  </View>
+                </View>
+
+                <BaseTextInput
+                  value={details.email}
+                  label="Email"
+                  onChangeText={(newValue: string) => handleInputChange("email", newValue)}
+                  required={true}
+                  inputStyle={{
+                    marginBottom: 5,
+                  }}
+                />
+
+                <BaseTextInput
+                  value={details.password}
+                  label="Password"
+                  onChangeText={(newValue: string) => handleInputChange("password", newValue)}
+                  required={true}
+                  securityEntry={passwordSecurityEntry}
+                  inputStyle={{
+                    marginBottom: 5,
+                  }}
+                />
+
+                <TouchableOpacity
+                  onPress={() => {
+                    setPasswordSecurityEntry((prevState) => !prevState);
+                  }}
+                >
+                  <Text style={styles.showPasswordText}>
+                    {passwordSecurityEntry ? 'Show Password' : 'Hide Password'}
+                  </Text>
+                </TouchableOpacity>
+
+                <View style={styles.loginButtonContainer}>
+                  <BaseButton
+                    text='Login'
+                    isLoading={isLoading}
+                    onPress={handleLogin}
+                  />
                 </View>
               </View>
-
-              <BaseTextInput
-                value={details.email}
-                label="Email"
-                onChangeText={(newValue: string) => handleInputChange("email", newValue)}
-                required={true}
-                inputStyle={{
-                  marginBottom: 5,
-                }}
-              />
-
-              <BaseTextInput
-                value={details.password}
-                label="Password"
-                onChangeText={(newValue: string) => handleInputChange("password", newValue)}
-                required={true}
-                securityEntry={passwordSecurityEntry}
-                inputStyle={{
-                  marginBottom: 5,
-                }}
-              />
-
-              <TouchableOpacity
-                onPress={() => {
-                  setPasswordSecurityEntry((prevState) => !prevState);
-                }}
-              >
-                <Text style={styles.showPasswordText}>
-                  {passwordSecurityEntry ? 'Show Password' : 'Hide Password'}
-                </Text>
-              </TouchableOpacity>
-
-              <View style={styles.loginButtonContainer}>
-                <BaseButton
-                  text='Login'
-                  isLoading={isLoading}
-                  onPress={handleLogin}
-                />
-              </View>
-            </View>
-          </ScrollView>
-        </TouchableWithoutFeedback>
-      </KeyboardAvoidingView>
+            </ScrollView>
+          </TouchableWithoutFeedback>
+        </KeyboardAvoidingView>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+  },
   container: {
     flex: 1,
     // alignItems: 'center',

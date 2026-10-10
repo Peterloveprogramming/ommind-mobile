@@ -6,6 +6,7 @@ import { useState,useContext,useEffect,useRef} from 'react';
 import { FONTS } from '@/theme';
 import { ToastVisibilityContext } from '@/context/useToast';
 import BaseButton from '@/comp/base/BaseButton';
+import BackHeader from '@/comp/headers/BackHeader';
 import { useRouter } from "expo-router";
 import { useRegistrationQuestionApi } from '@/api/api';
 import { checkIfLambdaResultIsSuccess, getLambdaErrorMessage } from '@/utils/helper';
@@ -100,6 +101,7 @@ const RegistrationQuestions = () => {
     // console.log(currentQuestion)
     return (
         <View style={styles.root}>
+            <BackHeader onBack={() => router.back()} />
             <View style={styles.content}>
                 {/* progress bar */}
                 <View style={styles.progressBarContainer}>

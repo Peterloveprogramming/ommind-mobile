@@ -1,8 +1,6 @@
 import { Stack } from "expo-router";
 import { View, StyleSheet } from "react-native";
-import { useRouter } from "expo-router";
 import { Platform } from "react-native";
-import BackButton from "@/comp/headers/BackButton";
 import * as SplashScreen from "expo-splash-screen";
 import { useFonts as useFigtree, Figtree_400Regular, Figtree_500Medium, Figtree_600SemiBold, Figtree_600SemiBold_Italic, Figtree_700Bold } from "@expo-google-fonts/figtree";
 import { useFonts as useInter, Inter_400Regular, Inter_600SemiBold, Inter_500Medium, Inter_700Bold } from "@expo-google-fonts/inter";
@@ -24,8 +22,6 @@ Sentry.init({
 });
 
 function RootLayout() {
-  const router = useRouter(); // Initialize the router
-
   const [figtreeLoaded] = useFigtree({
     Figtree_400Regular,
     Figtree_500Medium,
@@ -85,26 +81,16 @@ function RootLayout() {
 
         <Stack.Screen
           name="authentication/registration"
-          options={{
-            headerShown: true,
-            headerTitle: () => <View></View>,
-            headerLeft:()=> <BackButton onTouch={() => router.back()} />,
-            // headerTitleAlign: "center", // Center the header title
-            // headerStyle: {
-            // }
-          }}
+          // Draws its own back button (BackHeader) so it lines up identically
+          // on iOS and Android.
+          options={{ headerShown: false }}
         />
 
         <Stack.Screen
           name="authentication/login"
-          options={{
-            headerShown: true,
-            headerTitle: () => <View></View>,
-            headerLeft:()=> <BackButton onTouch={() => router.back()} />,
-            // headerTitleAlign: "center", // Center the header title
-            // headerStyle: {
-            // }
-          }}
+          // Draws its own back button (BackHeader) so it lines up identically
+          // on iOS and Android.
+          options={{ headerShown: false }}
         />
 
         <Stack.Screen
@@ -123,14 +109,9 @@ function RootLayout() {
 
         <Stack.Screen
           name="authentication/registration_questions"
-          options={{
-            headerShown: true,
-            headerTitle: () => <View></View>,
-            headerLeft:()=> <BackButton onTouch={() => router.back()} />,
-            // headerTitleAlign: "center", // Center the header title
-            // headerStyle: {
-            // }
-          }}
+          // Draws its own back button (BackHeader) so it lines up identically
+          // on iOS and Android.
+          options={{ headerShown: false }}
         />
 
         <Stack.Screen

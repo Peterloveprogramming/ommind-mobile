@@ -4,7 +4,7 @@ import { StyleSheet, Text, View, KeyboardAvoidingView as KeyboardAvoidingViewRN,
 import { COLORS, FONTS } from "@/theme.js";
 import BaseTextInput from "@/comp/base/BaseTextInput";
 import OTPInput from '@/comp/OTPInput';
-import { Stack, useRouter, Router } from "expo-router";
+import { useRouter, Router } from "expo-router";
 import { KeyboardAvoidingView, useKeyboardState } from "react-native-keyboard-controller";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { images } from "@/constants/images";
@@ -12,6 +12,7 @@ import { useUserApi } from '@/api/api';
 import { useToast } from '@/context/useToast';
 import { convertFieldNameToReadableFormat,checkIfLambdaResultIsSuccess } from '@/utils/helper';
 import BaseButton from '@/comp/base/BaseButton';
+import BackHeader from '@/comp/headers/BackHeader';
 import { storeAuthInfo } from '@/utils/helper';
 let debugUi = false;
 const VERIFY_BACKGROUND = '#FAFAFA';
@@ -322,43 +323,48 @@ export default function Registration() {
 
   if (stage === VERIFY_EMAIL) {
     return (
-      <>
-        <Stack.Screen options={{ headerStyle: { backgroundColor: VERIFY_BACKGROUND }, headerShadowVisible: false }} />
+      <View style={styles.screen}>
+        <BackHeader onBack={() => router.back()} backgroundColor={VERIFY_BACKGROUND} />
         <EmailVerification
           email={details.email}
           editEmail={()=>setStage(REGISTER)}
           router={router}
           showToastMessage={showToastMessage}
         />
-      </>
+      </View>
     )
   }
 
   return (
-    <View style={styles.container}>
-      <Stack.Screen options={{ headerStyle: { backgroundColor: '#FFFFFF' }, headerShadowVisible: true }} />
-      <KeyboardAvoidingViewRN
-        style={{ flex: 1 }} 
-        behavior="padding"
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 20 : 100}
-      >
-        {/* Dismissing the keyboard when tapping outside */}
-        <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
-          <ScrollView contentContainerStyle={styles.scrollViewContainer}>
-            <RegisterForm
-              onPressRegister={handleRegistration}
-              handleInputChange={handleInputChange}
-              details={details}
-              isLoading={isLoading}
-            />
-          </ScrollView>
-        </TouchableWithoutFeedback>
-      </KeyboardAvoidingViewRN>
+    <View style={styles.screen}>
+      <BackHeader onBack={() => router.back()} />
+      <View style={styles.container}>
+        <KeyboardAvoidingViewRN
+          style={{ flex: 1 }} 
+          behavior="padding"
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 20 : 100}
+        >
+          {/* Dismissing the keyboard when tapping outside */}
+          <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
+            <ScrollView contentContainerStyle={styles.scrollViewContainer}>
+              <RegisterForm
+                onPressRegister={handleRegistration}
+                handleInputChange={handleInputChange}
+                details={details}
+                isLoading={isLoading}
+              />
+            </ScrollView>
+          </TouchableWithoutFeedback>
+        </KeyboardAvoidingViewRN>
+      </View>
     </View>
   )
 }
 
 const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+  },
   container: {
     flex: 1,
     alignItems: 'center',
