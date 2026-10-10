@@ -211,7 +211,7 @@ const SpiritualMentorChat = () => {
     const {showToastMessage} = useToast()
     const {aiMessage,isAiLoading,aiError,aiMode,aiRequestId,activeRequestId,fetchMessage,reset:resetAiMessageState,resumeActiveJob,wakePolling,pendingUserMessage} = useFetchAiMessage(false,normalizedSessionId ?? "");
     const { fetchChatMessages } = useChatMessagesBySessionId();
-    const { submitMessageRating, isLoading: isMessageRatingLoading } = useMessageRating();
+    const { submitMessageRating } = useMessageRating();
     const { playAudio, playbackStatus, pause, resume, dispose } = useWebsocketHexPcmAudio();
     const {
       isRecording,
@@ -234,6 +234,7 @@ const SpiritualMentorChat = () => {
     });
     const [messages,setMessages] = useState<ChatMessage[]>([])
     const [updatingFavouriteMessageId, setUpdatingFavouriteMessageId] = useState<string | null>(null);
+    const [ratingMessageIds, setRatingMessageIds] = useState<Set<string>>(() => new Set());
     const flatListRef = useRef<FlatList<ChatMessage> | null>(null);
     const fetchChatMessagesRef = useRef(fetchChatMessages);
     const resumeActiveJobRef = useRef(resumeActiveJob);
@@ -854,6 +855,27 @@ const SpiritualMentorChat = () => {
     scrollToLatestMessage(500);
   };
 
+  const submitRatingForMessage = async (input: Parameters<typeof submitMessageRating>[0]) => {
+    const messageKey = normalizeMessageId(input.message_id);
+
+    if (!messageKey || ratingMessageIds.has(messageKey)) {
+      return false;
+    }
+
+    setRatingMessageIds((prev) => new Set(prev).add(messageKey));
+
+    try {
+      const response = await submitMessageRating(input);
+      return Boolean(response);
+    } finally {
+      setRatingMessageIds((prev) => {
+        const next = new Set(prev);
+        next.delete(messageKey);
+        return next;
+      });
+    }
+  };
+
   const handlePositiveRatingSelect = async ({
     rating,
     message_id,
@@ -863,11 +885,11 @@ const SpiritualMentorChat = () => {
     message_id?: string | number;
     session_id?: string | number;
   }) => {
-    if (rating <= 3 || !message_id || !messageSessionId || isMessageRatingLoading) {
+    if (rating <= 3 || !message_id || !messageSessionId) {
       return false;
     }
 
-    const response = await submitMessageRating({
+    return submitRatingForMessage({
       message_id,
       session_id: messageSessionId,
       rating,
@@ -878,8 +900,6 @@ const SpiritualMentorChat = () => {
       issues: null,
       other_details: null,
     });
-
-    return Boolean(response);
   };
 
   const handleFeedbackSubmit = async ({
@@ -890,11 +910,11 @@ const SpiritualMentorChat = () => {
     message_id,
     session_id: messageSessionId,
   }: FeedBackPayload) => {
-    if (!message_id || !messageSessionId || isMessageRatingLoading) {
+    if (!message_id || !messageSessionId) {
       return false;
     }
 
-    const response = await submitMessageRating({
+    return submitRatingForMessage({
       message_id,
       session_id: messageSessionId,
       rating: overallRating,
@@ -905,8 +925,6 @@ const SpiritualMentorChat = () => {
       issues: selectedIssues ? [selectedIssues] : null,
       other_details: comment || null,
     });
-
-    return Boolean(response);
   };
 
   const handleFavouritePress = async (messageId?: string | number | null) => {
@@ -1028,7 +1046,7 @@ const SpiritualMentorChat = () => {
                           showRating={item.showRating}
                           message_id={item.chatMessage?.id}
                           session_id={item.chatMessage?.session_id}
-                          isRatingLoading={isMessageRatingLoading}
+                          isRatingLoading={ratingMessageIds.has(normalizeMessageId(item.chatMessage?.id) ?? "")}
                           onFeedbackSubmit={handleFeedbackSubmit}
                           onPositiveRatingSelect={handlePositiveRatingSelect}
                         />
@@ -1055,7 +1073,7 @@ const SpiritualMentorChat = () => {
                           showRating={item.showRating}
                           message_id={item.chatMessage.id}
                           session_id={item.chatMessage.session_id}
-                          isRatingLoading={isMessageRatingLoading}
+                          isRatingLoading={ratingMessageIds.has(normalizeMessageId(item.chatMessage.id) ?? "")}
                           onFeedbackSubmit={handleFeedbackSubmit}
                           onPositiveRatingSelect={handlePositiveRatingSelect}
                           showShare={item.mode !== GUIDED_MEDITATION}
