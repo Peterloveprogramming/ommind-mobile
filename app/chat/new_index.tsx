@@ -3,7 +3,7 @@ import { StyleSheet, Text, View, Platform, TouchableOpacity, FlatList, Keyboard,
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller'
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import Back from '@/assets/svg/header/Back'
+import ChevronLeft from '@/assets/svg/chat/ChevronLeft'
 import PrecautionButton from '@/assets/svg/chat/PrecautionButton'
 import Ai from '@/comp/chat/Ai'
 import ChatComposer from '@/comp/chat/ChatComposer'
@@ -12,6 +12,7 @@ import OpenChatHistoryButton from '@/comp/headers/OpenChatHistoryButton'
 import PersonalisedMeditationModal, { PersonalisedMeditationSelection } from '@/comp/modals/PersonalisedMeditationModal'
 import { Ionicons } from '@expo/vector-icons'
 import { images } from '@/constants/images'
+import { FONTS } from '@/theme.js'
 import useFetchAiMessage from '@/api/chatAi/useFetchAiMessage'
 import { useToast } from '@/context/useToast'
 import { useWebsocketHexPcmAudio } from "@/services/useWebsocketHexPcmAudio"
@@ -974,9 +975,15 @@ const SpiritualMentorChat = () => {
       >
         <Stack.Screen options={{ headerShown: false }} />
 
-        <View style={[styles.headerRow, { paddingTop: insets.top + 8 }]}>
-          <TouchableOpacity onPress={() => router.back()} hitSlop={12}>
-            <Back />
+        <View style={[styles.headerRow, { paddingTop: insets.top + 4 }]}>
+          <TouchableOpacity
+            onPress={() => router.back()}
+            hitSlop={12}
+            style={styles.headerCircleButton}
+            accessibilityRole="button"
+            accessibilityLabel="Back"
+          >
+            <ChevronLeft />
           </TouchableOpacity>
 
           <View style={styles.lhamoPill}>
@@ -1051,6 +1058,7 @@ const SpiritualMentorChat = () => {
                           isRatingLoading={isMessageRatingLoading}
                           onFeedbackSubmit={handleFeedbackSubmit}
                           onPositiveRatingSelect={handlePositiveRatingSelect}
+                          showShare={item.mode !== GUIDED_MEDITATION}
                         />
                       );
                   } else if (item.role === "human") {
@@ -1120,27 +1128,42 @@ export default SpiritualMentorChat
 const styles = StyleSheet.create({
     Parent: {
         flex: 1,
-        backgroundColor: "#FFFFFF",
+        backgroundColor: "#FAFAFA",
       },
       headerRow: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingHorizontal: 16,
-        paddingBottom: 8,
+        paddingHorizontal: 23,
+        paddingBottom: 10,
+      },
+      headerCircleButton: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: 'rgba(71, 71, 71, 0.3)',
       },
       lhamoPill: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
         gap: 5,
-        width: 135,
         height: 40,
+        paddingHorizontal: 20,
         borderRadius: 50,
-        backgroundColor: 'rgba(71, 71, 71, 0.5)',
+        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.8)',
+        backgroundColor: 'rgba(71, 71, 71, 0.4)',
       },
       lhamoText: {
+        fontFamily: FONTS.inter,
+        fontSize: 15,
+        lineHeight: 20,
+        letterSpacing: -0.24,
         color: '#FFFFFF',
+        includeFontPadding: false,
       },
       lhamoIcon: {
         width: 24,
@@ -1154,14 +1177,16 @@ const styles = StyleSheet.create({
         gap:5,
         alignItems:"center",
         justifyContent:"center",
-        padding:5,
+        paddingBottom:9,
       },
       precautionText:{
+        fontFamily: FONTS.interRegular,
+        fontSize: 13,
+        lineHeight: 18,
         color: 'rgba(71, 71, 71, 0.5)',
       },
       chatviewChild :{
         flex:1,
-        paddingVertical:10,
         paddingHorizontal: 10,
       },
       chatListContent: {
@@ -1188,8 +1213,8 @@ const styles = StyleSheet.create({
         borderRadius: 14,
       },
       createMeditationText: {
+        fontFamily: FONTS.figtreeBold,
         fontSize: 15,
-        fontWeight: "700",
         color: "#3A3A38",
       },
       guidedMeditationGeneratingPill: {
@@ -1204,8 +1229,8 @@ const styles = StyleSheet.create({
         minHeight: 48,
       },
       guidedMeditationGeneratingText: {
+        fontFamily: FONTS.figtreeBold,
         fontSize: 15,
-        fontWeight: "700",
         color: "#3A3A38",
       }
 })

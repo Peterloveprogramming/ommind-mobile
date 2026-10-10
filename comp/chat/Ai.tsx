@@ -1,12 +1,17 @@
-import {Text,View,Image, TouchableOpacity, ActivityIndicator} from 'react-native'
+import {Text,View,Image, Pressable, ActivityIndicator, Share, StyleSheet} from 'react-native'
 import React, { useState } from 'react'
 import * as Clipboard from 'expo-clipboard'
 import { images } from '@/constants/images'
 import FeedBackModal, { FeedBackPayload } from './FeedBackModal';
 import ReportProblem from './ReportProblem';
-import { Ionicons } from '@expo/vector-icons';
+import FeedbackThankYouModal from './FeedbackThankYouModal';
 import { useToast } from '@/context/useToast'
 import AiTypingIndicator from './AiTypingIndicator';
+import Bookmark from '@/assets/svg/chat/Bookmark';
+import ShareIcon from '@/assets/svg/chat/Share';
+import Star from '@/assets/svg/chat/Star';
+import Warning from '@/assets/svg/chat/Warning';
+import { FONTS } from '@/theme.js';
 
 type AiProps = {
     message: string;
@@ -18,6 +23,7 @@ type AiProps = {
     isFavourite?: boolean;
     isFavouriteUpdating?: boolean;
     showRating?:boolean;
+    showShare?: boolean;
     message_id?:string|number;
     session_id?:string|number;
     onFeedbackSubmit?: (payload: FeedBackPayload) => Promise<boolean | null> | boolean | null;
@@ -39,6 +45,7 @@ const Ai = ({
     isFavourite = false,
     isFavouriteUpdating = false,
     showRating = true,
+    showShare = true,
     message_id,
     session_id,
     onFeedbackSubmit,
@@ -55,6 +62,14 @@ const Ai = ({
     const handleCopy = async () => {
         await Clipboard.setStringAsync(message);
         showToastMessage("Copied to clipboard", true);
+    };
+
+    const handleShare = async () => {
+        try {
+            await Share.share({ message });
+        } catch (error) {
+            console.error("Failed to share message:", error);
+        }
     };
 
     const handleRatingSuccess = () => {
@@ -102,184 +117,100 @@ const Ai = ({
     };
 
     const shouldShowRating = showRating && !hasSubmittedRating;
+    const showBookmark = showPlaybackControl;
+    const showReport = message_id != null;
+    const hasActions = showBookmark || showShare || showReport;
+    const hasFooter = hasActions || shouldShowRating;
 
     if (message === "loading"){
         return <AiTypingIndicator />
-    } else {
+    }
+
     return (
         <>
-            <View style={{gap:10,marginBottom:10}}>
-                <Image source={images.lhamo_mini} style={{ width: 25, height: 25, resizeMode: "contain" }}/>
-                <View style={{backgroundColor:"#8C8C8A",maxWidth:"90%",borderRadius:10}}>
-                    <View style={{padding:15,gap:12}}>
-                        <Text
-                            style={{fontSize:16, color:"#FFFFFF",flexShrink:1}}
-                            selectable
-                            onLongPress={handleCopy}
-                        >{message}</Text>
-                        {showPlaybackControl ? (
-                            <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
-                                {/* <TouchableOpacity
-                                    onPress={onPlaybackControlPress}
-                                    hitSlop={6}
-                                    style={{
-                                        width: 30,
-                                        height: 30,
-                                        alignItems: "center",
-                                        justifyContent: "center",
-                                    }}
-                                >
-                                    <Image
-                                        source={
-                                            showPlayButton
-                                              ? images.play_button_guided_meditation
-                                              : images.pause_button_guided_meditation
-                                        }
-                                        style={{ width: 30, height: 30 }}
-                                        resizeMode="contain"
-                                    />
-                                </TouchableOpacity> */}
-                                {/* <TouchableOpacity
-                                    onPress={onReplayPress}
-                                    hitSlop={6}
-                                    style={{
-                                        width: 30,
-                                        height: 30,
-                                        alignItems: "center",
-                                        justifyContent: "center",
-                                    }}
-                                >
-                                    <Image
-                                        source={images.replay_button}
-                                        style={{ width: 30, height: 30 }}
-                                        resizeMode="contain"
-                                    />
-                                </TouchableOpacity> */}
-                                <TouchableOpacity
-                                    onPress={onFavouritePress}
-                                    disabled={isFavouriteUpdating}
-                                    hitSlop={6}
-                                    style={{
-                                        width: 30,
-                                        height: 30,
-                                        alignItems: "center",
-                                        justifyContent: "center",
-                                    }}
-                                >
-                                    <Image
-                                        source={isFavourite ? images.bookmarked : images.favourite_button}
-                                        style={{ width: 30, height: 30 }}
-                                        resizeMode="contain"
-                                    />
-                                </TouchableOpacity>
-                            </View>
-                        ) : null}
-                    </View>
-                
-                    {shouldShowRating ? (
-                        <>
-                        <View 
-                            style={{height:1,borderWidth:0.5,width:"100%",borderColor:"#AFAFAF"}}
-                        />
-                            
-                            <View style={{ padding:10, flexDirection: "row", alignItems: "center", gap: 3 }}>
-                                <View 
-                                    style={{flexDirection: "row",gap:3,backgroundColor:"#AFAFAF",paddingVertical:10, paddingHorizontal:10,borderWidth:0.5,borderColor:"#ffffff",borderRadius:50}}
-                                >
-                                <Text style={{
-                                    fontSize:15,
-                                    color:"#ffffff"
-                                }}>Rate this Response:</Text>
-                                {isRatingLoading ? (
-                                    <View style={{justifyContent:"center", marginLeft:6, minWidth: 32}}>
-                                        <ActivityIndicator size="small" color="#ffffff" />
-                                    </View>
-                                ) : (
-                                    Array.from({ length: 5 }, (_, index) => {
-                                        const isFilled = index < selectedRating;
+            <View style={styles.container}>
+                <Image source={images.lhamo_mini} style={styles.avatar} resizeMode="contain" />
+                <View style={[styles.bubble, hasFooter && styles.bubbleWithFooter]}>
+                    <Text
+                        style={styles.messageText}
+                        selectable
+                        onLongPress={handleCopy}
+                    >{message}</Text>
 
-                                        return (
-                                            <TouchableOpacity
-                                                key={index}
-                                                onPress={() => handleRatingPress(index + 1)}
-                                                hitSlop={6}
-                                            >
-                                                <Image
-                                                    source={isFilled ? images.star_filled : images.star_unfilled}
-                                                    style={{ width: 24, height: 24 }}
-                                                    resizeMode="contain"
-                                                />
-                                            </TouchableOpacity>
-                                        );
-                                    })
-                                )}
-                            </View>
-                            
-                            {isRatingLoading ? null : (
-                                <TouchableOpacity
-                                    style={{marginLeft:3}}
-                                    onPress={() => setIsReportProblemVisible(true)}
-                                >
-                                    <Image
-                                        source={images.report}
-                                        style={{ width: 30, height: 30 }}
-                                        resizeMode="contain"
-                                    />
-                                </TouchableOpacity>
-                            )}
+                    {hasFooter ? (
+                        <View style={styles.footer}>
+                            {hasActions ? (
+                                <View style={styles.actionsRow}>
+                                    {showBookmark ? (
+                                        <Pressable
+                                            onPress={onFavouritePress}
+                                            disabled={isFavouriteUpdating}
+                                            hitSlop={4}
+                                            style={({ pressed }) => [styles.actionButton, pressed && styles.pressed]}
+                                            accessibilityRole="button"
+                                            accessibilityLabel={isFavourite ? "Remove from favourites" : "Add to favourites"}
+                                        >
+                                            {isFavouriteUpdating ? (
+                                                <ActivityIndicator size="small" color="#FFFFFF" />
+                                            ) : (
+                                                <Bookmark filled={isFavourite} />
+                                            )}
+                                        </Pressable>
+                                    ) : null}
+                                    {showShare ? (
+                                        <Pressable
+                                            onPress={() => { void handleShare(); }}
+                                            hitSlop={4}
+                                            style={({ pressed }) => [styles.actionButton, pressed && styles.pressed]}
+                                            accessibilityRole="button"
+                                            accessibilityLabel="Share"
+                                        >
+                                            <ShareIcon />
+                                        </Pressable>
+                                    ) : null}
+                                    {showReport ? (
+                                        <Pressable
+                                            onPress={() => setIsReportProblemVisible(true)}
+                                            hitSlop={4}
+                                            style={({ pressed }) => [styles.reportButton, pressed && styles.pressed]}
+                                            accessibilityRole="button"
+                                        >
+                                            <Warning />
+                                            <Text style={styles.reportText}>Report</Text>
+                                        </Pressable>
+                                    ) : null}
+                                </View>
+                            ) : null}
+
+                            {shouldShowRating ? (
+                                <View style={styles.ratingRow}>
+                                    <View style={styles.ratingPill}>
+                                        <Text style={styles.ratingLabel}>Rate this Response:</Text>
+                                        {isRatingLoading ? (
+                                            <View style={styles.ratingLoading}>
+                                                <ActivityIndicator size="small" color="#FFFFFF" />
+                                            </View>
+                                        ) : (
+                                            <View style={styles.starsRow}>
+                                                {Array.from({ length: 5 }, (_, index) => (
+                                                    <Pressable
+                                                        key={index}
+                                                        onPress={() => handleRatingPress(index + 1)}
+                                                        hitSlop={{ top: 8, bottom: 8, left: 3, right: 3 }}
+                                                        accessibilityRole="button"
+                                                        accessibilityLabel={`Rate ${index + 1} star${index > 0 ? "s" : ""}`}
+                                                    >
+                                                        <Star filled={index < selectedRating} />
+                                                    </Pressable>
+                                                ))}
+                                            </View>
+                                        )}
+                                    </View>
+                                </View>
+                            ) : null}
                         </View>
-                        </>
                     ) : null}
                 </View>
-
-                {showThankYouCard ? (
-                    <View
-                        style={{
-                            marginTop: 8,
-                            alignSelf: "center",
-                            width: "82%",
-                            backgroundColor: "#5A5A5A",
-                            borderRadius: 22,
-                            paddingHorizontal: 18,
-                            paddingVertical: 18,
-                            alignItems: "center",
-                        }}
-                    >
-                        <View
-                            style={{
-                                width: 48,
-                                height: 48,
-                                borderRadius: 24,
-                                backgroundColor: "#8A8A8A",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                marginBottom: 14,
-                            }}
-                        >
-                            <Ionicons name="checkmark" size={28} color="#FFFFFF" />
-                        </View>
-                        <Text style={{ color: "#FFFFFF", fontSize: 18, fontWeight: "700", marginBottom: 10 }}>
-                            Thank you for your feedback!
-                        </Text>
-                        <Text style={{ color: "#FFFFFF", fontSize: 14, textAlign: "center", lineHeight: 22 }}>
-                            Your input helps us improve.
-                        </Text>
-                        <Text style={{ color: "#FFFFFF", fontSize: 14, textAlign: "center", lineHeight: 22, marginBottom: 16 }}>
-                            We appreciate your help!{"\uD83D\uDC9B"}
-                        </Text>
-                        <TouchableOpacity
-                            onPress={() => setShowThankYouCard(false)}
-                            style={{
-                                backgroundColor: "#F7C948",
-                                borderRadius: 999,
-                                paddingHorizontal: 22,
-                                paddingVertical: 10,
-                            }}
-                        >
-                            <Text style={{ color: "#FFFFFF", fontSize: 16, fontWeight: "700" }}>OK</Text>
-                        </TouchableOpacity>
-                    </View>
-                ) : null}
             </View>
             <ReportProblem
                 visible={isReportProblemVisible}
@@ -296,10 +227,117 @@ const Ai = ({
                 message_id={message_id}
                 onSubmit={handleFeedbackSubmit}
             />
+            <FeedbackThankYouModal
+                visible={showThankYouCard}
+                onClose={() => setShowThankYouCard(false)}
+            />
         </>
-        )
-    }
+    )
 }
 
+const styles = StyleSheet.create({
+    container: {
+        gap: 5,
+        marginBottom: 15,
+        alignItems: "flex-start",
+    },
+    avatar: {
+        width: 24,
+        height: 24,
+    },
+    bubble: {
+        maxWidth: 350,
+        gap: 10,
+        paddingTop: 16,
+        paddingBottom: 16,
+        borderRadius: 15,
+        backgroundColor: "#8C8C8A",
+    },
+    bubbleWithFooter: {
+        paddingBottom: 10,
+    },
+    messageText: {
+        paddingHorizontal: 12,
+        fontFamily: FONTS.interRegular,
+        fontSize: 15,
+        lineHeight: 20,
+        letterSpacing: -0.24,
+        color: "#FFFFFF",
+    },
+    footer: {
+        gap: 10,
+        paddingTop: 10,
+        borderTopWidth: 1,
+        borderTopColor: "#AFAFAF",
+    },
+    actionsRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        flexWrap: "wrap",
+        gap: 8,
+        paddingHorizontal: 12,
+    },
+    actionButton: {
+        width: 33,
+        height: 34,
+        borderRadius: 17,
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: "#A3A3A1",
+    },
+    reportButton: {
+        height: 34,
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 5,
+        paddingLeft: 10,
+        paddingRight: 12,
+        borderRadius: 17,
+        backgroundColor: "#A3A3A1",
+    },
+    reportText: {
+        fontFamily: FONTS.interRegular,
+        fontSize: 15,
+        lineHeight: 20,
+        letterSpacing: -0.24,
+        color: "#FFFFFF",
+        includeFontPadding: false,
+    },
+    pressed: {
+        opacity: 0.7,
+    },
+    ratingRow: {
+        flexDirection: "row",
+        paddingHorizontal: 12,
+    },
+    ratingPill: {
+        height: 33,
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 10,
+        paddingHorizontal: 12,
+        borderRadius: 50,
+        borderWidth: 1,
+        borderColor: "#FFFFFF",
+        backgroundColor: "rgba(255, 255, 255, 0.2)",
+    },
+    ratingLabel: {
+        fontFamily: FONTS.interRegular,
+        fontSize: 13,
+        lineHeight: 20,
+        letterSpacing: -0.24,
+        color: "#FFFFFF",
+        includeFontPadding: false,
+    },
+    starsRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 7,
+    },
+    ratingLoading: {
+        minWidth: 128,
+        alignItems: "center",
+    },
+});
 
 export default Ai

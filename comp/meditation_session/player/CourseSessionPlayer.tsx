@@ -2,10 +2,8 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import {
   AppState,
   AppStateStatus,
-  DimensionValue,
   GestureResponderEvent,
   Image,
-  ImageBackground,
   LayoutChangeEvent,
   Modal,
   PanResponder,
@@ -18,7 +16,11 @@ import { useFocusEffect, useRouter } from "expo-router";
 import { useAudioPlayer, useAudioPlayerStatus } from "expo-audio";
 import * as Sentry from "@sentry/react-native";
 import { images } from "@/constants/images";
-import BookmarkButtonWhite from "@/comp/buttons/BookmarkButtonWhite";
+import LoopSlash from "@/assets/svg/meditation_session/LoopSlash";
+import MusicIcon from "@/assets/svg/meditation_session/MusicIcon";
+import NextIcon from "@/assets/svg/meditation_session/NextIcon";
+import PlayPauseIcon from "@/assets/svg/meditation_session/PlayPauseIcon";
+import PreviousIcon from "@/assets/svg/meditation_session/PreviousIcon";
 import { useMeditationAudio as useMeditationAudioService } from "@/api/meditation/useMeditationAudio";
 import { useAppDispatch } from "@/store/hooks";
 import {
@@ -34,16 +36,20 @@ import {
 import type { CourseSessionPlayerParams } from "./sessionPlayerParams";
 import {
   BufferingBadge,
-  PlayerBackground,
-  TRACKER_SIZE,
+  PLAYER_UI,
+  PlayerScaffold,
+  PlayerTitleBlock,
   formatProgressPromptTime,
   formatTime,
   styles,
 } from "./sessionPlayerShared";
-import { usePlayerBackButton } from "./usePlayerBackButton";
 import { useSessionFavourite } from "./useSessionFavourite";
 
 const clampProgress = (value: number) => Math.max(0, Math.min(value, 1));
+
+// The thumb stays inside the track, so only width minus one thumb is seekable.
+const getSeekableWidth = (trackWidth: number) =>
+  Math.max(trackWidth - PLAYER_UI.progressThumbSize, 1);
 
 type CourseAudioTelemetryData = Record<
   string,
@@ -606,7 +612,7 @@ export default function CourseSessionPlayer({
   const handleBackToExplore = useCallback(() => {
     if (__DEV__) {
       console.log(
-        "[SessionPlayer] header back tapped; saving progress in background and navigating to explore",
+        "[SessionPlayer] close tapped; saving progress in background and navigating to explore",
         {
           route: "/explore",
           sessionKey,
@@ -618,8 +624,6 @@ export default function CourseSessionPlayer({
     void saveSessionProgress(undefined, false, "headerBack");
     router.dismissTo("/explore");
   }, [router, saveSessionProgress, sessionKey]);
-
-  usePlayerBackButton(handleBackToExplore);
 
   useEffect(() => {
     if (voiceStatus.playing) {
@@ -899,17 +903,14 @@ export default function CourseSessionPlayer({
     courseNumber,
     sessionNumber,
   };
-  const progressPercentage = useMemo<DimensionValue>(
-    () => `${displayedProgress * 100}%`,
-    [displayedProgress]
-  );
-  const trackerOffset = useMemo(() => {
-    if (!progressTrackWidth) {
-      return -TRACKER_SIZE / 2;
-    }
-
-    return displayedProgress * progressTrackWidth - TRACKER_SIZE / 2;
-  }, [displayedProgress, progressTrackWidth]);
+  const thumbOffset = progressTrackWidth
+    ? displayedProgress * getSeekableWidth(progressTrackWidth)
+    : 0;
+  const progressFillWidth = progressTrackWidth
+    ? thumbOffset + PLAYER_UI.progressThumbSize / 2
+    : 0;
+  const displayedTime = dragProgress === null ? currentTime : dragProgress * duration;
+  const remainingTime = Math.max(duration - displayedTime, 0);
 
   const seekToTime = useCallback(async (seconds: number) => {
     const clampedSeconds = Math.max(0, Math.min(seconds, durationRef.current || 0));
@@ -1071,8 +1072,11 @@ export default function CourseSessionPlayer({
       return;
     }
 
-    const nextTime = (event.nativeEvent.locationX / progressTrackWidth) * duration;
-    void seekToTime(nextTime);
+    const nextProgress = clampProgress(
+      (event.nativeEvent.locationX - PLAYER_UI.progressThumbSize / 2) /
+        getSeekableWidth(progressTrackWidth)
+    );
+    void seekToTime(nextProgress * duration);
   };
 
   const handleProgressLayout = (event: LayoutChangeEvent) => {
@@ -1094,7 +1098,8 @@ export default function CourseSessionPlayer({
           }
 
           const nextProgress = clampProgress(
-            dragStartProgressRef.current + gestureState.dx / progressTrackWidthRef.current
+            dragStartProgressRef.current +
+              gestureState.dx / getSeekableWidth(progressTrackWidthRef.current)
           );
           setDragProgress(nextProgress);
         },
@@ -1105,7 +1110,8 @@ export default function CourseSessionPlayer({
           }
 
           const nextProgress = clampProgress(
-            dragStartProgressRef.current + gestureState.dx / progressTrackWidthRef.current
+            dragStartProgressRef.current +
+              gestureState.dx / getSeekableWidth(progressTrackWidthRef.current)
           );
           setDragProgress(null);
           void seekToTime(nextProgress * durationRef.current);
@@ -1199,101 +1205,121 @@ export default function CourseSessionPlayer({
   };
 
   return (
-    <PlayerBackground backgroundUrl={backgroundUrl}>
-      <View style={styles.container}>
-        <ImageBackground
-          source={imageUrl ? { uri: imageUrl } : undefined}
-          style={styles.image}
-        />
-        <Text style={styles.currentTime}>{formatTime(currentTime)}</Text>
+    <PlayerScaffold
+      backgroundUrl={backgroundUrl}
+      artworkSource={imageUrl ? { uri: imageUrl } : undefined}
+      artworkOverlay={
+        isWaitingForInitialAudio ? <BufferingBadge isBusy text="Buffering audio..." /> : null
+      }
+      onClose={handleBackToExplore}
+    >
+      <PlayerTitleBlock
+        timeText={formatTime(remainingTime)}
+        timeAccessibilityLabel={`${formatTime(remainingTime)} remaining`}
+        title={title ?? ""}
+        isBookmarked={currentFavourite === 1}
+        isBookmarkDisabled={isFavouriteUpdating}
+        onBookmarkPress={handleBookmarkPress}
+      />
 
-        <View style={{ flexDirection: "row", marginVertical: 5 }}>
-          <Text style={styles.title}>{title}</Text>
-          <BookmarkButtonWhite
-            onTouch={handleBookmarkPress}
-            isBookmarked={currentFavourite === 1}
-            disabled={isFavouriteUpdating}
-          />
-        </View>
-
-        {isWaitingForInitialAudio ? (
-          <BufferingBadge isBusy text="Buffering audio..." />
-        ) : null}
-
-        <View style={styles.timeline}>
+      <View style={styles.playbackBlock}>
+        <View style={[styles.section, styles.timeline]}>
           <Pressable
-            style={styles.progressTrack}
+            accessibilityLabel="Seek"
+            style={styles.progressTouchArea}
             onLayout={handleProgressLayout}
             onPress={handleProgressPress}
           >
-            <View style={[styles.progressFill, { width: progressPercentage }]} />
+            <View style={styles.progressTrack}>
+              <View style={[styles.progressFill, { width: progressFillWidth }]} />
+            </View>
             <View
-              style={[
-                styles.progressTrackerWrapper,
-                { transform: [{ translateX: trackerOffset }] },
-              ]}
+              style={[styles.progressThumbWrapper, { transform: [{ translateX: thumbOffset }] }]}
               pointerEvents="box-none"
             >
-              <View {...panResponder.panHandlers} style={styles.progressTrackerTouchArea}>
-                <Image
-                  source={images.progress_tracker}
-                  style={styles.progressTracker}
-                  resizeMode="contain"
-                />
+              <View {...panResponder.panHandlers} style={styles.progressThumbTouchArea}>
+                <View style={styles.progressThumb} />
               </View>
             </View>
           </Pressable>
           <View style={styles.timeRow}>
-            <Text style={styles.timeText}>{formatTime(currentTime)}</Text>
-            <Text style={styles.timeText}>{formatTime(duration)}</Text>
+            <Text maxFontSizeMultiplier={PLAYER_UI.maxFontSizeMultiplier} style={styles.timeText}>
+              {formatTime(displayedTime)}
+            </Text>
+            <Text maxFontSizeMultiplier={PLAYER_UI.maxFontSizeMultiplier} style={styles.timeText}>
+              -{formatTime(remainingTime)}
+            </Text>
           </View>
         </View>
 
-        <View style={styles.iconRow}>
-          <TouchableOpacity style={styles.iconButtonPreview} onPress={handleTogglePlayback}>
-            <Image
-              source={isPlaybackEnabled ? images.play_back_true : images.play_back_false}
-              style={styles.iconPreviewImage}
-              resizeMode="contain"
-            />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.iconButtonPreview} onPress={handleSkipBackward}>
-            <Image
-              source={images.skip_backwards}
-              style={styles.iconPreviewImage}
-              resizeMode="contain"
-            />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.primaryIconButtonPreview}
-            onPress={voiceStatus.playing ? handlePause : handlePlay}
+        <View style={styles.controlsRow}>
+          <Pressable
+            accessibilityRole="switch"
+            accessibilityLabel="Repeat session"
+            accessibilityState={{ checked: isPlaybackEnabled }}
+            hitSlop={10}
+            onPress={handleTogglePlayback}
+            style={({ pressed }) => [styles.loopIcon, pressed && styles.pressed]}
           >
-            <Image
-              source={voiceStatus.playing ? images.pause_icon : images.play_icon}
-              style={styles.primaryIconPreviewImage}
-              resizeMode="contain"
-            />
-          </TouchableOpacity>
+            <Image source={images.loop} style={styles.loopImage} resizeMode="cover" />
+            {isPlaybackEnabled ? null : <LoopSlash style={styles.loopSlash} />}
+          </Pressable>
 
-          <TouchableOpacity style={styles.iconButtonPreview} onPress={handleSkipForward}>
-            <Image
-              source={images.skip_forwards}
-              style={styles.iconPreviewImage}
-              resizeMode="contain"
-            />
-          </TouchableOpacity>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Previous session"
+            accessibilityState={{ disabled: !canSkipBackward }}
+            disabled={!canSkipBackward}
+            hitSlop={10}
+            onPress={handleSkipBackward}
+            style={({ pressed }) => [
+              styles.controlIcon,
+              !canSkipBackward && styles.controlDisabled,
+              pressed && styles.pressed,
+            ]}
+          >
+            <PreviousIcon />
+          </Pressable>
 
-          <TouchableOpacity style={styles.iconButtonPreview} onPress={handleToggleBgm}>
-            <Image
-              source={isBgmEnabled ? images.music_true : images.music_false}
-              style={styles.iconPreviewImage}
-              resizeMode="contain"
-            />
-          </TouchableOpacity>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={voiceStatus.playing ? "Pause" : "Play"}
+            hitSlop={6}
+            onPress={voiceStatus.playing ? handlePause : handlePlay}
+            style={({ pressed }) => pressed && styles.pressed}
+          >
+            <PlayPauseIcon isPlaying={voiceStatus.playing} />
+          </Pressable>
+
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Next session"
+            accessibilityState={{ disabled: !canSkipForward }}
+            disabled={!canSkipForward}
+            hitSlop={10}
+            onPress={handleSkipForward}
+            style={({ pressed }) => [
+              styles.controlIcon,
+              !canSkipForward && styles.controlDisabled,
+              pressed && styles.pressed,
+            ]}
+          >
+            <NextIcon />
+          </Pressable>
+
+          <Pressable
+            accessibilityRole="switch"
+            accessibilityLabel="Background music"
+            accessibilityState={{ checked: isBgmEnabled }}
+            hitSlop={10}
+            onPress={handleToggleBgm}
+            style={({ pressed }) => [styles.controlIcon, pressed && styles.pressed]}
+          >
+            <MusicIcon enabled={isBgmEnabled} />
+          </Pressable>
         </View>
       </View>
+
       <Modal
         animationType="fade"
         transparent
@@ -1323,6 +1349,6 @@ export default function CourseSessionPlayer({
           </View>
         </View>
       </Modal>
-    </PlayerBackground>
+    </PlayerScaffold>
   );
 }

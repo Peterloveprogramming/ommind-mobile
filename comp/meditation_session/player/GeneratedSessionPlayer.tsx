@@ -1,13 +1,11 @@
 import React, { useCallback, useEffect, useRef } from "react";
-import { ImageBackground, Text, View } from "react-native";
+import { View } from "react-native";
 import { useRouter } from "expo-router";
 import { images } from "@/constants/images";
-import BookmarkButtonWhite from "@/comp/buttons/BookmarkButtonWhite";
 import useChatMessageContentById from "@/api/chatMessages/useChatMessageContentById";
 import { useWebsocketHexPcmAudio } from "@/services/useWebsocketHexPcmAudio";
 import type { GeneratedSessionPlayerParams } from "./sessionPlayerParams";
-import { BufferingBadge, PlayerBackground, styles } from "./sessionPlayerShared";
-import { usePlayerBackButton } from "./usePlayerBackButton";
+import { BufferingBadge, PlayerScaffold, PlayerTitleBlock, styles } from "./sessionPlayerShared";
 import { useSessionFavourite } from "./useSessionFavourite";
 
 export default function GeneratedSessionPlayer({
@@ -53,7 +51,7 @@ export default function GeneratedSessionPlayer({
 
   const handleBackToExplore = useCallback(() => {
     if (__DEV__) {
-      console.log("[SessionPlayer] header back tapped; navigating generated session to explore", {
+      console.log("[SessionPlayer] close tapped; navigating generated session to explore", {
         route: "/explore",
         sessionKey,
       });
@@ -61,8 +59,6 @@ export default function GeneratedSessionPlayer({
 
     router.dismissTo("/explore");
   }, [router, sessionKey]);
-
-  usePlayerBackButton(handleBackToExplore);
 
   useEffect(() => {
     let isCancelled = false;
@@ -110,24 +106,20 @@ export default function GeneratedSessionPlayer({
               : "Preparing generated meditation...";
 
   return (
-    <PlayerBackground backgroundUrl={backgroundUrl}>
-      <View style={styles.container}>
-        <ImageBackground
-          source={imageUrl ? { uri: imageUrl } : images.meditation_test}
-          style={styles.image}
-        />
-
-        <View style={{ flexDirection: "row", marginVertical: 15 }}>
-          <Text style={styles.title}>{title ?? "Generated Guided Meditation"}</Text>
-          <BookmarkButtonWhite
-            onTouch={handleBookmarkPress}
-            isBookmarked={currentFavourite === 1}
-            disabled={isFavouriteUpdating}
-          />
-        </View>
-
+    <PlayerScaffold
+      backgroundUrl={backgroundUrl}
+      artworkSource={imageUrl ? { uri: imageUrl } : images.meditation_test}
+      onClose={handleBackToExplore}
+    >
+      <PlayerTitleBlock
+        title={title ?? "Generated Guided Meditation"}
+        isBookmarked={currentFavourite === 1}
+        isBookmarkDisabled={isFavouriteUpdating}
+        onBookmarkPress={handleBookmarkPress}
+      />
+      <View style={[styles.section, styles.generatedStatus]}>
         <BufferingBadge isBusy={isGeneratedPlaybackBusy} text={generatedStatusText} />
       </View>
-    </PlayerBackground>
+    </PlayerScaffold>
   );
 }

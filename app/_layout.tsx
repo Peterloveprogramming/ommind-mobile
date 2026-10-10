@@ -158,28 +158,10 @@ function RootLayout() {
 
         <Stack.Screen
           name="meditation_session/player"
-          options={{
-            headerTitle: () => <View />,
-            headerShown: true,
-            headerTransparent: true,
-            headerShadowVisible: false,
-            headerStyle: {
-              backgroundColor: "transparent",
-            },
-            headerLeft:() => (
-              <BackButton
-                debugLabel="HeaderBack:meditation_session/player"
-                onTouch={() =>
-                  handleMeditationHeaderBackPress(
-                    "meditation_session/player",
-                    () => router.dismissTo("/explore")
-                  )
-                }
-              />
-            ),
-            headerRight:()=><MoreButton onTouch={() => console.log("More pressed")} />
-            }}
-          />
+          // The player draws its own close/share bar (PlayerScaffold) so it
+          // lines up identically on iOS and Android.
+          options={{ headerShown: false }}
+        />
 
         <Stack.Screen
           name="authentication/registration_questions"

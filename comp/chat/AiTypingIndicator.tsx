@@ -35,8 +35,8 @@ const AiTypingIndicator = () => {
   }, [dotAnimations]);
 
   return (
-    <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 10 }}>
-      <Image source={images.lhamo_mini} style={{ width: 25, height: 25, resizeMode: "contain" }} />
+    <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 15 }}>
+      <Image source={images.lhamo_mini} style={{ width: 24, height: 24, resizeMode: "contain" }} />
       <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
         {dotAnimations.map((dotAnimation, index) => {
           const translateY = dotAnimation.interpolate({
